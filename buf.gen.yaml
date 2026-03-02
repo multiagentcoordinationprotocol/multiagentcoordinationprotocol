@@ -1,0 +1,30 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/macp/proto/gen/go
+plugins:
+  # Go
+  - remote: buf.build/protocolbuffers/go
+    out: generated/go
+    opt:
+      - paths=source_relative
+
+  # Python
+  - remote: buf.build/protocolbuffers/python
+    out: generated/python
+    opt:
+      - paths=source_relative
+
+  # JavaScript
+  - remote: buf.build/protocolbuffers/js
+    out: generated/js
+    opt:
+      - import_style=commonjs
+
+  # TypeScript declarations
+  - remote: buf.build/protocolbuffers/pyi
+    out: generated/python
+    opt:
+      - paths=source_relative

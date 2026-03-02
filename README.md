@@ -112,6 +112,9 @@ Every MACP message uses a standard Envelope wrapper:
 
 ```
 multiagentcoordinationprotocol/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # CI/CD validation workflow
 ├── rfcs/                           # Protocol specifications (RFC-style)
 │   └── RFC-MACP-0001.md           # Core MACP specification (canonical)
 ├── schemas/
@@ -132,6 +135,13 @@ multiagentcoordinationprotocol/
 │   ├── security.md                 # Security model and considerations
 │   ├── modes.md                    # How to define and implement coordination modes
 │   └── determinism.md              # Deterministic execution guarantees
+├── scripts/                        # Validation and development scripts
+│   ├── validate-json-schema.sh    # Validate JSON Schema itself
+│   ├── validate-json.sh           # Validate JSON examples
+│   └── validate-proto.sh          # Compile and validate protobuf
+├── Makefile                        # Development commands
+├── buf.yaml                        # Buf linting configuration
+├── buf.gen.yaml                    # Code generation configuration
 ├── CONTRIBUTING.md                 # Contribution guidelines
 ├── LICENSE                         # MIT License
 └── README.md                       # This file
@@ -236,32 +246,126 @@ MACP provides these invariants:
 5. **Replay Integrity**: Same message sequence + same versions = same state transitions
 6. **Idempotency**: Duplicate `message_id` within session produces no side effects
 
-## Working with Schemas
+## Development and Validation
 
-### Protocol Buffers (Canonical Wire Format)
+### Quick Start: Local Development
 
-The protobuf schema at [schemas/proto/macp/v1/macp.proto](schemas/proto/macp/v1/macp.proto) is the canonical definition.
+MACP provides a comprehensive set of tools for local development and validation:
 
-**Compile and validate:**
+```bash
+# Validate everything (JSON Schema, examples, protobuf)
+make validate
+
+# Validate just the JSON Schema itself (meta-validation)
+make json-schema-validate
+
+# Validate JSON examples against schema
+make json-validate
+
+# Lint protobuf files
+make proto-lint
+
+# Compile protobuf (validation)
+make proto-compile
+
+# Generate code from protobuf (Go, Python, TypeScript, JavaScript)
+make proto-gen
+
+# Clean generated files
+make clean
+
+# Install required development tools
+make install-tools
+```
+
+### Development Tools
+
+This repository includes:
+
+- **Makefile**: Convenient commands for validation and code generation
+- **buf**: Industry-standard protobuf linting and code generation
+- **Validation scripts** (`scripts/`):
+  - `validate-json-schema.sh` - Validates the JSON Schema itself (meta-validation)
+  - `validate-json.sh` - Validates JSON examples against the schema
+  - `validate-proto.sh` - Compiles and validates protobuf schemas
+- **CI/CD**: Automated validation via GitHub Actions
+
+### Working with Schemas
+
+#### Protocol Buffers (Canonical Wire Format)
+
+The protobuf schema at [schemas/proto/macp/v1/macp.proto](schemas/proto/macp/v1/macp.proto) is the **canonical** definition.
+
+**Using Makefile:**
+```bash
+make proto-compile  # Validate compilation
+make proto-lint     # Lint with buf
+make proto-gen      # Generate code
+```
+
+**Manual validation:**
 ```bash
 protoc --proto_path=schemas/proto \
        --descriptor_set_out=/dev/null \
        schemas/proto/macp/v1/macp.proto
 ```
 
-### JSON Schema Validation
+#### JSON Schema Validation
 
 The JSON schema at [schemas/json/macp-envelope.schema.json](schemas/json/macp-envelope.schema.json) validates JSON-encoded envelopes.
 
-**Validate examples:**
+**Using Makefile:**
 ```bash
-# Install ajv-cli (or similar validator)
+make json-schema-validate  # Validate the schema itself
+make json-validate         # Validate examples against schema
+```
+
+**Manual validation:**
+```bash
+# Install ajv-cli
 npm install -g ajv-cli
 
-# Validate all examples
+# Validate the schema itself (meta-validation)
+ajv compile -s schemas/json/macp-envelope.schema.json --spec=draft2020
+
+# Validate examples against schema
 ajv validate -s schemas/json/macp-envelope.schema.json \
-             -d "examples/json/*.json"
+             -d "examples/json/*.json" --spec=draft2020
 ```
+
+### Code Generation
+
+Generate protobuf code for multiple languages:
+
+```bash
+make proto-gen
+```
+
+Generated code is placed in `generated/` (gitignored):
+- `generated/go/` - Go packages
+- `generated/python/` - Python modules
+- `generated/js/` - JavaScript (CommonJS)
+
+**Buf Configuration:**
+- `buf.yaml` - Linting rules and breaking change detection
+- `buf.gen.yaml` - Code generation configuration
+
+### Continuous Integration
+
+GitHub Actions automatically validates:
+
+1. **JSON Schema meta-validation** - Ensures the schema itself is valid
+2. **JSON examples validation** - Validates all examples against the schema
+3. **Protobuf compilation** - Ensures protobuf schemas compile
+4. **Protobuf linting** - Lints with buf for best practices
+5. **Breaking change detection** - Checks for breaking changes in PRs
+6. **Code generation** - Verifies schemas can generate code for multiple languages
+
+**CI runs on:**
+- All pull requests
+- Pushes to `main` branch
+
+**View workflows:** [.github/workflows/ci.yml](.github/workflows/ci.yml)
 
 ## Transport
 
@@ -326,6 +430,53 @@ Protocol changes require an RFC (Request for Comments):
 5. RFCs are accepted through consensus
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full RFC process.
+
+## Getting Started with Development
+
+### Prerequisites
+
+To work with this repository, you'll need:
+
+1. **Protocol Buffer Compiler (protoc)**
+   - macOS: `brew install protobuf`
+   - Ubuntu: `sudo apt-get install protobuf-compiler`
+   - [Other platforms](https://protobuf.dev/downloads/)
+
+2. **buf** (Protocol Buffer tooling)
+   - macOS: `brew install bufbuild/buf/buf`
+   - [Other platforms](https://buf.build/docs/installation)
+
+3. **Node.js and npm** (for JSON Schema validation)
+   - [Download Node.js](https://nodejs.org/)
+   - Then: `npm install -g ajv-cli`
+
+4. **Go** (optional, for Go code generation)
+   - [Download Go](https://go.dev/dl/)
+
+### Quick Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/macp.git
+cd macp
+
+# Install development tools (macOS/Linux)
+make install-tools
+
+# Validate everything
+make validate
+
+# Generate code (optional)
+make proto-gen
+```
+
+### Development Workflow
+
+1. **Make changes** to schemas, documentation, or examples
+2. **Validate locally**: `make validate`
+3. **Fix any issues** reported by validation
+4. **Commit and push**: CI will run the same validations
+5. **Submit PR**: Breaking change detection runs automatically
 
 ## Contributing
 

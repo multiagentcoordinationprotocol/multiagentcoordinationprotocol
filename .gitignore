@@ -35,6 +35,8 @@ Temporary Items
 .project
 .classpath
 .settings/
+*.sublime-project
+*.sublime-workspace
 
 # Compiled protobuf files (if generated)
 *.pb.go
@@ -42,6 +44,9 @@ Temporary Items
 *_pb2.pyi
 *.pb.cc
 *.pb.h
+
+# Generated code from protobuf
+generated/
 
 # Build artifacts
 build/
@@ -52,6 +57,18 @@ out/
 # Dependency directories
 node_modules/
 vendor/
+.pnp/
+.pnp.js
+
+# Package manager lock files (optional - some projects choose to commit these)
+# Uncomment if you don't want to track lock files:
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+# Pipfile.lock
+# poetry.lock
+# Cargo.lock
+# go.sum
 
 # Environment files
 .env
@@ -66,3 +83,46 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+
+# Go
+*.test
+*.out
+go.work
+
+# Rust
+Cargo.lock
+target/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Test coverage
+coverage/
+*.lcov
+
+# Documentation build
+_build/
+.docusaurus/
+site/

@@ -72,11 +72,27 @@
   "oneOf": [
     {
       "required": ["payload"],
-      "not": { "required": ["payload_b64"] }
+      "properties": {
+        "payload": {
+          "description": "Decoded JSON payload form (preferred for Core payloads and readable messages)."
+        }
+      },
+      "not": {
+        "required": ["payload_b64"]
+      }
     },
     {
       "required": ["payload_b64"],
-      "not": { "required": ["payload"] }
+      "properties": {
+        "payload_b64": {
+          "type": "string",
+          "description": "Opaque payload bytes encoded as base64 (use when payload is opaque or binary).",
+          "contentEncoding": "base64"
+        }
+      },
+      "not": {
+        "required": ["payload"]
+      }
     }
   ],
 

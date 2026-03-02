@@ -98,9 +98,9 @@ message SessionCancelPayload {
 
 enum SessionState {
   SESSION_STATE_UNSPECIFIED = 0;
-  OPEN = 1;
-  RESOLVED = 2;
-  EXPIRED = 3;
+  SESSION_STATE_OPEN = 1;
+  SESSION_STATE_RESOLVED = 2;
+  SESSION_STATE_EXPIRED = 3;
 }
 
 message SessionMetadata {
