@@ -1,0 +1,18 @@
+{
+  "macp_version": "1.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "Commitment",
+  "message_id": "01HV0Q3BX2K3B4Q8J6T2K2S9M0",
+  "session_id": "01HV0Q2A8W0Y2XQ5N1R8Y2K9B3",
+  "sender": "agent://orchestrator",
+  "timestamp": "2026-03-01T20:30:10Z",
+  "payload": {
+    "commitment_id": "d4f9c5c0-3c7b-4b70-9f0c-2d57f6a3b1a2",
+    "action": "vendor.select",
+    "authority_scope": "procurement",
+    "reason": "Vendor B meets security + budget constraints",
+    "mode_version": "1.0.0",
+    "policy_version": "org-procurement-2026.02",
+    "configuration_version": "runtime-2026.03.01"
+  }
+}

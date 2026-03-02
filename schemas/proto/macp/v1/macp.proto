@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+/*
+ * MACP Core Protobuf Definitions
+ * Extracted from RFC-MACP-0001 (Appendix A)
+ *
+ * Package versioning:
+ *   - This file defines macp.v1. Future breaking changes SHOULD go into macp.v2, etc.
+ */
+
+package macp.v1;
+
+// -----------------------------------------------------------------------------
+// Core Envelope
+// -----------------------------------------------------------------------------
+
+message Envelope {
+  string macp_version = 1;        // e.g. "1.0"
+  string mode = 2;                // e.g. "macp.mode.decision.v1"
+  string message_type = 3;        // e.g. "SessionStart", "Signal", "Commitment"
+  string message_id = 4;          // globally unique
+  string session_id = 5;          // empty for ambient messages (Signals)
+  string sender = 6;              // agent identifier
+  int64  timestamp_unix_ms = 7;   // informational; receivers MUST NOT rely on it for ordering
+  bytes  payload = 8;             // serialized payload (Core or Mode defined)
+}
+
+// -----------------------------------------------------------------------------
+// Acknowledgement + Errors
+// -----------------------------------------------------------------------------
+
+message Ack {
+  bool ok = 1;
+  bool duplicate = 2;
+  string message_id = 3;
+  string session_id = 4;
+  int64 accepted_at_unix_ms = 5;
+  SessionState session_state = 6;
+  MACPError error = 7;
+}
+
+message MACPError {
+  string code = 1;        // stable machine-readable code
+  string message = 2;     // human-readable
+  string session_id = 3;  // optional
+  string message_id = 4;  // optional (the message that failed)
+  bytes details = 5;      // optional, mode-specific
+}
+
+// -----------------------------------------------------------------------------
+// Core Payloads
+// -----------------------------------------------------------------------------
+
+// Ambient, non-binding message payload.
+message SignalPayload {
+  string signal_type = 1;
+  bytes data = 2;
+  double confidence = 3;
+}
+
+// Optional utility payload for progress reporting (non-binding).
+message ProgressPayload {
+  string progress_token = 1;     // caller-chosen token, unique among active ops
+  double progress = 2;           // MUST be monotonically increasing for a token
+  double total = 3;              // optional; 0 if unknown
+  string message = 4;            // optional human-readable
+  string target_message_id = 5;  // optional: which message/op this refers to
+}
+
+// Optional boundary disclosure.
+message Root {
+  string uri = 1;   // absolute URI
+  string name = 2;  // optional
+}
+
+// Session start payload (Core).
+message SessionStartPayload {
+  string intent = 1;
+  repeated string participants = 2;
+  string mode_version = 3;
+  string configuration_version = 4;
+  int64 ttl_ms = 5;
+  bytes context = 6;
+
+  // Optional boundaries the Mode may interpret:
+  repeated Root roots = 7;
+}
+
+// Session cancel payload (Core; RECOMMENDED when SessionCancel is implemented).
+message SessionCancelPayload {
+  string reason = 1;
+  string cancelled_by = 2; // identifier of actor (optional)
+}
+
+// -----------------------------------------------------------------------------
+// Session State + Metadata
+// -----------------------------------------------------------------------------
+
+enum SessionState {
+  SESSION_STATE_UNSPECIFIED = 0;
+  OPEN = 1;
+  RESOLVED = 2;
+  EXPIRED = 3;
+}
+
+message SessionMetadata {
+  string session_id = 1;
+  string mode = 2;
+  SessionState state = 3;
+  int64 started_at_unix_ms = 4;
+  int64 expires_at_unix_ms = 5;
+}
+
+// -----------------------------------------------------------------------------
+// Query / Control
+// -----------------------------------------------------------------------------
+
+message SessionQuery {
+  string session_id = 1;
+}
+
+message CancelSessionRequest {
+  string session_id = 1;
+  string reason = 2;
+}
+
+// -----------------------------------------------------------------------------
+// Optional (Recommended) Convention: Commitment Payload
+// -----------------------------------------------------------------------------
+//
+// NOTE: Commitment is Mode-defined at the Envelope layer. This payload is a
+// reusable building block RECOMMENDED by the RFC for a standard commitment shape.
+//
+message CommitmentPayload {
+  string commitment_id = 1;
+  string action = 2;
+  string authority_scope = 3;
+  string reason = 4;
+
+  string mode_version = 5;
+  string policy_version = 6;
+  string configuration_version = 7;
+}

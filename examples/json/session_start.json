@@ -1,0 +1,21 @@
+{
+  "macp_version": "1.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "SessionStart",
+  "message_id": "01HV0Q2A9G4Z0FQ9C3Z9VZP8W1",
+  "session_id": "01HV0Q2A8W0Y2XQ5N1R8Y2K9B3",
+  "sender": "agent://orchestrator",
+  "timestamp": "2026-03-01T20:24:01Z",
+  "payload": {
+    "intent": "Select a vendor for OCR pipeline",
+    "participants": [
+      "agent://orchestrator",
+      "agent://security",
+      "agent://finance"
+    ],
+    "mode_version": "1.0.0",
+    "configuration_version": "runtime-2026.03.01",
+    "ttl_ms": 900000,
+    "context": "eyJidWRnZXQiOiAxMDAwMH0="
+  }
+}

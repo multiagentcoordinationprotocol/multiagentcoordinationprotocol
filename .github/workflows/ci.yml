@@ -1,0 +1,47 @@
+
+name: MACP CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install JSON Schema validator
+        run: |
+          pip install jsonschema
+
+      - name: Validate JSON examples
+        run: |
+          for file in examples/json/*.json; do
+            echo "Validating $file"
+            python - <<EOF
+import json, sys
+from jsonschema import validate
+
+schema = json.load(open("schemas/json/macp-envelope.schema.json"))
+data = json.load(open("$file"))
+validate(instance=data, schema=schema)
+EOF
+          done
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Validate Protobuf compiles
+        run: |
+          protoc --proto_path=schemas/proto                      --descriptor_set_out=/dev/null                      schemas/proto/macp/v1/macp.proto
