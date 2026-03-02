@@ -14,8 +14,6 @@ plugins:
   # Python
   - remote: buf.build/protocolbuffers/python
     out: generated/python
-    opt:
-      - paths=source_relative
 
   # JavaScript
   - remote: buf.build/protocolbuffers/js
@@ -23,8 +21,6 @@ plugins:
     opt:
       - import_style=commonjs
 
-  # TypeScript declarations
+  # Python type stubs (.pyi)
   - remote: buf.build/protocolbuffers/pyi
     out: generated/python
-    opt:
-      - paths=source_relative
