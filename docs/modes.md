@@ -1,6 +1,6 @@
 # MACP Coordination Modes
 
-> **Reference:** [RFC-MACP-0001 Sections 5.3, 21](../rfcs/RFC-MACP-0001.md)
+> **Reference:** [RFC-MACP-0002](../rfcs/RFC-MACP-0002-modes.md)
 
 ## Overview
 
@@ -456,7 +456,7 @@ If payloads contain sensitive data:
 Include example message sequences in Mode documentation:
 
 ```json
-// examples/decision-mode-example.json
+// See examples/decision-mode-session.json for a full transcript
 [
   { "message_type": "SessionStart", ...},
   { "message_type": "Proposal", ...},
@@ -486,4 +486,4 @@ Future MACP specifications MAY define a Mode Registry:
 - [Lifecycle](lifecycle.md) - How Modes interact with session lifecycle
 - [Security](security.md) - Security considerations for Mode implementers
 - [Determinism](determinism.md) - Making Modes deterministic
-- [RFC-MACP-0001 Appendix D](../rfcs/RFC-MACP-0001.md#appendix-d-mode-descriptor-recommended) - Mode Descriptor specification
+- [RFC-MACP-0002 Section 3](../rfcs/RFC-MACP-0002-modes.md#3-mode-descriptor) - Mode Descriptor specification

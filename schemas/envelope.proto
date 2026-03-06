@@ -1,0 +1,6 @@
+syntax = "proto3";
+package macp.entrypoints;
+
+// Human-friendly entrypoint.
+// Canonical versioned source: schemas/proto/macp/v1/envelope.proto
+import "macp/v1/envelope.proto";

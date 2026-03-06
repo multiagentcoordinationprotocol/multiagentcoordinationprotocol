@@ -1,6 +1,7 @@
 # Claude Code AI assistant files
 CLAUDE.md
 .claude/
+/plans/
 
 # macOS
 .DS_Store

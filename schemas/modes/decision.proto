@@ -1,0 +1,6 @@
+syntax = "proto3";
+package macp.entrypoints.modes;
+
+// Human-friendly entrypoint.
+// Canonical versioned source: schemas/proto/macp/modes/decision/v1/decision.proto
+import "macp/modes/decision/v1/decision.proto";

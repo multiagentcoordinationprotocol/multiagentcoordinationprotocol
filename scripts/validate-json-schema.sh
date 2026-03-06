@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
-# Validate that the JSON Schema itself is valid (meta-validation)
+# Validate that all JSON Schemas are valid (meta-validation)
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SCHEMA_FILE="${PROJECT_ROOT}/schemas/json/macp-envelope.schema.json"
+SCHEMA_DIR="${PROJECT_ROOT}/schemas/json"
 
-echo "Validating JSON Schema: ${SCHEMA_FILE}"
+echo "Meta-validating JSON Schemas under ${SCHEMA_DIR} ..."
+echo ""
 
 # Check if ajv-cli is installed
 if ! command -v ajv >/dev/null 2>&1; then
@@ -19,11 +20,33 @@ if ! command -v ajv >/dev/null 2>&1; then
     exit 1
 fi
 
-# Validate the schema itself using JSON Schema Draft 2020-12 meta-schema
-# The schema should be valid according to the JSON Schema specification
-# Note: Strict mode is disabled because the oneOf mutual exclusivity pattern
-# uses 'not: { required: [...] }' which triggers strictRequired warnings
-# The schema is still validated against the JSON Schema spec, just without extra strict mode checks
-ajv compile -s "${SCHEMA_FILE}" --spec=draft2020 --strict=false
+TOTAL=0
+VALIDATED=0
 
-echo "✓ JSON Schema is valid"
+# Validate each JSON Schema file
+# Note: Strict mode is disabled because the oneOf mutual exclusivity pattern
+# uses 'not: { required: [...] }' which triggers strictRequired warnings.
+# The schemas are still validated against the JSON Schema spec.
+for schema_file in "${SCHEMA_DIR}"/*.schema.json; do
+    if [ -f "$schema_file" ]; then
+        TOTAL=$((TOTAL + 1))
+        echo "Validating: $(basename "$schema_file")"
+
+        if ajv compile -s "${schema_file}" --spec=draft2020 --strict=false; then
+            VALIDATED=$((VALIDATED + 1))
+            echo "  ✓ Valid"
+        else
+            echo "  ✗ Invalid"
+            exit 1
+        fi
+        echo ""
+    fi
+done
+
+if [ $TOTAL -eq 0 ]; then
+    echo "Warning: No JSON Schema files found in ${SCHEMA_DIR}"
+    exit 1
+fi
+
+echo "─────────────────────────────────────"
+echo "✓ All ${VALIDATED}/${TOTAL} JSON Schemas are valid"

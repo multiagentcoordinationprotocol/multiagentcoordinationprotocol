@@ -1,0 +1,148 @@
+{
+  "description": "Illustrative decision-mode coordination transcript showing initialization, SessionStart, evaluations, and terminal Commitment.",
+  "protocol_version": "1.0",
+  "mode": "macp.mode.decision.v1",
+  "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+  "messages": [
+    {
+      "kind": "initialize_request",
+      "payload": {
+        "supported_protocol_versions": [
+          "1.0",
+          "0.9"
+        ],
+        "client_info": {
+          "name": "example-client",
+          "version": "1.0.0"
+        },
+        "capabilities": {
+          "sessions": {
+            "stream": true
+          },
+          "cancellation": {
+            "cancel_session": true
+          },
+          "mode_registry": {
+            "list_modes": true
+          },
+          "manifest": {
+            "get_manifest": true
+          }
+        }
+      }
+    },
+    {
+      "kind": "initialize_response",
+      "payload": {
+        "selected_protocol_version": "1.0",
+        "runtime_info": {
+          "name": "example-runtime",
+          "version": "1.0.0"
+        },
+        "capabilities": {
+          "sessions": {
+            "stream": true
+          },
+          "cancellation": {
+            "cancel_session": true
+          },
+          "mode_registry": {
+            "list_modes": true,
+            "list_changed": false
+          },
+          "manifest": {
+            "get_manifest": true
+          }
+        },
+        "supported_modes": [
+          "macp.mode.decision.v1"
+        ]
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "SessionStart",
+      "message_id": "01JCN7X8V0W8PP1BG5V6H7K3Q0",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://checkout.orchestrator",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "intent": "Evaluate high-value transfer",
+        "participants": [
+          "agent://fraud",
+          "agent://growth",
+          "agent://compliance"
+        ],
+        "mode_version": "1.0.0",
+        "configuration_version": "runtime-2026.03.02",
+        "policy_version": "banking-policy-2026.03",
+        "ttl_ms": 1500,
+        "context": "eyJ0cmFuc2FjdGlvbl9hbW91bnQiOiA0ODAwMCwgImNpdHkiOiAiU2FvIFBhdWxvIn0="
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Evaluation",
+      "message_id": "01JCN7XA1YYZSYW1P1XGQ1M2A1",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://fraud",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-approve",
+        "recommendation": "BLOCK",
+        "confidence": 0.91,
+        "reason": "Unusual login time and geovelocity shift"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Evaluation",
+      "message_id": "01JCN7XB9E90M5N6G5P5D0D8S7",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://growth",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-approve",
+        "recommendation": "APPROVE",
+        "confidence": 0.72,
+        "reason": "High-value customer with strong history"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Evaluation",
+      "message_id": "01JCN7XCJ9H0GW6HCQ2V7J9N3K",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://compliance",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-approve",
+        "recommendation": "REVIEW",
+        "confidence": 0.83,
+        "reason": "Cross-border rule boundary requires step-up verification"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Commitment",
+      "message_id": "01JCN7XDTY0T5T6M32E2JQ4G5Y",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://checkout.orchestrator",
+      "timestamp": "2026-03-02T12:00:01Z",
+      "payload": {
+        "commitment_id": "cmt-01JCN7XDTY0T5T6M32E2JQ4G5Y",
+        "action": "transfer.review",
+        "authority_scope": "payments",
+        "reason": "Conflicting high-confidence recommendations with regulatory boundary",
+        "mode_version": "1.0.0",
+        "policy_version": "banking-policy-2026.03",
+        "configuration_version": "runtime-2026.03.02"
+      }
+    }
+  ]
+}
