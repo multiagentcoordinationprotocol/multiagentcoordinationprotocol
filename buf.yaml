@@ -1,6 +1,7 @@
 version: v2
 modules:
   - path: schemas/proto
+    name: buf.build/multiagentcoordinationprotocol/macp
 breaking:
   use:
     - FILE
