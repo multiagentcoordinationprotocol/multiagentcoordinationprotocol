@@ -131,4 +131,4 @@ Validation checks JSON schemas/examples and compiles all versioned Protobuf defi
 
 ## License
 
-MIT.
+Apache License 2.0. See [LICENSE](LICENSE) for details.
