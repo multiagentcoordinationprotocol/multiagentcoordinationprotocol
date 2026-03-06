@@ -131,7 +131,7 @@ message SessionMetadata {
   string policy_version = 8;
 }
 
-message SessionQuery {
+message GetSessionRequest {
   string session_id = 1;
 }
 
@@ -140,7 +140,7 @@ message CancelSessionRequest {
   string reason = 2;
 }
 
-message ManifestQuery {
+message GetManifestRequest {
   string agent_id = 1;
 }
 
@@ -178,7 +178,9 @@ message ListRootsResponse {
   repeated Root roots = 1;
 }
 
-message WatchRequest {}
+message WatchModeRegistryRequest {}
+
+message WatchRootsRequest {}
 
 message RegistryChanged {
   string registry = 1;
@@ -189,15 +191,51 @@ message RootsChanged {
   int64 observed_at_unix_ms = 1;
 }
 
+message SendRequest {
+  Envelope envelope = 1;
+}
+
+message SendResponse {
+  Ack ack = 1;
+}
+
+message StreamSessionRequest {
+  Envelope envelope = 1;
+}
+
+message StreamSessionResponse {
+  Envelope envelope = 1;
+}
+
+message GetSessionResponse {
+  SessionMetadata metadata = 1;
+}
+
+message CancelSessionResponse {
+  Ack ack = 1;
+}
+
+message GetManifestResponse {
+  AgentManifest manifest = 1;
+}
+
+message WatchModeRegistryResponse {
+  RegistryChanged change = 1;
+}
+
+message WatchRootsResponse {
+  RootsChanged change = 1;
+}
+
 service MACPRuntimeService {
   rpc Initialize(InitializeRequest) returns (InitializeResponse);
-  rpc Send(Envelope) returns (Ack);
-  rpc StreamSession(stream Envelope) returns (stream Envelope);
-  rpc GetSession(SessionQuery) returns (SessionMetadata);
-  rpc CancelSession(CancelSessionRequest) returns (Ack);
-  rpc GetManifest(ManifestQuery) returns (AgentManifest);
+  rpc Send(SendRequest) returns (SendResponse);
+  rpc StreamSession(stream StreamSessionRequest) returns (stream StreamSessionResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc CancelSession(CancelSessionRequest) returns (CancelSessionResponse);
+  rpc GetManifest(GetManifestRequest) returns (GetManifestResponse);
   rpc ListModes(ListModesRequest) returns (ListModesResponse);
-  rpc WatchModeRegistry(WatchRequest) returns (stream RegistryChanged);
+  rpc WatchModeRegistry(WatchModeRegistryRequest) returns (stream WatchModeRegistryResponse);
   rpc ListRoots(ListRootsRequest) returns (ListRootsResponse);
-  rpc WatchRoots(WatchRequest) returns (stream RootsChanged);
+  rpc WatchRoots(WatchRootsRequest) returns (stream WatchRootsResponse);
 }
