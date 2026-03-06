@@ -69,6 +69,13 @@ jobs:
           git fetch origin main
           buf breaking --against '.git#branch=origin/main'
 
+      - name: Push to BSR
+        if: github.ref == 'refs/heads/main'
+        uses: bufbuild/buf-push-action@v1
+        with:
+          input: schemas/proto
+          buf_token: ${{ secrets.BUF_TOKEN }}
+
   generate-code:
     name: Generate and Validate Code
     runs-on: ubuntu-latest
