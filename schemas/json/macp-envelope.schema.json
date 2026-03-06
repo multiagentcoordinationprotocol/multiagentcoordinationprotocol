@@ -1,10 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.org/schemas/macp-envelope.schema.json",
+  "$id": "https://macp.dev/schemas/macp-envelope.schema.json",
   "title": "MACP Envelope (Canonical JSON Mapping)",
   "type": "object",
   "additionalProperties": false,
-
   "required": [
     "macp_version",
     "mode",
@@ -14,7 +13,6 @@
     "sender",
     "timestamp"
   ],
-
   "properties": {
     "macp_version": {
       "type": "string",
@@ -22,67 +20,64 @@
       "description": "MACP protocol version (semantic versioning).",
       "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?([-+][0-9A-Za-z.-]+)?$"
     },
-
     "mode": {
       "type": "string",
       "minLength": 1,
       "description": "Mode identifier (e.g., macp.core.signal.v1, macp.mode.decision.v1)."
     },
-
     "message_type": {
       "type": "string",
       "minLength": 1,
       "description": "Message type discriminator (e.g., Signal, SessionStart, Commitment)."
     },
-
     "message_id": {
       "type": "string",
       "minLength": 1,
       "description": "Globally unique message identifier (format is deployment-defined)."
     },
-
     "session_id": {
       "type": "string",
       "description": "Empty for ambient Signals; non-empty for session-scoped messages."
     },
-
     "sender": {
       "type": "string",
       "minLength": 1,
       "description": "Agent identifier for the sender."
     },
-
     "timestamp": {
       "type": "string",
       "format": "date-time",
       "description": "RFC3339 timestamp string (UTC recommended)."
     },
-
     "payload": {
       "description": "Decoded JSON payload form (preferred for Core payloads and readable messages)."
     },
-
     "payload_b64": {
       "type": "string",
       "description": "Opaque payload bytes encoded as base64 (use when payload is opaque or binary).",
       "contentEncoding": "base64"
     }
   },
-
   "oneOf": [
     {
-      "required": ["payload"],
+      "required": [
+        "payload"
+      ],
       "properties": {
         "payload": {
           "description": "Decoded JSON payload form (preferred for Core payloads and readable messages)."
         }
       },
       "not": {
-        "required": ["payload_b64"]
+        "required": [
+          "payload_b64"
+        ]
       }
     },
     {
-      "required": ["payload_b64"],
+      "required": [
+        "payload_b64"
+      ],
       "properties": {
         "payload_b64": {
           "type": "string",
@@ -91,107 +86,218 @@
         }
       },
       "not": {
-        "required": ["payload"]
+        "required": [
+          "payload"
+        ]
       }
     }
   ],
-
   "allOf": [
     {
       "if": {
-        "properties": { "message_type": { "const": "Signal" } },
-        "required": ["message_type"]
+        "properties": {
+          "message_type": {
+            "const": "Signal"
+          }
+        },
+        "required": [
+          "message_type"
+        ]
       },
       "then": {
         "properties": {
-          "payload": { "$ref": "#/$defs/SignalPayload" }
+          "payload": {
+            "$ref": "#/$defs/SignalPayload"
+          }
         }
       }
     },
     {
       "if": {
-        "properties": { "message_type": { "const": "SessionStart" } },
-        "required": ["message_type"]
+        "properties": {
+          "message_type": {
+            "const": "SessionStart"
+          }
+        },
+        "required": [
+          "message_type"
+        ]
       },
       "then": {
         "properties": {
-          "payload": { "$ref": "#/$defs/SessionStartPayload" }
+          "payload": {
+            "$ref": "#/$defs/SessionStartPayload"
+          }
         }
       }
     },
     {
       "if": {
-        "properties": { "message_type": { "const": "SessionCancel" } },
-        "required": ["message_type"]
+        "properties": {
+          "message_type": {
+            "const": "SessionCancel"
+          }
+        },
+        "required": [
+          "message_type"
+        ]
       },
       "then": {
         "properties": {
-          "payload": { "$ref": "#/$defs/SessionCancelPayload" }
+          "payload": {
+            "$ref": "#/$defs/SessionCancelPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "message_type": {
+            "const": "Commitment"
+          }
+        },
+        "required": [
+          "message_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/CommitmentPayload"
+          }
         }
       }
     }
   ],
-
   "$defs": {
     "Base64Bytes": {
       "type": "string",
       "description": "Protobuf bytes mapped to base64 string in JSON.",
       "contentEncoding": "base64"
     },
-
     "Root": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["uri"],
+      "required": [
+        "uri"
+      ],
       "properties": {
-        "uri": { "type": "string", "minLength": 1, "description": "Absolute URI boundary." },
-        "name": { "type": "string" }
+        "uri": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute URI boundary."
+        },
+        "name": {
+          "type": "string"
+        }
       }
     },
-
     "SignalPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["signal_type"],
+      "required": [
+        "signal_type"
+      ],
       "properties": {
-        "signal_type": { "type": "string", "minLength": 1 },
-        "data": { "$ref": "#/$defs/Base64Bytes" },
-        "confidence": { "type": "number" }
+        "signal_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "$ref": "#/$defs/Base64Bytes"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "correlation_session_id": {
+          "type": "string"
+        }
       }
     },
-
     "SessionStartPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ttl_ms"],
+      "required": [
+        "ttl_ms"
+      ],
       "properties": {
-        "intent": { "type": "string" },
+        "intent": {
+          "type": "string"
+        },
         "participants": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
-        "mode_version": { "type": "string" },
-        "configuration_version": { "type": "string" },
+        "mode_version": {
+          "type": "string"
+        },
+        "configuration_version": {
+          "type": "string"
+        },
         "ttl_ms": {
           "type": "integer",
           "minimum": 1,
           "description": "Session TTL in milliseconds."
         },
-        "context": { "$ref": "#/$defs/Base64Bytes" },
+        "context": {
+          "$ref": "#/$defs/Base64Bytes"
+        },
         "roots": {
           "type": "array",
-          "items": { "$ref": "#/$defs/Root" }
+          "items": {
+            "$ref": "#/$defs/Root"
+          }
+        },
+        "policy_version": {
+          "type": "string"
         }
       }
     },
-
     "SessionCancelPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["reason"],
+      "required": [
+        "reason"
+      ],
       "properties": {
-        "reason": { "type": "string", "minLength": 1 },
-        "cancelled_by": { "type": "string" }
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cancelled_by": {
+          "type": "string"
+        }
+      }
+    },
+    "CommitmentPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commitment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string"
+        },
+        "authority_scope": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "mode_version": {
+          "type": "string"
+        },
+        "policy_version": {
+          "type": "string"
+        },
+        "configuration_version": {
+          "type": "string"
+        }
       }
     }
   }

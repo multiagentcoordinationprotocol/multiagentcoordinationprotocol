@@ -1,0 +1,23 @@
+{
+  "mode": "macp.mode.decision.v1",
+  "mode_version": "1.0.0",
+  "title": "Decision Mode",
+  "description": "Collects proposals/evaluations and terminates with a Commitment.",
+  "determinism_class": "semantic-deterministic",
+  "participant_model": "declared",
+  "message_types": [
+    "SessionStart",
+    "Proposal",
+    "Evaluation",
+    "Objection",
+    "Vote",
+    "Commitment"
+  ],
+  "terminal_message_types": [
+    "Commitment"
+  ],
+  "schema_uris": {
+    "protobuf": "schemas/proto/macp/modes/decision/v1/decision.proto",
+    "entrypoint": "schemas/modes/decision.proto"
+  }
+}

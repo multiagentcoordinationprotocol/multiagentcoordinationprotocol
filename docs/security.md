@@ -1,6 +1,6 @@
 # MACP Security
 
-> **Reference:** [RFC-MACP-0001 Section 14](../rfcs/RFC-MACP-0001.md)
+> **Reference:** [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md)
 
 ## Overview
 
@@ -334,4 +334,4 @@ Depending on your deployment, consider:
 - [Architecture](architecture.md) - Isolation and session boundaries
 - [Lifecycle](lifecycle.md) - Session state management
 - [Determinism](determinism.md) - Replay integrity
-- [RFC-MACP-0001 Section 14](../rfcs/RFC-MACP-0001.md#14-security-considerations) - Full security specification
+- [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) - Full security specification

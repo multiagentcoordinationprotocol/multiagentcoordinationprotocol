@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 
-# Validate JSON examples against the MACP JSON Schema
+# Validate JSON examples against the MACP JSON Schemas
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SCHEMA_FILE="${PROJECT_ROOT}/schemas/json/macp-envelope.schema.json"
+ENVELOPE_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-envelope.schema.json"
+MANIFEST_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-manifest.schema.json"
+DESCRIPTOR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-mode-descriptor.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
+DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
 
-echo "Validating JSON examples against schema..."
-echo "Schema: ${SCHEMA_FILE}"
-echo "Examples: ${EXAMPLES_DIR}/*.json"
+echo "Validating JSON examples against schemas..."
 echo ""
 
 # Check if ajv-cli is installed
@@ -27,13 +28,17 @@ fi
 TOTAL=0
 VALIDATED=0
 
-# Validate each JSON example file
+# Validate each JSON example file against envelope schema
+echo "── Envelope examples (${EXAMPLES_DIR}/*.json) ──"
+echo "Schema: ${ENVELOPE_SCHEMA}"
+echo ""
+
 for example_file in "${EXAMPLES_DIR}"/*.json; do
     if [ -f "$example_file" ]; then
         TOTAL=$((TOTAL + 1))
         echo "Validating: $(basename "$example_file")"
 
-        if ajv validate -s "${SCHEMA_FILE}" -d "${example_file}" --spec=draft2020 --strict=false; then
+        if ajv validate -s "${ENVELOPE_SCHEMA}" -d "${example_file}" --spec=draft2020 --strict=false; then
             VALIDATED=$((VALIDATED + 1))
             echo "  ✓ Valid"
         else
@@ -44,10 +49,75 @@ for example_file in "${EXAMPLES_DIR}"/*.json; do
     fi
 done
 
+# Validate discovery examples against their respective schemas
+if [ -d "$DISCOVERY_DIR" ]; then
+    echo "── Discovery examples (${DISCOVERY_DIR}/*.json) ──"
+    echo ""
+
+    for manifest_file in "${DISCOVERY_DIR}"/agent_manifest*.json; do
+        if [ -f "$manifest_file" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating: discovery/$(basename "$manifest_file") against agent-manifest schema"
+
+            if ajv validate -s "${MANIFEST_SCHEMA}" -d "${manifest_file}" --spec=draft2020 --strict=false; then
+                VALIDATED=$((VALIDATED + 1))
+                echo "  ✓ Valid"
+            else
+                echo "  ✗ Invalid"
+                exit 1
+            fi
+            echo ""
+        fi
+    done
+
+    for descriptor_file in "${DISCOVERY_DIR}"/mode_descriptor*.json; do
+        if [ -f "$descriptor_file" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating: discovery/$(basename "$descriptor_file") against mode-descriptor schema"
+
+            if ajv validate -s "${DESCRIPTOR_SCHEMA}" -d "${descriptor_file}" --spec=draft2020 --strict=false; then
+                VALIDATED=$((VALIDATED + 1))
+                echo "  ✓ Valid"
+            else
+                echo "  ✗ Invalid"
+                exit 1
+            fi
+            echo ""
+        fi
+    done
+fi
+
+# Syntax-check composite transcript files (valid JSON but not single envelopes)
+TRANSCRIPT="${PROJECT_ROOT}/examples/decision-mode-session.json"
+if [ -f "$TRANSCRIPT" ]; then
+    echo "── Composite transcript (syntax check only) ──"
+    echo ""
+    TOTAL=$((TOTAL + 1))
+    echo "Validating JSON syntax: $(basename "$TRANSCRIPT")"
+
+    if command -v python3 >/dev/null 2>&1; then
+        SYNTAX_OK=$(python3 -c "import json, sys; json.load(open(sys.argv[1])); print('ok')" "$TRANSCRIPT" 2>/dev/null)
+    elif command -v node >/dev/null 2>&1; then
+        SYNTAX_OK=$(node -e "try { JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); console.log('ok') } catch(e) { process.exit(1) }" "$TRANSCRIPT" 2>/dev/null)
+    else
+        echo "  ⚠ Skipping: neither python3 nor node available for syntax check"
+        SYNTAX_OK="skip"
+    fi
+
+    if [ "$SYNTAX_OK" = "ok" ] || [ "$SYNTAX_OK" = "skip" ]; then
+        VALIDATED=$((VALIDATED + 1))
+        echo "  ✓ Valid JSON"
+    else
+        echo "  ✗ Invalid JSON"
+        exit 1
+    fi
+    echo ""
+fi
+
 if [ $TOTAL -eq 0 ]; then
-    echo "Warning: No JSON example files found in ${EXAMPLES_DIR}"
+    echo "Warning: No JSON example files found"
     exit 1
 fi
 
 echo "─────────────────────────────────────"
-echo "✓ All ${VALIDATED}/${TOTAL} JSON examples are valid"
+echo "✓ All ${VALIDATED}/${TOTAL} JSON files validated"

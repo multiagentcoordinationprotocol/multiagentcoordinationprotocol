@@ -1,6 +1,6 @@
 # MACP Determinism and Replay Integrity
 
-> **Reference:** [RFC-MACP-0001 Section 16](../rfcs/RFC-MACP-0001.md)
+> **Reference:** [RFC-MACP-0003](../rfcs/RFC-MACP-0003-determinism.md)
 
 ## Overview
 
@@ -346,4 +346,4 @@ Including all external context in SessionStart can lead to large payloads.
 - [Architecture](architecture.md) - Append-only history and isolation
 - [Lifecycle](lifecycle.md) - Session state transitions
 - [Modes](modes.md) - Implementing deterministic Modes
-- [RFC-MACP-0001 Section 16](../rfcs/RFC-MACP-0001.md#16-determinism-and-replay-integrity) - Full specification
+- [RFC-MACP-0003](../rfcs/RFC-MACP-0003-determinism.md) - Full specification
