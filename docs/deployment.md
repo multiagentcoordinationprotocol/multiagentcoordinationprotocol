@@ -1,5 +1,6 @@
 # MACP Deployment Topologies
 
+> **Status:** Non-normative (explanatory). In case of conflict, the referenced RFC is authoritative.
 > **Reference:** [RFC-MACP-0001 Core](../rfcs/RFC-MACP-0001-core.md)
 
 MACP is deployment-agnostic at the protocol level, but certain deployment shapes preserve its guarantees better than others.

@@ -235,7 +235,7 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 - `ListRoots` — root listing
 - `WatchRoots` — root change notifications
 
-Runtimes MAY expose additional bindings, including REST/JSON, provided the canonical Envelope and JSON mapping semantics are preserved.
+Runtimes MAY expose additional bindings, including REST/JSON, provided the canonical Envelope and JSON mapping semantics are preserved. Standard transport bindings are defined in [RFC-MACP-0006](RFC-MACP-0006-transport-bindings.md).
 
 The media types `application/macp+proto` and `application/macp+json` are defined in [registries/media-types.md](../registries/media-types.md).
 
@@ -296,6 +296,8 @@ A runtime that advertises `manifest.getManifest` SHOULD expose a machine-readabl
 A runtime that advertises `modeRegistry.listModes` SHOULD expose a list of Mode Descriptors.
 
 If `listChanged` is advertised for a registry or roots surface, the runtime SHOULD provide change notifications using the negotiated transport.
+
+The discovery and manifest model is specified in [RFC-MACP-0005](RFC-MACP-0005-discovery-and-manifests.md).
 
 ---
 
@@ -369,7 +371,8 @@ MACP maintains initial registries for:
 - capabilities,
 - error codes,
 - media types,
-- standard mode identifiers.
+- standard mode identifiers,
+- transport identifiers (see [registries/transports.md](../registries/transports.md)).
 
 Registry policy and initial values are defined in the `registries/` directory.
 

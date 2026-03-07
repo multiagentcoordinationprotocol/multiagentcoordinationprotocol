@@ -1,5 +1,6 @@
 # MACP Coordination Modes
 
+> **Status:** Non-normative (explanatory). In case of conflict, the referenced RFC is authoritative.
 > **Reference:** [RFC-MACP-0002](../rfcs/RFC-MACP-0002-modes.md)
 
 ## Overview

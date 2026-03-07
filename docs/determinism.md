@@ -1,5 +1,6 @@
 # MACP Determinism and Replay Integrity
 
+> **Status:** Non-normative (explanatory). In case of conflict, the referenced RFC is authoritative.
 > **Reference:** [RFC-MACP-0003](../rfcs/RFC-MACP-0003-determinism.md)
 
 ## Overview

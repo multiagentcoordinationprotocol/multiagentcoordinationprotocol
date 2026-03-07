@@ -6,6 +6,8 @@ The MACP standard is intentionally split.
 - **RFC-MACP-0002 Modes** — semantic extension model
 - **RFC-MACP-0003 Determinism** — replay integrity and deterministic behavior
 - **RFC-MACP-0004 Security** — threat model and security requirements
+- **RFC-MACP-0005 Discovery & Manifests** — agent/runtime discovery, manifest schemas, well-known endpoints
+- **RFC-MACP-0006 Transport Bindings** — standard transport bindings for MACP messages (gRPC, HTTP, WebSocket, Message Bus)
 
 ### Companion Content
 

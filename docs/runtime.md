@@ -1,5 +1,6 @@
 # MACP Runtime
 
+> **Status:** Non-normative (explanatory). In case of conflict, the referenced RFC is authoritative.
 > **Reference:** [RFC-MACP-0001 Core](../rfcs/RFC-MACP-0001-core.md)
 
 A MACP Runtime is the system that turns the protocol from a specification into an enforceable boundary. Its purpose is not to decide what a session means. Its purpose is to decide, authoritatively and durably, which messages were accepted, in what order, under what lifecycle state, and by which versioned execution context.

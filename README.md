@@ -28,6 +28,8 @@ MACP/
     RFC-MACP-0002-modes.md
     RFC-MACP-0003-determinism.md
     RFC-MACP-0004-security.md
+    RFC-MACP-0005-discovery-and-manifests.md
+    RFC-MACP-0006-transport-bindings.md
 
   docs/
     architecture.md
@@ -38,6 +40,9 @@ MACP/
     modes.md
     determinism.md
     security.md
+    discovery.md
+    transports.md
+    agent-manifest-schema.md
 
   registries/
     README.md
@@ -45,15 +50,19 @@ MACP/
     error-codes.md
     media-types.md
     modes.md
+    transports.md
 
   schemas/
-    envelope.proto
+    envelope.proto            # flat entrypoints
     core.proto
     modes/
       decision.proto
-    proto/
+    proto/                    # canonical versioned schemas
       macp/v1/
+        envelope.proto
+        core.proto
       macp/modes/decision/v1/
+        decision.proto
     json/
       macp-envelope.schema.json
       macp-agent-manifest.schema.json
@@ -62,8 +71,23 @@ MACP/
   examples/
     decision-mode-session.json
     json/
+      signal.json
+      session_start.json
+      commitment.json
+      session_cancel.json
     proto/
+      envelope.bin
     discovery/
+      agent_manifest.json
+      mode_descriptor.json
+
+  generated/                  # generated code (Go, JS, Python)
+    go/
+    js/
+    python/
+
+  governance/
+    GOVERNANCE.md
 ```
 
 ## Reading order
@@ -75,6 +99,8 @@ If you are new to MACP, start here:
 3. **[docs/architecture.md](docs/architecture.md)** — the architectural rendering of the protocol as a system.
 4. **[docs/runtime.md](docs/runtime.md)** and **[docs/deployment.md](docs/deployment.md)** — how to implement and deploy it.
 5. **[RFC-MACP-0002-modes.md](rfcs/RFC-MACP-0002-modes.md)** — how semantic extensions work.
+6. **[RFC-MACP-0005-discovery-and-manifests.md](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** — agent and runtime discovery, manifest schemas.
+7. **[RFC-MACP-0006-transport-bindings.md](rfcs/RFC-MACP-0006-transport-bindings.md)** — standard transport bindings.
 
 ## Standards posture
 
@@ -84,6 +110,8 @@ MACP is intentionally split into a small set of RFCs because that makes the stan
 - **RFC-MACP-0002 Modes** defines how semantic coordination modes extend MACP without violating Core invariants.
 - **RFC-MACP-0003 Determinism** defines structural replay integrity, semantic determinism classes, and side-effect handling patterns.
 - **RFC-MACP-0004 Security** defines the threat model and required defenses.
+- **RFC-MACP-0005 Discovery** defines agent and runtime discovery, manifest schemas, and well-known endpoints.
+- **RFC-MACP-0006 Transport Bindings** defines standard transport bindings (gRPC, HTTP, WebSocket, Message Bus).
 
 This split mirrors how mature standards separate the kernel from extension documents.
 
