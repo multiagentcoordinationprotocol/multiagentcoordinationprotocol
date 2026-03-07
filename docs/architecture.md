@@ -25,17 +25,7 @@ This document describes MACP’s architectural model, runtime responsibilities, 
 
 ---
 
-## 1. Conformance and terminology
-
-A MACP implementation is considered **compliant** with this architecture if:
-
-1. it enforces the session boundary invariant (no implicit coordination),
-2. it enforces the session lifecycle state machine monotonically,
-3. it enforces session isolation,
-4. it defines an authoritative within-session order of accepted messages,
-5. it persists session history as append-only accepted events,
-6. it enforces idempotent handling of duplicates via `message_id`,
-7. it supports deterministic structural replay of state transitions.
+## 1. Terminology
 
 This chapter uses the following terms:
 
@@ -73,21 +63,21 @@ The boundary between planes is not conceptual. It is executable: `SessionStart`.
 
 ```mermaid
 flowchart TB
-  subgraph Ambient["Ambient Plane (continuous)"]
-    S[Signals: observations, updates, telemetry]
-    Bus[(Signal Bus / PubSub / Streams)]
+  subgraph Ambient["Ambient Plane - continuous"]
+    S["Signals: observations, updates, telemetry"]
+    Bus[("Signal Bus / PubSub / Streams")]
     S --> Bus
   end
 
-  subgraph Convergent["Coordination Plane (bounded)"]
-    SS[SessionStart]
-    SM[Session State Machine]
-    ME[Mode Engine]
-    C[Commitment / Terminal]
+  subgraph Convergent["Coordination Plane - bounded"]
+    SS["SessionStart"]
+    SM["Session State Machine"]
+    ME["Mode Engine"]
+    C["Commitment / Terminal"]
     SS --> SM --> ME --> C
   end
 
-  Agents[Agents / Services] --> S
+  Agents["Agents / Services"] --> S
   Agents --> SS
 
   Bus --> Agents
@@ -121,26 +111,26 @@ Agents connect to a transport gateway. Messages are authenticated, validated, de
 ```mermaid
 flowchart LR
   subgraph Clients["Agents / Applications"]
-    A1[Agent: Fraud]
-    A2[Agent: Growth]
-    A3[Agent: Compliance]
-    A4[Agent: Supervisor / Initiator]
+    A1["Agent: Fraud"]
+    A2["Agent: Growth"]
+    A3["Agent: Compliance"]
+    A4["Agent: Supervisor / Initiator"]
   end
 
-  subgraph Kernel["MACP Runtime (Coordination Kernel)"]
-    GW[Transport Gateway<br/>gRPC bidirectional streams]
-    Auth[AuthN/AuthZ]
-    Val[Envelope Validation]
-    Dedup[Dedup / Idempotency]
-    Route[Session Router / Sharder]
-    SM[Session State Machine]
-    Mode[Mode Engine (pluggable)]
-    Emit[Terminal / Commitment Emitter]
+  subgraph Kernel["MACP Runtime - Coordination Kernel"]
+    GW["Transport Gateway - gRPC bidirectional streams"]
+    Auth["AuthN / AuthZ"]
+    Val["Envelope Validation"]
+    Dedup["Dedup / Idempotency"]
+    Route["Session Router / Sharder"]
+    SM["Session State Machine"]
+    Mode["Mode Engine - pluggable"]
+    Emit["Terminal / Commitment Emitter"]
   end
 
   subgraph Storage["Persistence"]
-    Log[(Append-only Session Ledger)]
-    Snap[(Snapshots / Indexes)]
+    Log[("Append-only Session Ledger")]
+    Snap[("Snapshots / Indexes")]
   end
 
   A1 --> GW
@@ -261,10 +251,10 @@ stateDiagram-v2
 
   NON_EXISTENT --> OPEN: accept SessionStart
 
-  OPEN --> RESOLVED: accept first terminal message<br/>(mode-defined)
+  OPEN --> RESOLVED: accept first terminal message
   OPEN --> EXPIRED: TTL elapsed
   OPEN --> EXPIRED: CancelSession
-  OPEN --> EXPIRED: runtime policy (deterministic)
+  OPEN --> EXPIRED: runtime policy
 
   RESOLVED --> [*]
   EXPIRED --> [*]
@@ -459,15 +449,15 @@ Distributed runtimes typically implement this by hashing `session_id` to shards.
 
 ```mermaid
 flowchart TB
-  LB[Load Balancer / Anycast] --> R[Edge Router]
+  LB["Load Balancer / Anycast"] --> R["Edge Router"]
 
-  R -->|hash(session_id)| S1[Shard 1<br/>Session Engine]
-  R -->|hash(session_id)| S2[Shard 2<br/>Session Engine]
-  R -->|hash(session_id)| S3[Shard 3<br/>Session Engine]
+  R -->|"hash session_id"| S1["Shard 1 - Session Engine"]
+  R -->|"hash session_id"| S2["Shard 2 - Session Engine"]
+  R -->|"hash session_id"| S3["Shard 3 - Session Engine"]
 
-  S1 --> L1[(Ledger Partition 1)]
-  S2 --> L2[(Ledger Partition 2)]
-  S3 --> L3[(Ledger Partition 3)]
+  S1 --> L1[("Ledger Partition 1")]
+  S2 --> L2[("Ledger Partition 2")]
+  S3 --> L3[("Ledger Partition 3")]
 ```
 
 ### 10.1 Failover and ownership transfer
