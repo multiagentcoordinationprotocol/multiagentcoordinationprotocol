@@ -39,10 +39,10 @@ Each OPEN session must have exactly one ordering authority at any instant. In a 
 
 ```mermaid
 flowchart TB
-  R[Edge Router] -->|hash(session_id)| O1[Session Owner A]
-  R -->|hash(session_id)| O2[Session Owner B]
-  O1 --> L1[(Ledger Partition A)]
-  O2 --> L2[(Ledger Partition B)]
+  R["Edge Router"] -->|"hash session_id"| O1["Session Owner A"]
+  R -->|"hash session_id"| O2["Session Owner B"]
+  O1 --> L1[("Ledger Partition A")]
+  O2 --> L2[("Ledger Partition B")]
 ```
 
 The owner is responsible for acceptance order, lifecycle transitions, and deterministic rejection of invalid or late messages.
