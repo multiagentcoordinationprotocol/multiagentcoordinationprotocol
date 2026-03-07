@@ -1,5 +1,6 @@
 # MACP Session Lifecycle
 
+> **Status:** Non-normative (explanatory). In case of conflict, the referenced RFC is authoritative.
 > **Reference:** [RFC-MACP-0001 Core](../rfcs/RFC-MACP-0001-core.md)
 
 The MACP session lifecycle is a monotonic state machine. This is what turns coordination from emergent behavior into enforceable protocol state.

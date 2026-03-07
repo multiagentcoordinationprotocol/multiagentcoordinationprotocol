@@ -1,8 +1,10 @@
 # MACP Architecture
-**Protocol Revision:** 2026-03-02  
-**Status:** Draft (Standards Track)  
-**Normative transport:** gRPC over HTTP/2  
-**Canonical wire format:** Protocol Buffers  
+
+> **Status:** Non-normative (explanatory). In case of conflict, [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) is authoritative.
+
+**Protocol Revision:** 2026-03-02
+**Normative transport:** gRPC over HTTP/2
+**Canonical wire format:** Protocol Buffers
 **Required JSON mapping:** Yes
 
 ---
@@ -24,8 +26,6 @@ This document describes MACP’s architectural model, runtime responsibilities, 
 ---
 
 ## 1. Conformance and terminology
-
-The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in this document are to be interpreted as normative requirements.
 
 A MACP implementation is considered **compliant** with this architecture if:
 

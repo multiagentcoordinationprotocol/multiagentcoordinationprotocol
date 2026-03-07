@@ -15,6 +15,7 @@
     ],
     "mode_version": "1.0.0",
     "configuration_version": "runtime-2026.03.01",
+    "policy_version": "org-procurement-2026.02",
     "ttl_ms": 900000,
     "context": "eyJidWRnZXQiOiAxMDAwMH0="
   }

@@ -17,3 +17,4 @@ Each registry entry has a status:
 - [error-codes.md](error-codes.md)
 - [media-types.md](media-types.md)
 - [modes.md](modes.md)
+- [transports.md](transports.md)

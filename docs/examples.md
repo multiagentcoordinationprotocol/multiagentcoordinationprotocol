@@ -1,5 +1,7 @@
 # MACP Examples
 
+> **Status:** Non-normative (explanatory). In case of conflict, [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) is authoritative.
+
 This document explains the example transcript at [`examples/decision-mode-session.json`](../examples/decision-mode-session.json).
 
 The example shows a small Decision Mode session from initialization through Commitment. It is intentionally narrow: the purpose is to show how a bounded coordination event looks when written down as history.
