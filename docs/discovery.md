@@ -31,10 +31,45 @@ Agents SHOULD publish their manifest at:
   "title": "Fraud Detection Agent",
   "description": "Analyzes transactions for fraud risk",
   "supported_modes": ["macp.mode.decision.v1"],
-  "input_content_types": ["application/json"],
-  "output_content_types": ["application/json"]
+  "input_content_types": [
+    "application/macp-envelope+proto",
+    "application/macp-envelope+json"
+  ],
+  "output_content_types": [
+    "application/macp-envelope+proto",
+    "application/macp-envelope+json"
+  ],
+  "transport_endpoints": [
+    {
+      "transport": "macp.transport.grpc.v1",
+      "uri": "grpcs://fraud.example.com:50051",
+      "content_types": ["application/macp-envelope+proto"]
+    }
+  ],
+  "metadata": {
+    "owner": "risk-platform"
+  }
 }
 ```
+
+Content types SHOULD use registered MACP media types from [`registries/media-types.md`](../registries/media-types.md).
+
+## Transport Endpoints
+
+Manifests MAY include `transport_endpoints` to describe how MACP messages can be delivered. Each endpoint MUST include:
+
+- a registered transport identifier (e.g., `macp.transport.grpc.v1`),
+- a concrete URI,
+- one or more supported content types.
+
+Transport identifiers are listed in [`registries/transports.md`](../registries/transports.md).
+
+## `GetManifest` RPC
+
+For the gRPC binding, manifests can also be retrieved via the `GetManifest` RPC:
+
+- an empty `agent_id` requests the manifest of the serving runtime or agent,
+- a non-empty `agent_id` requests a locally-known manifest for that identifier.
 
 ## Registry-based Discovery
 
@@ -42,4 +77,4 @@ Organizations may operate registries that aggregate manifests across services.
 
 ## Security
 
-Publish manifests over HTTPS and verify identities using public keys.
+Manifests SHOULD include only public discovery information. Transport endpoints MUST use secure transport (TLS). Secrets MUST NOT appear in manifests.

@@ -37,7 +37,7 @@ A **Mode** is a specification that defines:
 
 Modes SHOULD use namespaced identifiers:
 
-- **Pattern:** `macp.mode.<name>.<version>`
+- **Pattern:** `macp.mode.<name>.v<major>`
 - **Example:** `macp.mode.decision.v1`
 - **Experimental modes:** Use reverse-domain naming (e.g., `com.example.mode.custom.v1`)
 
@@ -79,9 +79,11 @@ Expose a machine-readable Mode Descriptor:
   "mode_version": "1.0.0",
   "title": "Decision Mode",
   "description": "Collects proposals and produces a single binding Commitment.",
-  "deterministic": true,
+  "determinism_class": "semantic-deterministic",
   "message_types": [
     "Proposal",
+    "Evaluation",
+    "Objection",
     "Vote",
     "Commitment"
   ],
@@ -89,8 +91,10 @@ Expose a machine-readable Mode Descriptor:
     "Commitment"
   ],
   "participant_model": "declared",
-  "schemas": {
+  "schema_uris": {
     "Proposal": "https://example.org/schemas/mode/decision/proposal.json",
+    "Evaluation": "https://example.org/schemas/mode/decision/evaluation.json",
+    "Objection": "https://example.org/schemas/mode/decision/objection.json",
     "Vote": "https://example.org/schemas/mode/decision/vote.json",
     "Commitment": "https://example.org/schemas/mode/decision/commitment.json"
   }
@@ -134,6 +138,9 @@ Orchestrator → SessionStart
               → Proposal (option A)
               → Proposal (option B)
 
+Agent 1 → Evaluation (analysis of A and B)
+Agent 2 → Objection (concern about option B)
+
 Agent 1 → Vote (approve A)
 Agent 2 → Vote (approve A)
 Agent 3 → Vote (approve B)
@@ -145,16 +152,18 @@ Orchestrator → Commitment (selected: A)
 ### Message Types
 
 1. **Proposal**: Submit an option for consideration
-2. **Vote**: Express preference for a proposal
-3. **Commitment**: Binding decision
+2. **Evaluation**: Provide analysis or assessment of a proposal
+3. **Objection**: Raise a concern about a proposal
+4. **Vote**: Express preference for a proposal
+5. **Commitment**: Binding decision
 
 ### Rules
 
 - **Participants**: Declared in SessionStart
-- **Proposal phase**: Any participant can submit proposals
-- **Voting phase**: Each participant votes once
-- **Termination**: Orchestrator emits Commitment after quorum reached
-- **Deterministic**: Yes (given same votes, same outcome)
+- **Orchestrator**: The sender of the accepted `SessionStart` is the default designated orchestrator (may be outside the declared participants set)
+- **Structural validation**: `Proposal` MUST define a non-empty `proposal_id`; `Evaluation`, `Objection`, and `Vote` MUST reference an existing accepted `proposal_id`
+- **Termination**: Only the designated orchestrator (or a participant authorized by Mode policy) MAY emit a Commitment
+- **Deterministic**: Yes (given same accepted history and versions, same outcome)
 
 ### Payload Schemas
 
@@ -258,7 +267,7 @@ class MyMode {
   processMessage(envelope) {
     // Validate message type
     if (!this.isValidMessageType(envelope.message_type)) {
-      throw new Error("INVALID_MESSAGE_TYPE");
+      throw new Error("INVALID_ENVELOPE");
     }
 
     // Validate sender authorization
@@ -275,7 +284,7 @@ class MyMode {
       case "Commitment":
         return this.handleCommitment(envelope);
       default:
-        throw new Error("UNKNOWN_MESSAGE_TYPE");
+        throw new Error("INVALID_ENVELOPE");
     }
   }
 
@@ -371,7 +380,7 @@ Use semantic versioning:
 ### Version Compatibility
 
 - Agents MUST reject Modes they don't support
-- Runtimes SHOULD negotiate Mode version during SessionStart admission control
+- Runtimes SHOULD reject unsupported Mode versions at SessionStart admission time using the `MODE_NOT_SUPPORTED` error code
 - Include `mode_version` in SessionStartPayload for explicit versioning
 
 ### Deprecation
@@ -457,7 +466,7 @@ If payloads contain sensitive data:
 Include example message sequences in Mode documentation:
 
 ```json
-// See examples/decision-mode-session.json for a full transcript
+// See examples/json/decision-mode-session.json for a full transcript
 [
   { "message_type": "SessionStart", ...},
   { "message_type": "Proposal", ...},
@@ -471,6 +480,10 @@ Include example message sequences in Mode documentation:
 - What if no votes are cast?
 - What if session expires before Commitment?
 - What if multiple Commitments are sent (should reject second)?
+
+## Accepted-History Discipline
+
+Mode-specific structural validation (such as checking that a referenced `proposal_id` has been accepted) is part of the admission pipeline described in RFC-MACP-0001 Section 8.3. Only Envelopes that pass all checks — including Mode validation — enter accepted history. Rejected Envelopes do not consume `message_id` deduplication slots or mutate session state.
 
 ## Mode Registry (Future)
 

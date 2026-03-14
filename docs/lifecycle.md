@@ -34,6 +34,16 @@ For any message with a non-empty `session_id`, the runtime MUST verify that:
 
 If any check fails, the message is rejected and does not enter history.
 
+## Accepted-History Discipline
+
+Only **accepted** Envelopes become part of session history. Rejected Envelopes MUST NOT:
+
+- be appended to accepted history,
+- consume `message_id` deduplication slots,
+- mutate session state.
+
+All validation, authentication, authorization, deduplication, session-state checks, and Mode-specific structural validation MUST succeed before an Envelope is appended to accepted history.
+
 ## Terminal races
 
 If multiple terminal messages are sent concurrently, the first one accepted into the session log determines the outcome. Later terminal messages are rejected because the session is no longer OPEN.

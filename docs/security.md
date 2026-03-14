@@ -250,13 +250,16 @@ Monitor for:
 | Code | HTTP Status | Description | Security Implication |
 |------|-------------|-------------|---------------------|
 | `UNAUTHENTICATED` | 401 | Authentication failed | Deny access |
-| `FORBIDDEN` | 403 | Not authorized for session | Deny access |
-| `DUPLICATE_MESSAGE` | 409 | message_id already seen | Possible replay attack |
+| `FORBIDDEN` | 403 | Authenticated sender not authorized for session or message type | Deny access |
+| `DUPLICATE_MESSAGE` | 409 | `message_id` already accepted within the session | Possible replay attack |
 | `SESSION_NOT_FOUND` | 404 | Session doesn't exist | May leak session existence |
 | `SESSION_NOT_OPEN` | 409 | Session is RESOLVED/EXPIRED | Normal termination |
-| `INVALID_ENVELOPE` | 400 | Malformed envelope | Possible attack |
+| `INVALID_ENVELOPE` | 400 | Envelope validation failed or payload structural contract not met | Possible attack |
+| `UNSUPPORTED_PROTOCOL_VERSION` | 400 | No mutually supported protocol version | Version mismatch |
+| `MODE_NOT_SUPPORTED` | 400 | Referenced mode or mode version not supported | Mode mismatch |
 | `PAYLOAD_TOO_LARGE` | 413 | Payload exceeds limit | DoS mitigation |
 | `RATE_LIMITED` | 429 | Too many requests | DoS mitigation |
+| `UNAUTHORIZED` | 403 | Deprecated alias for `FORBIDDEN` | Use `FORBIDDEN` instead |
 
 ## Deployment Best Practices
 

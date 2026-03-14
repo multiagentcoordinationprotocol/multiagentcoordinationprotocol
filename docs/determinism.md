@@ -161,11 +161,7 @@ Mode descriptors SHOULD declare determinism claims:
 ```json
 {
   "mode": "macp.mode.decision.v1",
-  "deterministic": true,
-  "determinism_scope": {
-    "inputs": ["accepted messages", "mode version", "policy version"],
-    "excluded": []
-  }
+  "determinism_class": "semantic-deterministic"
 }
 ```
 

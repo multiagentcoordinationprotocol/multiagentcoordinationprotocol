@@ -33,6 +33,8 @@ flowchart LR
 
 If a message is not appended, it did not happen from the protocol’s perspective.
 
+Only **accepted** Envelopes enter history. All checks — validation, authentication, authorization, deduplication, session-state, and Mode-specific structural validation — MUST pass before the Envelope is appended. Rejected Envelopes MUST NOT consume `message_id` deduplication slots or mutate session state.
+
 ## Session ownership
 
 Each OPEN session must have exactly one ordering authority at any instant. In a distributed deployment, this usually means sharding by `session_id` and assigning ownership through leases or partition leadership.

@@ -38,8 +38,11 @@ Optional fields:
 
 - `title` — human-readable display name
 - `metadata` — arbitrary string key-value pairs
+- `transport_endpoints` — array of transport endpoint objects, each containing a registered transport identifier, URI, and supported content types (see `$defs/TransportEndpoint` in the schema)
 
 This keeps the manifest lightweight while still being implementation-ready.
+
+Content type fields (`input_content_types`, `output_content_types`, and `transport_endpoints[*].content_types`) SHOULD use registered MACP media types such as `application/macp-envelope+proto` and `application/macp-envelope+json`.
 
 ## Example publishing pattern
 
