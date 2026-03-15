@@ -140,8 +140,17 @@ message CancelSessionRequest {
   string reason = 2;
 }
 
+// Empty agent_id requests the manifest of the serving runtime/agent.
+// Non-empty agent_id requests a locally-known manifest for that identifier.
 message GetManifestRequest {
   string agent_id = 1;
+}
+
+message TransportEndpoint {
+  string transport = 1;
+  string uri = 2;
+  repeated string content_types = 3;
+  map<string, string> metadata = 4;
 }
 
 message AgentManifest {
@@ -152,6 +161,7 @@ message AgentManifest {
   repeated string input_content_types = 5;
   repeated string output_content_types = 6;
   map<string, string> metadata = 7;
+  repeated TransportEndpoint transport_endpoints = 8;
 }
 
 message ModeDescriptor {
@@ -199,6 +209,8 @@ message SendResponse {
   Ack ack = 1;
 }
 
+// StreamSession carries canonical MACP envelopes only.
+// Standard per-message negative acknowledgements remain the responsibility of Send.
 message StreamSessionRequest {
   Envelope envelope = 1;
 }

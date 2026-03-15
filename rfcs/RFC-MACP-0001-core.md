@@ -1,12 +1,12 @@
 # RFC-MACP-0001
 # Multi-Agent Coordination Protocol (MACP) — Core
 
-**Document:** RFC-MACP-0001  
-**Version:** 1.0.0-draft  
-**Status:** Community Standards Track  
-**Canonical wire format:** Protocol Buffers  
-**Normative transport:** gRPC over HTTP/2  
-**Required JSON mapping:** Yes  
+**Document:** RFC-MACP-0001
+**Version:** 1.0.0-draft
+**Status:** Community Standards Track
+**Canonical wire format:** Protocol Buffers
+**Normative transport:** gRPC over HTTP/2
+**Required JSON mapping:** Yes
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
@@ -33,7 +33,7 @@ The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **
 
 An **Agent** is any identifiable computational entity that emits and receives MACP Envelopes.
 
-A **MACP Runtime** is the logical system responsible for enforcing session state transitions, ordering, deduplication, validation, and isolation.
+A **MACP Runtime** is the logical system responsible for enforcing session state transitions, ordering, deduplication, validation, authorization, and isolation.
 
 A **Coordination Mode** (or **Mode**) is a semantic extension that defines how coordination unfolds inside a session.
 
@@ -45,11 +45,11 @@ A **Signal** is a non-binding informational message. A **Session** is a bounded 
 
 MACP Core exists to guarantee bounded coordination rather than generic messaging. It is designed to provide:
 
-1. explicit coordination boundaries,  
-2. monotonic lifecycle transitions,  
-3. session isolation,  
-4. append-only accepted history,  
-5. replay-preserving structural behavior, and  
+1. explicit coordination boundaries,
+2. monotonic lifecycle transitions,
+3. session isolation,
+4. append-only accepted history,
+5. replay-preserving structural behavior, and
 6. transport independence through a canonical envelope.
 
 MACP Core does **not** define arbitration algorithms, mode semantics, policy languages, or side-effect semantics.
@@ -90,7 +90,7 @@ If there is no mutually supported protocol version, initialization MUST fail wit
 
 Capability negotiation is explicit. A side MUST NOT assume support for an optional feature unless that feature was successfully negotiated.
 
-The initial registry of capabilities is defined in [registries/capabilities.md](../registries/capabilities.md). The most important initial capabilities are:
+The initial registry of capabilities is defined in [registries/capabilities.md](../registries/capabilities.md). The most important initial capability surfaces are:
 
 - `sessions.stream`
 - `cancellation.cancelSession`
@@ -112,7 +112,7 @@ Unknown capabilities MUST be ignored unless they are explicitly required by loca
 
 ## 5. Coordination Model
 
-MACP separates interaction into two planes:
+MACP separates interaction into two planes.
 
 ### 5.1 Ambient Plane
 
@@ -149,6 +149,14 @@ The Envelope provides:
 
 The canonical Protobuf definition is maintained under [`schemas/proto/macp/v1/envelope.proto`](../schemas/proto/macp/v1/envelope.proto). Core payload definitions (`SignalPayload`, `SessionStartPayload`, `SessionCancelPayload`, `CommitmentPayload`) are in [`schemas/proto/macp/v1/core.proto`](../schemas/proto/macp/v1/core.proto).
 
+For all accepted Envelopes:
+
+- `message_type` MUST be non-empty,
+- `message_id` MUST be non-empty,
+- `sender` MUST be non-empty,
+- `session_id` MUST be non-empty for session-scoped messages,
+- `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
+
 Unknown fields MUST be ignored for forward compatibility.
 
 ---
@@ -159,14 +167,18 @@ Unknown fields MUST be ignored for forward compatibility.
 
 A session is created by accepting a valid `SessionStart` message.
 
-A valid SessionStart MUST bind:
+A valid `SessionStart` MUST bind:
 
 - `session_id`,
 - Mode identifier,
 - `mode_version`,
 - `configuration_version`,
 - `ttl_ms`,
-- participant information (when used by the Mode).
+- participant information (when used by the Mode),
+- `context` when present,
+- `roots` when present.
+
+A Mode MAY also bind additional immutable authority roles through the accepted `SessionStart` sender or through mode-specific policy encoded in bound session context.
 
 ### 7.2 Session States
 
@@ -180,7 +192,7 @@ Sessions MUST transition monotonically. No transition from RESOLVED or EXPIRED b
 
 ### 7.3 Termination
 
-A session transitions from OPEN to RESOLVED when the first Mode-defined terminal message is accepted.
+A session transitions from OPEN to RESOLVED when the first Mode-defined terminal condition is accepted.
 
 A session transitions from OPEN to EXPIRED when:
 
@@ -188,7 +200,7 @@ A session transitions from OPEN to EXPIRED when:
 - cancellation is accepted,
 - or deterministic runtime policy requires expiration.
 
-Any message referencing a non-OPEN session MUST be rejected.
+Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
 ---
 
@@ -206,7 +218,29 @@ Runtimes MUST enforce idempotent handling of duplicates using `message_id`.
 
 If an Envelope with a previously accepted `message_id` is received within the same session, the runtime MUST treat it as a duplicate and MUST NOT create side effects.
 
-Duplicate SessionStart messages with the same `session_id` but different `message_id` MUST be rejected.
+Duplicate `SessionStart` messages with the same `session_id` but different `message_id` MUST be rejected.
+
+### 8.3 Accepted-History Discipline
+
+Only **accepted** Envelopes become part of accepted history.
+
+Therefore, for any individual Envelope:
+
+- validation,
+- authentication,
+- authorization,
+- deduplication,
+- session-state checks,
+- and Mode-specific structural validation
+
+MUST all succeed before the Envelope is appended to accepted history or consumes durable deduplication state.
+
+Rejected Envelopes MUST NOT:
+
+- be appended to accepted history,
+- consume `message_id` deduplication slots,
+- mutate session state,
+- or alter replay outcomes except through transient transport-level error reporting.
 
 ---
 
@@ -218,7 +252,7 @@ A compliant runtime MUST support:
 
 - unary initialization,
 - unary send/ack flow,
-- bidirectional session streaming,
+- bidirectional session streaming when `sessions.stream` is advertised,
 - session metadata query,
 - explicit session cancellation.
 
@@ -229,7 +263,7 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 - `StreamSession` — bidirectional session streaming
 - `GetSession` — session metadata query
 - `CancelSession` — explicit session cancellation
-- `GetManifest` — agent manifest retrieval
+- `GetManifest` — agent or runtime manifest retrieval
 - `ListModes` — mode registry query
 - `WatchModeRegistry` — mode registry change notifications
 - `ListRoots` — root listing
@@ -237,7 +271,7 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 
 Runtimes MAY expose additional bindings, including REST/JSON, provided the canonical Envelope and JSON mapping semantics are preserved. Standard transport bindings are defined in [RFC-MACP-0006](RFC-MACP-0006-transport-bindings.md).
 
-The media types `application/macp+proto` and `application/macp+json` are defined in [registries/media-types.md](../registries/media-types.md).
+The media types `application/macp-envelope+proto` and `application/macp-envelope+json` are defined in [registries/media-types.md](../registries/media-types.md).
 
 ---
 
@@ -267,16 +301,16 @@ Protobuf `bytes` fields MUST be represented as base64-encoded strings in JSON.
 
 ### 10.4 Enum Representation
 
-Protobuf enum values MUST be represented as their string names (e.g., `"SESSION_STATE_OPEN"`) in JSON, not as integer values.
+Protobuf enum values MUST be represented as their string names (for example `"SESSION_STATE_OPEN"`) in JSON, not as integer values.
 
 ### 10.5 Media Types
 
-- `application/macp+proto` — Protocol Buffers wire format
-- `application/macp+json` — Canonical JSON mapping
+- `application/macp-envelope+proto` — Protocol Buffers wire format for canonical MACP envelopes
+- `application/macp-envelope+json` — Canonical JSON mapping for MACP envelopes
 
 ### 10.6 Forward Compatibility
 
-JSON consumers SHOULD ignore unrecognized fields for forward compatibility, consistent with the protobuf unknown field preservation rule.
+JSON consumers SHOULD ignore unrecognized fields for forward compatibility, consistent with the protobuf unknown field rule.
 
 The JSON Schema for envelope validation is maintained at [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
 
@@ -290,7 +324,8 @@ A runtime that advertises `manifest.getManifest` SHOULD expose a machine-readabl
 
 - identity,
 - supported Modes and versions,
-- supported MIME types,
+- supported content types,
+- optional transport endpoints,
 - optional metadata useful for discovery.
 
 A runtime that advertises `modeRegistry.listModes` SHOULD expose a list of Mode Descriptors.

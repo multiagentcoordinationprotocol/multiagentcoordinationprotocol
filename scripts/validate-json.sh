@@ -35,8 +35,16 @@ echo ""
 
 for example_file in "${EXAMPLES_DIR}"/*.json; do
     if [ -f "$example_file" ]; then
+        # Skip composite transcript files (not single envelopes)
+        basename_file="$(basename "$example_file")"
+        if [ "$basename_file" = "decision-mode-session.json" ]; then
+            echo "Skipping composite transcript: ${basename_file} (validated separately)"
+            echo ""
+            continue
+        fi
+
         TOTAL=$((TOTAL + 1))
-        echo "Validating: $(basename "$example_file")"
+        echo "Validating: ${basename_file}"
 
         if ajv validate -s "${ENVELOPE_SCHEMA}" -d "${example_file}" --spec=draft2020 --strict=false; then
             VALIDATED=$((VALIDATED + 1))
@@ -88,7 +96,7 @@ if [ -d "$DISCOVERY_DIR" ]; then
 fi
 
 # Syntax-check composite transcript files (valid JSON but not single envelopes)
-TRANSCRIPT="${PROJECT_ROOT}/examples/decision-mode-session.json"
+TRANSCRIPT="${PROJECT_ROOT}/examples/json/decision-mode-session.json"
 if [ -f "$TRANSCRIPT" ]; then
     echo "── Composite transcript (syntax check only) ──"
     echo ""

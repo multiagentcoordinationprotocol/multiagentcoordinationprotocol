@@ -25,6 +25,17 @@ macp.transport.grpc.v1
 | macp.transport.grpc.v1 | gRPC transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.http.v1 | HTTP transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.websocket.v1 | WebSocket transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
+| macp.transport.messagebus.v1 | Message bus transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
+
+## Capability Registry vs. Capability Objects
+
+The **Capability Registry** (this document) lists high-level feature identifiers used in agent manifests and discovery endpoints (see [RFC-MACP-0005](../rfcs/RFC-MACP-0005-discovery-and-manifests.md)). These identifiers follow the `macp.<category>.<name>.v<version>` pattern and declare what an agent or runtime supports at the advertisement level.
+
+The **Capability Objects** defined in [RFC-MACP-0001 Section 4.2](../rfcs/RFC-MACP-0001-core.md) are structured protobuf fields (e.g., `sessions.stream`, `cancellation.cancelSession`) exchanged during `InitializeRequest`/`InitializeResponse` negotiation. These represent fine-grained feature toggles negotiated at connection time.
+
+Both systems serve complementary purposes:
+- **Registry identifiers** appear in manifests and discovery responses to advertise broad capabilities before a connection is established.
+- **Protobuf capability fields** are exchanged during the `Initialize` handshake to negotiate specific features for a given connection.
 
 ## Extension Policy
 

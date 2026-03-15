@@ -1,9 +1,9 @@
 # RFC-MACP-0002
 # Multi-Agent Coordination Protocol (MACP) — Coordination Modes
 
-**Document:** RFC-MACP-0002  
-**Version:** 1.0.0-draft  
-**Status:** Community Standards Track  
+**Document:** RFC-MACP-0002
+**Version:** 1.0.0-draft
+**Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
 ## Abstract
@@ -17,7 +17,7 @@ A Mode specification defines:
 - its identifier and version,
 - its additional message types,
 - participant rules,
-- termination conditions,
+- terminal conditions,
 - determinism claims,
 - commitment semantics,
 - payload schemas,
@@ -59,6 +59,13 @@ This specification recognizes common participant models:
 - **delegated** — participants may speak for sub-capabilities or delegated roles.
 
 A Mode MUST declare which participant model it uses.
+
+A Mode MAY distinguish between:
+
+- the **declared participants** who contribute domain messages, and
+- one or more **authority roles** (for example an orchestrator) that are bound at `SessionStart` and may emit terminal or administrative messages.
+
+If a Mode makes that distinction, the Mode specification MUST state how those authority roles are bound.
 
 ## 5. Terminal Semantics
 
@@ -104,15 +111,38 @@ In addition, Decision Mode reuses the Core `Commitment` message type as its term
 
 Decision Mode uses the **declared** participant model. The participant set is bound at `SessionStart` and MUST NOT change during the session.
 
-### 8.3 Terminal Conditions
+For `macp.mode.decision.v1` specifically:
 
-A Decision Mode session terminates when a `Commitment` message is accepted. Only the designated orchestrator (or the participant authorized by Mode policy) MAY emit a Commitment.
+- the sender of the accepted `SessionStart` is the default **designated orchestrator** for the session unless local policy or bound session context states otherwise,
+- declared `participants` are the agents eligible to emit `Proposal`, `Evaluation`, `Objection`, and `Vote` messages unless local policy authorizes a narrower subset,
+- the designated orchestrator MAY be outside the declared `participants` set.
 
-### 8.4 Determinism Class
+This rule resolves the common "orchestrator plus specialists" pattern without forcing the orchestrator to appear in every participant list.
 
-Decision Mode claims **semantic-deterministic** determinism. Given the same accepted message history and the same mode/policy/configuration versions, the same binding outcome MUST be produced. However, the decision profile (e.g., voting thresholds, quorum rules) is configuration-dependent.
+### 8.3 Structural Validation Rules
 
-### 8.5 Canonical Schemas
+Decision Mode does not standardize a single decision profile such as quorum size, minimum vote count, or evaluation thresholds. Those are configuration- and policy-dependent.
+
+Decision Mode does standardize these structural rules:
+
+- `Proposal` MUST define a non-empty `proposal_id`.
+- `Evaluation`, `Objection`, and `Vote` MUST reference an existing accepted `proposal_id`.
+- A `Commitment` MAY be accepted only from the designated orchestrator or from a participant explicitly authorized by bound Mode policy.
+- A `Commitment` does **not** require the presence of `Vote` messages unless the bound configuration or policy says so.
+
+This means a valid Decision Mode session MAY terminate after proposals plus evaluations/objections, or after proposals plus votes, or after any other policy-valid sequence that preserves the structural rules above.
+
+### 8.4 Terminal Conditions
+
+A Decision Mode session terminates when a `Commitment` message is accepted.
+
+Only the designated orchestrator (or the participant authorized by Mode policy) MAY emit a Commitment.
+
+### 8.5 Determinism Class
+
+Decision Mode claims **semantic-deterministic** determinism. Given the same accepted message history and the same mode/policy/configuration versions, the same binding outcome MUST be produced. However, the decision profile (for example voting thresholds, quorum rules, or evaluation thresholds) is configuration-dependent.
+
+### 8.6 Canonical Schemas
 
 Canonical schemas are provided in:
 
@@ -145,4 +175,7 @@ A Mode specification MUST state:
 
 ## 11. Interoperability
 
-Runtimes SHOULD reject unsupported Mode versions deterministically at SessionStart admission time. A Mode MUST NOT silently downgrade behavior without explicit negotiation.
+Runtimes SHOULD reject unsupported Mode versions deterministically at SessionStart admission time.
+A Mode MUST NOT silently downgrade behavior without explicit negotiation.
+
+When a runtime rejects a Mode or Mode version for new sessions, it SHOULD use the registered error code `MODE_NOT_SUPPORTED`.

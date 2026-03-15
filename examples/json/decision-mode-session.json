@@ -1,5 +1,5 @@
 {
-  "description": "Illustrative decision-mode coordination transcript showing initialization, SessionStart, evaluations, and terminal Commitment.",
+  "description": "Illustrative decision-mode coordination transcript showing initialization, SessionStart, proposal, evaluations, and terminal Commitment.",
   "protocol_version": "1.0",
   "mode": "macp.mode.decision.v1",
   "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
@@ -17,7 +17,7 @@
         },
         "capabilities": {
           "sessions": {
-            "stream": true
+            "stream": false
           },
           "cancellation": {
             "cancel_session": true
@@ -41,7 +41,7 @@
         },
         "capabilities": {
           "sessions": {
-            "stream": true
+            "stream": false
           },
           "cancellation": {
             "cancel_session": true
@@ -79,6 +79,21 @@
         "policy_version": "banking-policy-2026.03",
         "ttl_ms": 1500,
         "context": "eyJ0cmFuc2FjdGlvbl9hbW91bnQiOiA0ODAwMCwgImNpdHkiOiAiU2FvIFBhdWxvIn0="
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Proposal",
+      "message_id": "01JCN7X9M4YB7H4BVR7S60S5J1",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://fraud",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-approve",
+        "option": "transfer.review",
+        "rationale": "Escalate to manual review rather than auto-approve or auto-block",
+        "supporting_data": ""
       }
     },
     {

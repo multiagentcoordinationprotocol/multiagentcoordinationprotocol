@@ -69,12 +69,12 @@ MACP/
       macp-mode-descriptor.schema.json
 
   examples/
-    decision-mode-session.json
     json/
       signal.json
       session_start.json
       commitment.json
       session_cancel.json
+      decision-mode-session.json
     proto/
       envelope.bin
     discovery/
@@ -110,8 +110,8 @@ MACP is intentionally split into a small set of RFCs because that makes the stan
 - **RFC-MACP-0002 Modes** defines how semantic coordination modes extend MACP without violating Core invariants.
 - **RFC-MACP-0003 Determinism** defines structural replay integrity, semantic determinism classes, and side-effect handling patterns.
 - **RFC-MACP-0004 Security** defines the threat model and required defenses.
-- **RFC-MACP-0005 Discovery** defines agent and runtime discovery, manifest schemas, and well-known endpoints.
-- **RFC-MACP-0006 Transport Bindings** defines standard transport bindings (gRPC, HTTP, WebSocket, Message Bus).
+- **RFC-MACP-0005 Discovery** defines agent and runtime discovery, manifest schemas, transport endpoints, and well-known endpoints.
+- **RFC-MACP-0006 Transport Bindings** defines standard transport bindings (gRPC — including Send, StreamSession, and Watch RPC semantics — HTTP, WebSocket, Message Bus).
 
 This split mirrors how mature standards separate the kernel from extension documents.
 

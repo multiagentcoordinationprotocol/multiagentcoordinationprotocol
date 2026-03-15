@@ -6,10 +6,31 @@
     "macp.mode.decision.v1"
   ],
   "input_content_types": [
-    "application/json"
+    "application/macp-envelope+proto",
+    "application/macp-envelope+json"
   ],
   "output_content_types": [
-    "application/json"
+    "application/macp-envelope+proto",
+    "application/macp-envelope+json"
+  ],
+  "transport_endpoints": [
+    {
+      "transport": "macp.transport.grpc.v1",
+      "uri": "grpcs://checkout.example.com:50051",
+      "content_types": [
+        "application/macp-envelope+proto"
+      ],
+      "metadata": {
+        "audience": "internal"
+      }
+    },
+    {
+      "transport": "macp.transport.http.v1",
+      "uri": "https://checkout.example.com/.well-known/macp.json",
+      "content_types": [
+        "application/macp-manifest+json"
+      ]
+    }
   ],
   "metadata": {
     "owner": "payments-platform",
