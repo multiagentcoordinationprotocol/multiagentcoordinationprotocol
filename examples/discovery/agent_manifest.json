@@ -1,9 +1,13 @@
 {
-  "agent_id": "agent://checkout.orchestrator",
-  "title": "Checkout Orchestrator",
-  "description": "Coordinates payment-review sessions and emits terminal commitments.",
+  "agent_id": "agent://coordination.gateway",
+  "title": "Coordination Gateway",
+  "description": "Routes bounded MACP sessions across the standard coordination modes.",
   "supported_modes": [
-    "macp.mode.decision.v1"
+    "macp.mode.decision.v1",
+    "macp.mode.proposal.v1",
+    "macp.mode.task.v1",
+    "macp.mode.handoff.v1",
+    "macp.mode.quorum.v1"
   ],
   "input_content_types": [
     "application/macp-envelope+proto",

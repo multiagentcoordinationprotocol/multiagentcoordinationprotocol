@@ -1,0 +1,6 @@
+syntax = "proto3";
+package macp.entrypoints.modes;
+
+// Human-friendly entrypoint.
+// Canonical versioned source: schemas/proto/macp/modes/quorum/v1/quorum.proto
+import "macp/modes/quorum/v1/quorum.proto";

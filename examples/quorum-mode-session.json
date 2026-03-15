@@ -1,0 +1,89 @@
+{
+  "description": "Illustrative Quorum Mode transcript showing an approval request, two approvals, and terminal Commitment.",
+  "protocol_version": "1.0",
+  "mode": "macp.mode.quorum.v1",
+  "session_id": "01JCQUOR9Y5P9V4H0A8E0F4Q01",
+  "messages": [
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.quorum.v1",
+      "message_type": "SessionStart",
+      "message_id": "01JCQUORST4RT0000000000001",
+      "session_id": "01JCQUOR9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://deploy.controller",
+      "timestamp": "2026-03-14T09:30:00Z",
+      "payload": {
+        "intent": "Request production deployment approval",
+        "participants": [
+          "agent://ops.alice",
+          "agent://ops.bob",
+          "agent://security.carol"
+        ],
+        "mode_version": "1.0.0",
+        "configuration_version": "deploy-quorum-2026.03",
+        "policy_version": "prod-change-policy-2026.03",
+        "ttl_ms": 300000
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.quorum.v1",
+      "message_type": "ApprovalRequest",
+      "message_id": "01JCQUOR000000000000000002",
+      "session_id": "01JCQUOR9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://deploy.controller",
+      "timestamp": "2026-03-14T09:30:05Z",
+      "payload": {
+        "request_id": "deploy-2026-03-14-01",
+        "action": "deploy.production",
+        "summary": "Deploy release 2026.03.14.1 to production",
+        "details": "eyJyZWxlYXNlIjogIjIwMjYuMDMuMTQuMSIsICJjaGFuZ2Vfd2luZG93IjogIjA5OjMwLTA5OjQ1IFVUQyJ9",
+        "required_approvals": 2
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.quorum.v1",
+      "message_type": "Approve",
+      "message_id": "01JCQUOR000000000000000003",
+      "session_id": "01JCQUOR9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://ops.alice",
+      "timestamp": "2026-03-14T09:30:15Z",
+      "payload": {
+        "request_id": "deploy-2026-03-14-01",
+        "reason": "Operational checks are green"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.quorum.v1",
+      "message_type": "Approve",
+      "message_id": "01JCQUOR000000000000000004",
+      "session_id": "01JCQUOR9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://ops.bob",
+      "timestamp": "2026-03-14T09:30:25Z",
+      "payload": {
+        "request_id": "deploy-2026-03-14-01",
+        "reason": "Rollback plan and observability checks are ready"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.quorum.v1",
+      "message_type": "Commitment",
+      "message_id": "01JCQUOR000000000000000005",
+      "session_id": "01JCQUOR9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://deploy.controller",
+      "timestamp": "2026-03-14T09:30:30Z",
+      "payload": {
+        "commitment_id": "cmt-01JCQUOR000000000000000005",
+        "action": "quorum.approved",
+        "authority_scope": "deployment",
+        "reason": "2-of-3 approvals satisfied for deploy-2026-03-14-01",
+        "mode_version": "1.0.0",
+        "policy_version": "prod-change-policy-2026.03",
+        "configuration_version": "deploy-quorum-2026.03"
+      }
+    }
+  ]
+}

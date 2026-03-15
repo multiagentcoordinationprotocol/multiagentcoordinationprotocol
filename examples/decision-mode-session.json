@@ -1,5 +1,5 @@
 {
-  "description": "Illustrative decision-mode coordination transcript showing initialization, SessionStart, proposal, evaluations, and terminal Commitment.",
+  "description": "Illustrative Decision Mode transcript showing initialization, SessionStart, a proposal, evaluations, and terminal Commitment.",
   "protocol_version": "1.0",
   "mode": "macp.mode.decision.v1",
   "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
@@ -17,7 +17,7 @@
         },
         "capabilities": {
           "sessions": {
-            "stream": false
+            "stream": true
           },
           "cancellation": {
             "cancel_session": true
@@ -41,7 +41,7 @@
         },
         "capabilities": {
           "sessions": {
-            "stream": false
+            "stream": true
           },
           "cancellation": {
             "cancel_session": true
@@ -55,7 +55,11 @@
           }
         },
         "supported_modes": [
-          "macp.mode.decision.v1"
+          "macp.mode.decision.v1",
+          "macp.mode.proposal.v1",
+          "macp.mode.task.v1",
+          "macp.mode.handoff.v1",
+          "macp.mode.quorum.v1"
         ]
       }
     },
@@ -77,7 +81,7 @@
         "mode_version": "1.0.0",
         "configuration_version": "runtime-2026.03.02",
         "policy_version": "banking-policy-2026.03",
-        "ttl_ms": 1500,
+        "ttl_ms": 15000,
         "context": "eyJ0cmFuc2FjdGlvbl9hbW91bnQiOiA0ODAwMCwgImNpdHkiOiAiU2FvIFBhdWxvIn0="
       }
     },
@@ -85,15 +89,15 @@
       "macp_version": "1.0",
       "mode": "macp.mode.decision.v1",
       "message_type": "Proposal",
-      "message_id": "01JCN7X9M4YB7H4BVR7S60S5J1",
+      "message_id": "01JCN7X9Q1T3N1G4R8B7X8K4Y1",
       "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
-      "sender": "agent://fraud",
+      "sender": "agent://checkout.orchestrator",
       "timestamp": "2026-03-02T12:00:00Z",
       "payload": {
-        "proposal_id": "transfer-approve",
-        "option": "transfer.review",
-        "rationale": "Escalate to manual review rather than auto-approve or auto-block",
-        "supporting_data": ""
+        "proposal_id": "transfer-review",
+        "option": "Require step-up verification before transfer",
+        "rationale": "Risk signals and compliance boundary require additional verification",
+        "supporting_data": "e30="
       }
     },
     {
@@ -105,10 +109,10 @@
       "sender": "agent://fraud",
       "timestamp": "2026-03-02T12:00:00Z",
       "payload": {
-        "proposal_id": "transfer-approve",
-        "recommendation": "BLOCK",
+        "proposal_id": "transfer-review",
+        "recommendation": "APPROVE",
         "confidence": 0.91,
-        "reason": "Unusual login time and geovelocity shift"
+        "reason": "Unusual login time and geovelocity shift warrant a review gate"
       }
     },
     {
@@ -120,10 +124,10 @@
       "sender": "agent://growth",
       "timestamp": "2026-03-02T12:00:00Z",
       "payload": {
-        "proposal_id": "transfer-approve",
+        "proposal_id": "transfer-review",
         "recommendation": "APPROVE",
         "confidence": 0.72,
-        "reason": "High-value customer with strong history"
+        "reason": "Customer history is strong, but a step-up review keeps the experience recoverable"
       }
     },
     {
@@ -135,10 +139,10 @@
       "sender": "agent://compliance",
       "timestamp": "2026-03-02T12:00:00Z",
       "payload": {
-        "proposal_id": "transfer-approve",
-        "recommendation": "REVIEW",
+        "proposal_id": "transfer-review",
+        "recommendation": "APPROVE",
         "confidence": 0.83,
-        "reason": "Cross-border rule boundary requires step-up verification"
+        "reason": "Cross-border rule boundary requires step-up verification before release"
       }
     },
     {
@@ -153,7 +157,7 @@
         "commitment_id": "cmt-01JCN7XDTY0T5T6M32E2JQ4G5Y",
         "action": "transfer.review",
         "authority_scope": "payments",
-        "reason": "Conflicting high-confidence recommendations with regulatory boundary",
+        "reason": "Declared participants converged on a step-up verification review for proposal transfer-review",
         "mode_version": "1.0.0",
         "policy_version": "banking-policy-2026.03",
         "configuration_version": "runtime-2026.03.02"

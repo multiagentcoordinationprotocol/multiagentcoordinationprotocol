@@ -27,10 +27,16 @@ Agents SHOULD publish their manifest at:
 
 ```json
 {
-  "agent_id": "agent://fraud-detector",
-  "title": "Fraud Detection Agent",
-  "description": "Analyzes transactions for fraud risk",
-  "supported_modes": ["macp.mode.decision.v1"],
+  "agent_id": "agent://coordination.gateway",
+  "title": "Coordination Gateway",
+  "description": "Routes bounded MACP sessions across the standard coordination modes.",
+  "supported_modes": [
+    "macp.mode.decision.v1",
+    "macp.mode.proposal.v1",
+    "macp.mode.task.v1",
+    "macp.mode.handoff.v1",
+    "macp.mode.quorum.v1"
+  ],
   "input_content_types": [
     "application/macp-envelope+proto",
     "application/macp-envelope+json"
@@ -42,12 +48,12 @@ Agents SHOULD publish their manifest at:
   "transport_endpoints": [
     {
       "transport": "macp.transport.grpc.v1",
-      "uri": "grpcs://fraud.example.com:50051",
+      "uri": "grpcs://gateway.example.com:50051",
       "content_types": ["application/macp-envelope+proto"]
     }
   ],
   "metadata": {
-    "owner": "risk-platform"
+    "owner": "coordination-platform"
   }
 }
 ```
