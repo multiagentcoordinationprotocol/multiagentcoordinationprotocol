@@ -2,7 +2,7 @@
   "mode": "macp.mode.decision.v1",
   "mode_version": "1.0.0",
   "title": "Decision Mode",
-  "description": "Collects proposals/evaluations and terminates with a Commitment.",
+  "description": "Collects proposals, evaluations, objections, and votes and terminates with a Commitment.",
   "determinism_class": "semantic-deterministic",
   "participant_model": "declared",
   "message_types": [

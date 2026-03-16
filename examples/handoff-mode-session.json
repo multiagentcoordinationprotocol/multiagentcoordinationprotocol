@@ -1,0 +1,95 @@
+{
+  "description": "Illustrative Handoff Mode transcript showing offer, context transfer, acceptance, and terminal Commitment.",
+  "protocol_version": "1.0",
+  "mode": "macp.mode.handoff.v1",
+  "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",
+  "messages": [
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.handoff.v1",
+      "message_type": "SessionStart",
+      "message_id": "01JCHANDST4RT0000000000001",
+      "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",
+      "sender": "agent://support.triage",
+      "timestamp": "2026-03-14T09:20:00Z",
+      "payload": {
+        "intent": "Transfer responsibility for a payment settlement issue",
+        "participants": [
+          "agent://support.triage",
+          "agent://payments.specialist"
+        ],
+        "mode_version": "1.0.0",
+        "configuration_version": "handoff-profile-2026.03",
+        "policy_version": "support-policy-2026.03",
+        "ttl_ms": 600000,
+        "roots": [
+          {
+            "uri": "macp://payments/eu-settlement",
+            "name": "EU settlement queue"
+          }
+        ]
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.handoff.v1",
+      "message_type": "HandoffOffer",
+      "message_id": "01JCHAND000000000000000002",
+      "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",
+      "sender": "agent://support.triage",
+      "timestamp": "2026-03-14T09:20:05Z",
+      "payload": {
+        "handoff_id": "handoff-001",
+        "target_participant": "agent://payments.specialist",
+        "scope": "Resolve payment settlement issue",
+        "reason": "Issue requires payments-domain authority"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.handoff.v1",
+      "message_type": "HandoffContext",
+      "message_id": "01JCHAND000000000000000003",
+      "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",
+      "sender": "agent://support.triage",
+      "timestamp": "2026-03-14T09:20:10Z",
+      "payload": {
+        "handoff_id": "handoff-001",
+        "content_type": "application/json",
+        "context": "eyJ0aWNrZXRfaWQiOiAiVEtULTQyMDEiLCAiY3VzdG9tZXJfaWQiOiAiQ1VTLTcxMjMifQ=="
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.handoff.v1",
+      "message_type": "HandoffAccept",
+      "message_id": "01JCHAND000000000000000004",
+      "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",
+      "sender": "agent://payments.specialist",
+      "timestamp": "2026-03-14T09:20:30Z",
+      "payload": {
+        "handoff_id": "handoff-001",
+        "accepted_by": "agent://payments.specialist",
+        "reason": "Target has authority and available capacity"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.handoff.v1",
+      "message_type": "Commitment",
+      "message_id": "01JCHAND000000000000000005",
+      "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",
+      "sender": "agent://support.triage",
+      "timestamp": "2026-03-14T09:20:40Z",
+      "payload": {
+        "commitment_id": "cmt-01JCHAND000000000000000005",
+        "action": "handoff.accepted",
+        "authority_scope": "support-escalation",
+        "reason": "Responsibility transferred to agent://payments.specialist under handoff-001",
+        "mode_version": "1.0.0",
+        "policy_version": "support-policy-2026.03",
+        "configuration_version": "handoff-profile-2026.03"
+      }
+    }
+  ]
+}

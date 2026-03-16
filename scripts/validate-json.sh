@@ -12,6 +12,7 @@ MANIFEST_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-manifest.schema.json"
 DESCRIPTOR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-mode-descriptor.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
+TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*-mode-session.json"
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -29,28 +30,20 @@ TOTAL=0
 VALIDATED=0
 
 # Validate each JSON example file against envelope schema
-echo "── Envelope examples (${EXAMPLES_DIR}/*.json) ──"
+echo "-- Envelope examples (${EXAMPLES_DIR}/*.json) --"
 echo "Schema: ${ENVELOPE_SCHEMA}"
 echo ""
 
 for example_file in "${EXAMPLES_DIR}"/*.json; do
     if [ -f "$example_file" ]; then
-        # Skip composite transcript files (not single envelopes)
-        basename_file="$(basename "$example_file")"
-        if [ "$basename_file" = "decision-mode-session.json" ]; then
-            echo "Skipping composite transcript: ${basename_file} (validated separately)"
-            echo ""
-            continue
-        fi
-
         TOTAL=$((TOTAL + 1))
-        echo "Validating: ${basename_file}"
+        echo "Validating: $(basename "$example_file")"
 
         if ajv validate -s "${ENVELOPE_SCHEMA}" -d "${example_file}" --spec=draft2020 --strict=false; then
             VALIDATED=$((VALIDATED + 1))
-            echo "  ✓ Valid"
+            echo "  [OK] Valid"
         else
-            echo "  ✗ Invalid"
+            echo "  [X] Invalid"
             exit 1
         fi
         echo ""
@@ -59,7 +52,7 @@ done
 
 # Validate discovery examples against their respective schemas
 if [ -d "$DISCOVERY_DIR" ]; then
-    echo "── Discovery examples (${DISCOVERY_DIR}/*.json) ──"
+    echo "-- Discovery examples (${DISCOVERY_DIR}/*.json) --"
     echo ""
 
     for manifest_file in "${DISCOVERY_DIR}"/agent_manifest*.json; do
@@ -69,9 +62,9 @@ if [ -d "$DISCOVERY_DIR" ]; then
 
             if ajv validate -s "${MANIFEST_SCHEMA}" -d "${manifest_file}" --spec=draft2020 --strict=false; then
                 VALIDATED=$((VALIDATED + 1))
-                echo "  ✓ Valid"
+                echo "  [OK] Valid"
             else
-                echo "  ✗ Invalid"
+                echo "  [X] Invalid"
                 exit 1
             fi
             echo ""
@@ -85,9 +78,9 @@ if [ -d "$DISCOVERY_DIR" ]; then
 
             if ajv validate -s "${DESCRIPTOR_SCHEMA}" -d "${descriptor_file}" --spec=draft2020 --strict=false; then
                 VALIDATED=$((VALIDATED + 1))
-                echo "  ✓ Valid"
+                echo "  [OK] Valid"
             else
-                echo "  ✗ Invalid"
+                echo "  [X] Invalid"
                 exit 1
             fi
             echo ""
@@ -95,37 +88,38 @@ if [ -d "$DISCOVERY_DIR" ]; then
     done
 fi
 
-# Syntax-check composite transcript files (valid JSON but not single envelopes)
-TRANSCRIPT="${PROJECT_ROOT}/examples/json/decision-mode-session.json"
-if [ -f "$TRANSCRIPT" ]; then
-    echo "── Composite transcript (syntax check only) ──"
-    echo ""
-    TOTAL=$((TOTAL + 1))
-    echo "Validating JSON syntax: $(basename "$TRANSCRIPT")"
+echo "-- Composite transcripts (syntax check only) --"
+echo ""
 
-    if command -v python3 >/dev/null 2>&1; then
-        SYNTAX_OK=$(python3 -c "import json, sys; json.load(open(sys.argv[1])); print('ok')" "$TRANSCRIPT" 2>/dev/null)
-    elif command -v node >/dev/null 2>&1; then
-        SYNTAX_OK=$(node -e "try { JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); console.log('ok') } catch(e) { process.exit(1) }" "$TRANSCRIPT" 2>/dev/null)
-    else
-        echo "  ⚠ Skipping: neither python3 nor node available for syntax check"
-        SYNTAX_OK="skip"
-    fi
+for transcript in ${TRANSCRIPT_GLOB}; do
+    if [ -f "$transcript" ]; then
+        TOTAL=$((TOTAL + 1))
+        echo "Validating JSON syntax: $(basename "$transcript")"
 
-    if [ "$SYNTAX_OK" = "ok" ] || [ "$SYNTAX_OK" = "skip" ]; then
-        VALIDATED=$((VALIDATED + 1))
-        echo "  ✓ Valid JSON"
-    else
-        echo "  ✗ Invalid JSON"
-        exit 1
+        if command -v python3 >/dev/null 2>&1; then
+            SYNTAX_OK=$(python3 -c "import json, sys; json.load(open(sys.argv[1])); print('ok')" "$transcript" 2>/dev/null)
+        elif command -v node >/dev/null 2>&1; then
+            SYNTAX_OK=$(node -e "try { JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); console.log('ok') } catch(e) { process.exit(1) }" "$transcript" 2>/dev/null)
+        else
+            echo "  [!] Skipping: neither python3 nor node available for syntax check"
+            SYNTAX_OK="skip"
+        fi
+
+        if [ "$SYNTAX_OK" = "ok" ] || [ "$SYNTAX_OK" = "skip" ]; then
+            VALIDATED=$((VALIDATED + 1))
+            echo "  [OK] Valid JSON"
+        else
+            echo "  [X] Invalid JSON"
+            exit 1
+        fi
+        echo ""
     fi
-    echo ""
-fi
+done
 
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON example files found"
     exit 1
 fi
 
-echo "─────────────────────────────────────"
-echo "✓ All ${VALIDATED}/${TOTAL} JSON files validated"
+echo "-------------------------------------"
+echo "[OK] All ${VALIDATED}/${TOTAL} JSON files validated"

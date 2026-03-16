@@ -1,0 +1,108 @@
+{
+  "description": "Illustrative Task Mode transcript showing bounded delegation, progress, completion, and terminal Commitment.",
+  "protocol_version": "1.0",
+  "mode": "macp.mode.task.v1",
+  "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+  "messages": [
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.task.v1",
+      "message_type": "SessionStart",
+      "message_id": "01JCTASKST4RT0000000000001",
+      "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+      "sender": "agent://planner",
+      "timestamp": "2026-03-14T09:10:00Z",
+      "payload": {
+        "intent": "Delegate one bounded research task",
+        "participants": [
+          "agent://planner",
+          "agent://search.worker"
+        ],
+        "mode_version": "1.0.0",
+        "configuration_version": "task-routing-2026.03",
+        "policy_version": "ops-policy-2026.03",
+        "ttl_ms": 900000
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.task.v1",
+      "message_type": "TaskRequest",
+      "message_id": "01JCTASK000000000000000002",
+      "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+      "sender": "agent://planner",
+      "timestamp": "2026-03-14T09:10:05Z",
+      "payload": {
+        "task_id": "task-001",
+        "title": "Summarize SOC2 control deltas",
+        "instructions": "Review the latest control updates and produce a concise delta summary.",
+        "requested_assignee": "agent://search.worker",
+        "input": "eyJkb2N1bWVudHMiOiBbIkNvbnRyb2xzLTIwMjYuMDMuanNvbiJdfQ==",
+        "deadline_unix_ms": 1773509100000
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.task.v1",
+      "message_type": "TaskAccept",
+      "message_id": "01JCTASK000000000000000003",
+      "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+      "sender": "agent://search.worker",
+      "timestamp": "2026-03-14T09:10:10Z",
+      "payload": {
+        "task_id": "task-001",
+        "assignee": "agent://search.worker",
+        "reason": "Capacity available and inputs understood"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.task.v1",
+      "message_type": "TaskUpdate",
+      "message_id": "01JCTASK000000000000000004",
+      "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+      "sender": "agent://search.worker",
+      "timestamp": "2026-03-14T09:11:30Z",
+      "payload": {
+        "task_id": "task-001",
+        "status": "running",
+        "progress": 0.5,
+        "message": "Compared baseline and latest control sets",
+        "partial_output": "eyJub3RlcyI6ICJTdW1tYXJ5IGluIHByb2dyZXNzIn0="
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.task.v1",
+      "message_type": "TaskComplete",
+      "message_id": "01JCTASK000000000000000005",
+      "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+      "sender": "agent://search.worker",
+      "timestamp": "2026-03-14T09:12:10Z",
+      "payload": {
+        "task_id": "task-001",
+        "assignee": "agent://search.worker",
+        "output": "eyJzdW1tYXJ5IjogIkFkZGVkIGtleSByb3RhdGlvbiBjaGVja3MgYW5kIHRpZ2h0ZW5lZCBsb2dnaW5nIHJldmlldy4ifQ==",
+        "summary": "Produced a concise delta summary"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.task.v1",
+      "message_type": "Commitment",
+      "message_id": "01JCTASK000000000000000006",
+      "session_id": "01JCTASK9Y5P9V4H0A8E0F4T01",
+      "sender": "agent://planner",
+      "timestamp": "2026-03-14T09:12:20Z",
+      "payload": {
+        "commitment_id": "cmt-01JCTASK000000000000000006",
+        "action": "task.completed",
+        "authority_scope": "research",
+        "reason": "Requester accepted TaskComplete for task-001",
+        "mode_version": "1.0.0",
+        "policy_version": "ops-policy-2026.03",
+        "configuration_version": "task-routing-2026.03"
+      }
+    }
+  ]
+}

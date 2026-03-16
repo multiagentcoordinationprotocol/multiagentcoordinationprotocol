@@ -54,7 +54,11 @@ Example:
   "title": "Fraud Detection Agent",
   "description": "Analyzes transactions for fraud risk",
   "supported_modes": [
-    "macp.mode.decision.v1"
+    "macp.mode.decision.v1",
+    "macp.mode.proposal.v1",
+    "macp.mode.task.v1",
+    "macp.mode.handoff.v1",
+    "macp.mode.quorum.v1"
   ],
   "input_content_types": [
     "application/macp-envelope+proto",
@@ -86,7 +90,7 @@ Capabilities MUST be registered in the MACP Capability Registry (see [`registrie
 
 ## 5. Mode Declaration
 
-Agents declare supported coordination modes. Modes are defined in RFC-MACP-0002.
+Agents declare supported coordination modes. Modes are defined in [RFC-MACP-0002](RFC-MACP-0002-modes.md) and, for the standards-track mode set in this repo, in [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) through [RFC-MACP-0011](RFC-MACP-0011-quorum-mode.md).
 
 If a runtime exposes `ListModes`, the manifest SHOULD be consistent with the runtime's mode registry output.
 

@@ -1,0 +1,107 @@
+{
+  "description": "Illustrative Proposal Mode transcript showing offer, counteroffer, acceptance, and terminal Commitment.",
+  "protocol_version": "1.0",
+  "mode": "macp.mode.proposal.v1",
+  "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+  "messages": [
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.proposal.v1",
+      "message_type": "SessionStart",
+      "message_id": "01JCPROPST4RT0000000000001",
+      "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+      "sender": "agent://buyer",
+      "timestamp": "2026-03-14T09:00:00Z",
+      "payload": {
+        "intent": "Negotiate premium support renewal",
+        "participants": [
+          "agent://buyer",
+          "agent://seller"
+        ],
+        "mode_version": "1.0.0",
+        "configuration_version": "negotiation-2026.03",
+        "policy_version": "commercial-policy-2026.03",
+        "ttl_ms": 600000
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.proposal.v1",
+      "message_type": "Proposal",
+      "message_id": "01JCPROP000000000000000002",
+      "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+      "sender": "agent://seller",
+      "timestamp": "2026-03-14T09:00:05Z",
+      "payload": {
+        "proposal_id": "offer-1",
+        "title": "Initial renewal offer",
+        "summary": "Premium support at 1200 USD per month for 12 months",
+        "details": "eyJwcmljZV91c2QiOiAxMjAwLCAidGVybV9tb250aHMiOiAxMn0=",
+        "tags": [
+          "renewal",
+          "support"
+        ]
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.proposal.v1",
+      "message_type": "CounterProposal",
+      "message_id": "01JCPROP000000000000000003",
+      "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+      "sender": "agent://buyer",
+      "timestamp": "2026-03-14T09:00:20Z",
+      "payload": {
+        "proposal_id": "offer-2",
+        "supersedes_proposal_id": "offer-1",
+        "title": "Counteroffer",
+        "summary": "Premium support at 1000 USD per month with 12-month term",
+        "details": "eyJwcmljZV91c2QiOiAxMDAwLCAidGVybV9tb250aHMiOiAxMn0="
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.proposal.v1",
+      "message_type": "Accept",
+      "message_id": "01JCPROP000000000000000004",
+      "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+      "sender": "agent://seller",
+      "timestamp": "2026-03-14T09:00:35Z",
+      "payload": {
+        "proposal_id": "offer-2",
+        "reason": "Counteroffer is acceptable"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.proposal.v1",
+      "message_type": "Accept",
+      "message_id": "01JCPROP000000000000000005",
+      "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+      "sender": "agent://buyer",
+      "timestamp": "2026-03-14T09:00:40Z",
+      "payload": {
+        "proposal_id": "offer-2",
+        "reason": "Buyer confirms the revised terms"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.proposal.v1",
+      "message_type": "Commitment",
+      "message_id": "01JCPROP000000000000000006",
+      "session_id": "01JCPROP9Y5P9V4H0A8E0F4P01",
+      "sender": "agent://buyer",
+      "timestamp": "2026-03-14T09:00:45Z",
+      "payload": {
+        "commitment_id": "cmt-01JCPROP000000000000000006",
+        "action": "proposal.accepted",
+        "authority_scope": "commercial-renewal",
+        "reason": "All declared parties accepted offer-2",
+        "mode_version": "1.0.0",
+        "policy_version": "commercial-policy-2026.03",
+        "configuration_version": "negotiation-2026.03"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+package macp.entrypoints.modes;
+
+// Human-friendly entrypoint.
+// Canonical versioned source: schemas/proto/macp/modes/task/v1/task.proto
+import "macp/modes/task/v1/task.proto";
