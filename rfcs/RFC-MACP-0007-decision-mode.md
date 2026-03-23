@@ -8,7 +8,7 @@
 
 ## Abstract
 
-This document defines `macp.mode.decision.v1`, the standards-track Decision Mode for bounded multi-party decisions. Decision Mode lets declared participants submit proposals, evaluations, objections, and votes, and it terminates with a single authoritative `Commitment`.
+This document defines `macp.mode.decision.v1`, the standards-track Decision Mode for bounded multi-party decisions. Decision Mode lets declared participants submit proposals, evaluations, objections, and votes, and it terminates with a single authoritative `Commitment`. The accepted `SessionStart` sender (session initiator/coordinator) may also be separately authorized to emit `Proposal` and `Commitment`.
 
 ## 1. Purpose
 
@@ -25,11 +25,11 @@ Decision Mode is intentionally narrower than a general workflow engine:
 - **Mode identifier:** `macp.mode.decision.v1`
 - **Participant model:** `declared`
 
-The eligible participant set is bound at `SessionStart`. Only declared participants MAY emit Decision Mode messages.
+The eligible participant set is bound at `SessionStart`. Declared participants MAY emit `Proposal`, `Evaluation`, `Objection`, and `Vote`. The accepted `SessionStart` sender (session initiator/coordinator) MAY emit `Proposal` and `Commitment` even if not listed in `participants`, unless a stricter policy is bound by configuration or policy.
 
 ## 3. SessionStart requirements
 
-A Decision Mode Session SHOULD bind the following fields explicitly in `SessionStartPayload`:
+A Decision Mode Session MUST bind the following fields explicitly in `SessionStartPayload`:
 
 - `participants` - decision participants,
 - `mode_version` - the decision-mode semantic profile,
@@ -83,8 +83,8 @@ Given the same accepted message history, the same participant set, and the same 
 
 Implementations MUST address all of the following:
 
-- authenticate the sender of each evaluation, objection, vote, and commitment,
-- reject messages from non-participants,
+- authenticate the sender of each proposal, evaluation, objection, vote, and commitment,
+- reject Decision Mode messages from unauthorized senders, distinguishing declared-participant authority from any separately bound coordinator authority,
 - protect confidential decision context and proposal data,
 - ensure only authorized actors can emit `Commitment`,
 - preserve append-only accepted history for audit and replay.

@@ -13,7 +13,7 @@ A compliant runtime performs a small number of structurally critical jobs:
 2. authenticate and authorize senders,  
 3. validate Envelopes,  
 4. assign accepted messages an authoritative order within a session,  
-5. persist accepted history append-only,  
+5. persist accepted session history append-only,  
 6. execute lifecycle transitions monotonically,  
 7. dispatch accepted messages to the Mode engine.
 
@@ -55,8 +55,8 @@ Mode execution SHOULD be treated as a pure function over accepted history whenev
 
 ## Recovery and rehydration
 
-Because accepted history is append-only, failed owners can recover by replaying the session log and reconstructing in-memory state. Snapshots are an optimization, not an authority.
+Because accepted session history is append-only, failed owners can recover by replaying the session log and reconstructing in-memory state. Snapshots are an optimization, not an authority. Ambient Signals may be handled ephemerally unless a deployment defines a separate signal-log profile.
 
 ## Cancellation
 
-Cancellation transitions a session from OPEN to EXPIRED without rewriting history. Late-arriving messages are rejected because the lifecycle state is no longer OPEN.
+Cancellation transitions a session from OPEN to EXPIRED without rewriting history. By default, only the session initiator is authorized to cancel. Deployments may extend this through policy. Late-arriving messages are rejected because the lifecycle state is no longer OPEN.

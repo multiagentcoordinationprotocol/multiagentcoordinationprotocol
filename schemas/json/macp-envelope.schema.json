@@ -22,8 +22,7 @@
     },
     "mode": {
       "type": "string",
-      "minLength": 1,
-      "description": "Mode identifier (e.g., macp.core.signal.v1, macp.mode.decision.v1)."
+      "description": "Empty string for ambient Signals; canonical mode identifier for session-scoped messages (for example macp.mode.decision.v1)."
     },
     "message_type": {
       "type": "string",
@@ -37,7 +36,7 @@
     },
     "session_id": {
       "type": "string",
-      "description": "Empty for ambient Signals; non-empty for session-scoped messages."
+      "description": "Empty string for ambient Signals; non-empty for session-scoped messages."
     },
     "sender": {
       "type": "string",
@@ -106,8 +105,24 @@
       },
       "then": {
         "properties": {
+          "mode": {
+            "maxLength": 0
+          },
+          "session_id": {
+            "maxLength": 0
+          },
           "payload": {
             "$ref": "#/$defs/SignalPayload"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "mode": {
+            "minLength": 1
+          },
+          "session_id": {
+            "minLength": 1
           }
         }
       }
@@ -219,7 +234,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "ttl_ms"
+        "ttl_ms",
+        "mode_version",
+        "configuration_version"
       ],
       "properties": {
         "intent": {
@@ -232,10 +249,12 @@
           }
         },
         "mode_version": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "configuration_version": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "ttl_ms": {
           "type": "integer",

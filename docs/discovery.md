@@ -68,14 +68,19 @@ Manifests MAY include `transport_endpoints` to describe how MACP messages can be
 - a concrete URI,
 - one or more supported content types.
 
-Transport identifiers are listed in [`registries/transports.md`](../registries/transports.md).
+Transport identifiers are listed in [`registries/transports.md`](../registries/transports.md). Directly connected `GetManifest` responses may omit `transport_endpoints` when the serving channel already establishes the relevant delivery coordinates or when deployment policy intentionally withholds them.
 
 ## `GetManifest` RPC
 
 For the gRPC binding, manifests can also be retrieved via the `GetManifest` RPC:
 
 - an empty `agent_id` requests the manifest of the serving runtime or agent,
-- a non-empty `agent_id` requests a locally-known manifest for that identifier.
+- a non-empty `agent_id` requests a locally-known manifest for that identifier,
+- self-manifests returned over an already-established channel may omit `transport_endpoints`.
+
+## `ListModes` vs manifest `supported_modes`
+
+`ListModes` returns only standards-track mode descriptors. `GetManifest` and `Initialize` may include both standards-track and extension mode identifiers in `supported_modes`. Extension mode discovery varies by runtime — some runtimes expose a separate extension listing surface.
 
 ## Registry-based Discovery
 

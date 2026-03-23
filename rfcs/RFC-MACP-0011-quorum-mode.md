@@ -19,11 +19,11 @@ Quorum Mode is appropriate when one bounded action requires N-of-M approval rath
 - **Mode identifier:** `macp.mode.quorum.v1`
 - **Participant model:** `quorum`
 
-The participant set is typically declared at `SessionStart`, but resolution is based on a threshold rather than unanimity.
+The participant set MUST be declared at `SessionStart`, but resolution is based on a threshold rather than unanimity.
 
 ## 3. SessionStart requirements
 
-A Quorum Mode Session SHOULD bind:
+A Quorum Mode Session MUST bind:
 
 - `participants` - eligible approvers,
 - `mode_version` - quorum-mode semantic profile,

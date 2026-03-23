@@ -67,16 +67,20 @@ A runtime that advertises `sessions.stream = true` MUST implement `StreamSession
 
 A runtime MAY echo back accepted client-submitted envelopes on the stream as part of the authoritative accepted sequence.
 
+The base protocol does **not** define a passive attach or no-op envelope for observing an existing session without sending a new session-scoped coordination message. Session-scoped `Signal` envelopes are invalid in the base protocol and MUST NOT be used as a stream-attach mechanism. Clients that need zero-mutation observation SHOULD either begin streaming before the session activity of interest or rely on a deployment-specific extension outside the base protocol.
+
 When a transport-level or stream-fatal error occurs, the runtime SHOULD use native gRPC stream termination semantics.
 
 ### 3.3 `WatchModeRegistry` and `WatchRoots`
 
 These watch streams are optional discovery hints.
 
+`ListModes` SHOULD return only standards-track mode descriptors. Extension mode descriptors are discoverable through implementation-defined surfaces and are not part of the base `ListModes` response.
+
 A runtime MUST advertise `mode_registry.list_changed = true` before `WatchModeRegistry` can be assumed interoperable.
 A runtime MUST advertise `roots.list_changed = true` before `WatchRoots` can be assumed interoperable.
 
-A watch notification indicates that the corresponding registry or roots view may have changed. Clients SHOULD re-query the full surface (`ListModes` or `ListRoots`) after receiving a change notification.
+A watch notification indicates that the corresponding registry or roots view may have changed. Clients SHOULD re-query the full surface (`ListModes` or `ListRoots`) after receiving a change notification. A minimal compliant implementation MAY send an initial change hint immediately after stream establishment and then remain idle until a later change occurs.
 
 ## 4. HTTP Binding
 

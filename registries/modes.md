@@ -32,8 +32,14 @@ The main MACP standards repo standardizes only foundational coordination primiti
 - auction and marketplace modes that are still settling semantically,
 - broadcast-style patterns that fit ambient Signals or external pub/sub better than bounded Sessions.
 
-## Experimental Modes
+## Extension and experimental modes
 
-Experimental modes SHOULD use reverse-domain naming, for example:
+Runtime-shipped built-in extensions SHOULD use the `ext.*` namespace:
+
+`ext.<name>.v<major>`
+
+Experimental or vendor-specific modes SHOULD use reverse-domain naming:
 
 `com.example.mode.custom.v1`
+
+Runtimes MAY implement additional non-standard modes, but those modes MUST be documented as non-standard and MUST NOT be presented as part of the standards-track set unless they are listed in this registry and backed by a main-repo RFC. `ListModes` SHOULD return only standards-track modes listed above; extension modes are discoverable through implementation-defined surfaces.

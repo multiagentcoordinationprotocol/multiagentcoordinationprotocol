@@ -19,11 +19,11 @@ Proposal Mode standardizes a common negotiation shape without forcing the heavie
 - **Mode identifier:** `macp.mode.proposal.v1`
 - **Participant model:** `peer`
 
-The participant roles are symmetric, but the participant set SHOULD still be bound at `SessionStart`.
+The participant roles are symmetric, but the participant set MUST still be bound at `SessionStart`.
 
 ## 3. SessionStart requirements
 
-A Proposal Mode Session SHOULD bind:
+A Proposal Mode Session MUST bind:
 
 - `participants` - required negotiating parties,
 - `mode_version` - proposal-mode semantic profile,

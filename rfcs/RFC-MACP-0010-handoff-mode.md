@@ -23,7 +23,7 @@ The current owner or a policy-defined coordinator is the default `Commitment` au
 
 ## 3. SessionStart requirements
 
-A Handoff Mode Session SHOULD bind:
+A Handoff Mode Session MUST bind:
 
 - `participants` - current owner and eligible targets,
 - `mode_version` - handoff semantic profile,

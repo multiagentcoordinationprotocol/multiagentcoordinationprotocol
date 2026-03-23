@@ -20,6 +20,8 @@ UPPER_SNAKE_CASE
 | MODE_NOT_SUPPORTED | The referenced coordination mode or mode version is not supported for new sessions | 400 | permanent | [RFC-MACP-0002](../rfcs/RFC-MACP-0002-modes.md) |
 | PAYLOAD_TOO_LARGE | Payload exceeds allowed size | 413 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | RATE_LIMITED | Too many requests | 429 | permanent | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) |
+| INVALID_SESSION_ID | `session_id` format does not meet deployment requirements (e.g., not a valid UUID or base64url token) | 400 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
+| INTERNAL_ERROR | Unrecoverable internal runtime error (e.g., storage failure); clients SHOULD retry or escalate | 500 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | UNAUTHORIZED | Historical alias for `FORBIDDEN`; new implementations SHOULD use `FORBIDDEN` | 403 | deprecated | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) |
 
 ## Error Design Principles

@@ -23,7 +23,7 @@ The session initiator or a policy-defined coordinator is the requester and defau
 
 ## 3. SessionStart requirements
 
-A Task Mode Session SHOULD bind:
+A Task Mode Session MUST bind:
 
 - `participants` - requester and eligible assignee participants,
 - `mode_version` - task-mode semantic profile,

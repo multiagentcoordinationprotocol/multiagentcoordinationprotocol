@@ -52,7 +52,9 @@ The following patterns are intentionally excluded from the main standards set un
 - fast-moving experimental modes,
 - broadcast-style dissemination patterns that are better modeled as ambient Signals or external pub/sub systems.
 
-Experimental Modes SHOULD use reverse-domain identifiers to avoid collisions.
+Runtimes MAY implement additional non-standard modes. Such modes are not part of the standards-track set unless they are listed in `registries/modes.md` and backed by a main-repo RFC. Discovery surfaces and documentation MUST distinguish these modes from the standards-track set.
+
+Experimental Modes SHOULD use reverse-domain identifiers to avoid collisions. Implementations SHOULD avoid introducing new non-standard modes under the `macp.mode.*` namespace; if a legacy non-standard identifier is retained for compatibility, it MUST NOT be advertised as a standards-track mode.
 
 ## 3. Mode identifiers
 
@@ -64,9 +66,17 @@ Experimental or vendor-specific Modes SHOULD use reverse-domain names, for examp
 
 `com.example.mode.custom.v1`
 
+Runtime-shipped built-in extensions that are not yet standards-track SHOULD use the `ext.*` namespace:
+
+`ext.<name>.v<major>`
+
+For example: `ext.multi_round.v1`
+
+Identifiers in the `macp.mode.*` namespace are reserved for standards-track or explicitly community-governed profiles. New implementation-defined modes SHOULD avoid that namespace unless and until they enter the standards process.
+
 ## 4. Mode Descriptor
 
-A runtime that supports `modeRegistry.listModes` SHOULD expose a machine-readable Mode Descriptor for each supported Mode.
+A runtime that supports `modeRegistry.listModes` SHOULD expose a machine-readable Mode Descriptor for each standards-track Mode it supports. Extension mode descriptors MAY be exposed through implementation-defined discovery surfaces.
 
 A Mode Descriptor SHOULD include:
 
@@ -172,7 +182,19 @@ Promotion criteria:
 - Provisional -> Permanent: stable schemas, at least one interoperable implementation, and community review.
 - Permanent -> Deprecated: replacement Mode available or security/design issues identified. Deprecation SHOULD include a migration guide and transition timeline.
 
-## 12. Security and privacy
+## 12. Extension mode lifecycle
+
+Runtimes MAY support extension modes beyond the standards-track set. Extension mode management is an implementation concern, not a core protocol requirement.
+
+The following guidance applies:
+
+- Extension modes SHOULD use the `ext.*` namespace or reverse-domain identifiers to avoid collision with the reserved `macp.mode.*` namespace.
+- `ListModes` SHOULD return only standards-track modes. Extension mode discovery is implementation-defined; runtimes MAY expose extension modes through separate discovery surfaces.
+- `GetManifest` and `Initialize` MAY include both standards-track and extension mode identifiers in `supported_modes` to advertise the full runtime capability.
+- Runtimes MAY support dynamic registration and removal of extension modes at runtime. Built-in extension modes shipped with the runtime SHOULD NOT be removable.
+- Runtimes MAY support promoting an extension mode to standards-track status. Promotion into the main MACP standards set requires the full process described in §9 and §11.
+
+## 13. Security and privacy
 
 A Mode specification MUST state:
 
@@ -182,6 +204,6 @@ A Mode specification MUST state:
 - what authority scope a `Commitment` carries,
 - how external side effects are made idempotent.
 
-## 13. Interoperability
+## 14. Interoperability
 
 Runtimes SHOULD reject unsupported Mode versions deterministically at `SessionStart` admission time. A Mode MUST NOT silently downgrade behavior without explicit negotiation.

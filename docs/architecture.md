@@ -33,7 +33,7 @@ This chapter uses the following terms:
 An identifiable computational entity that emits and receives MACP Envelopes.
 
 **Signal**  
-An ambient, non-binding message carrying informational updates. Signals MUST NOT create sessions, mutate session state, or produce binding outcomes.
+An ambient, non-binding message carrying informational updates. In the base protocol, Signals carry an empty `session_id` and an empty `mode`; if they need to correlate with a session, that reference belongs inside the payload. Signals MUST NOT create sessions, mutate session state, or produce binding outcomes.
 
 **Coordination Session**  
 A bounded coordination context created only by `SessionStart`, governed by a declared Mode and a monotonic lifecycle, and terminating explicitly as **RESOLVED** or **EXPIRED**.
@@ -187,7 +187,7 @@ package macp.v1;
 
 message Envelope {
   string macp_version = 1;
-  string mode = 2;
+  string mode = 2;                // empty for ambient Signals
   string message_type = 3;
   string message_id = 4;
   string session_id = 5;          // empty for Signals
@@ -210,10 +210,10 @@ This division is essential: the runtime must be able to enforce boundaries witho
 MACP defines two primary categories of messages:
 
 **Signals (ambient)**  
-Signals MUST have an empty `session_id` (or a session correlation field inside the payload, depending on the mapping). Signals MUST NOT mutate session state.
+Signals MUST have an empty `session_id` and an empty `mode`. If correlation with a session is needed, it SHOULD be carried in `SignalPayload.correlation_session_id` or another payload field. Signals MUST NOT mutate session state.
 
-**Session-scoped messages (coordinated)**  
-Session-scoped messages MUST include `session_id` and MUST be admitted only if the session exists and is OPEN.
+**Session-scoped messages (coordinated)**
+Session-scoped messages MUST include a non-empty `session_id` and a non-empty `mode`, and MUST be admitted only if the session exists and is OPEN.
 
 Modes define additional message types inside sessions, but the session boundary remains invariant.
 
@@ -388,7 +388,7 @@ MACP Core does not guarantee semantic determinism unless the Mode claims it.
 
 A session is replayable only if its execution context is historically exact.
 
-Therefore, sessions SHOULD bind:
+Therefore, sessions MUST bind:
 
 - `mode_version`,
 - `configuration_version`,
@@ -516,7 +516,7 @@ A system that can never force a session to terminate cannot guarantee coherence 
 
 Cancellation is where many systems degrade into ambiguity. MACP treats cancellation as structural.
 
-A compliant runtime MUST support deterministic cancellation that transitions a session from OPEN to EXPIRED without mutating history.
+A compliant runtime MUST support deterministic cancellation that transitions a session from OPEN to EXPIRED without mutating history. By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority through policy.
 
 A runtime SHOULD emit a session-scoped cancellation event (`SessionCancel` Envelope) into the append-only log so that replay preserves the cause of termination.
 
