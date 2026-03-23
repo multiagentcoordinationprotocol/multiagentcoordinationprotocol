@@ -36,13 +36,17 @@ If any check fails, the message is rejected and does not enter history.
 
 ## Accepted-History Discipline
 
-Only **accepted** Envelopes become part of session history. Rejected Envelopes MUST NOT:
+Only **accepted session-scoped** Envelopes become part of authoritative session history. Ambient Signals may be handled ephemerally and are not required to enter durable replay history unless a deployment opts into separate signal logging. Rejected Envelopes MUST NOT:
 
 - be appended to accepted history,
 - consume `message_id` deduplication slots,
 - mutate session state.
 
 All validation, authentication, authorization, deduplication, session-state checks, and Mode-specific structural validation MUST succeed before an Envelope is appended to accepted history.
+
+## Cancellation Authority
+
+The default cancellation authority is the session initiator. Deployments may extend this through policy, but cancellation always requires authentication and authorization.
 
 ## Terminal races
 

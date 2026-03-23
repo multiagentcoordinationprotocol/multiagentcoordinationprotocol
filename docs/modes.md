@@ -19,7 +19,7 @@ The main MACP RFC repo should contain only coordination primitives that are broa
 | `macp.mode.handoff.v1` | responsibility transfer | delegated | context-frozen | [RFC-MACP-0010](../rfcs/RFC-MACP-0010-handoff-mode.md) |
 | `macp.mode.quorum.v1` | threshold approval or rejection | quorum | semantic-deterministic | [RFC-MACP-0011](../rfcs/RFC-MACP-0011-quorum-mode.md) |
 
-Everything else - debate, review, critique, pipeline, swarm, auction, marketplace, and organization-specific workflows - should stay in incubator or vendor repos until it proves broad interoperable demand.
+Everything else - debate, review, critique, pipeline, swarm, auction, marketplace, and organization-specific workflows - should stay in incubator or vendor repos until it proves broad interoperable demand. Runtimes may still ship implementation-defined modes for local or product-specific use, but those modes should be documented separately and MUST NOT be counted as main-repo standards unless they appear in the registry and have a corresponding RFC.
 
 ## Why these five modes
 
@@ -62,7 +62,7 @@ Use this rule of thumb:
 
 ### Decision Mode
 
-Decision Mode uses `Proposal`, `Evaluation`, `Objection`, `Vote`, and a final `Commitment`. The participant set is declared up front. The mode standardizes transcript semantics, while policy/configuration decide the exact decision algorithm.
+Decision Mode uses `Proposal`, `Evaluation`, `Objection`, `Vote`, and a final `Commitment`. The participant set is declared up front. The session initiator (coordinator) may emit `Proposal` and `Commitment` even if not listed in `participants`. The mode standardizes transcript semantics, while policy/configuration decide the exact decision algorithm.
 
 ### Proposal Mode
 
@@ -79,6 +79,19 @@ Handoff Mode is for transfer of responsibility, not just work execution. The key
 ### Quorum Mode
 
 Quorum Mode is the narrowest of the five. It covers one approval request and a threshold of approvals, rejections, or abstentions that make the request eligible for a final `Commitment`.
+
+## Extension modes
+
+Runtimes may ship built-in extension modes beyond the five standards-track modes. Extension modes use the `ext.*` namespace (for example `ext.multi_round.v1`) and are not part of the main standards set.
+
+Key differences from standards-track modes:
+
+- `ListModes` returns only standards-track modes. Extensions are discoverable through implementation-defined surfaces.
+- `GetManifest` and `Initialize` may include extension identifiers in `supported_modes` to advertise the full runtime capability.
+- Extension modes do not have canonical schemas or RFCs in this repository.
+- Runtimes may support dynamic registration, removal, and promotion of extension modes.
+
+See [RFC-MACP-0002 §12](../rfcs/RFC-MACP-0002-modes.md) for normative guidance.
 
 ## Schemas and examples
 

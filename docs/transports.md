@@ -28,11 +28,11 @@ The authoritative per-message request/ack surface. Use `SendResponse.ack` for st
 
 An optional interactive envelope stream, advertised by `sessions.stream = true`. The stream carries canonical MACP Envelopes only — implementations MUST NOT invent ad-hoc pseudo-envelopes for acks or errors. Once bound to a `session_id`, all subsequent session-scoped envelopes on that stream MUST use the same `session_id`.
 
-`StreamSession` is **not** a replacement for unary `Send` acknowledgements. Clients that need per-message negative acknowledgements SHOULD use `Send`.
+`StreamSession` is **not** a replacement for unary `Send` acknowledgements. Clients that need per-message negative acknowledgements SHOULD use `Send`. The base protocol does not define a passive attach/no-op envelope for observing an existing session, and session-scoped `Signal` envelopes are invalid as an attach mechanism. If you need zero-mutation observation, begin streaming before the activity of interest or use a deployment-specific extension outside the base protocol.
 
 ### `WatchModeRegistry` / `WatchRoots` (Server Streaming)
 
-Optional discovery hint streams. A runtime MUST advertise the corresponding capability (`mode_registry.list_changed` or `roots.list_changed`) before these can be assumed interoperable. After receiving a change notification, clients SHOULD re-query the full surface (`ListModes` or `ListRoots`).
+Optional discovery hint streams. A runtime MUST advertise the corresponding capability (`mode_registry.list_changed` or `roots.list_changed`) before these can be assumed interoperable. After receiving a change notification, clients SHOULD re-query the full surface (`ListModes` or `ListRoots`). Minimal implementations may send an initial change hint immediately after stream establishment and then stay idle until a later change occurs. Note that `ListModes` returns only standards-track modes; extension mode discovery is implementation-defined.
 
 ## HTTP
 

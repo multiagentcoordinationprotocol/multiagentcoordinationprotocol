@@ -92,7 +92,9 @@ Capabilities MUST be registered in the MACP Capability Registry (see [`registrie
 
 Agents declare supported coordination modes. Modes are defined in [RFC-MACP-0002](RFC-MACP-0002-modes.md) and, for the standards-track mode set in this repo, in [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) through [RFC-MACP-0011](RFC-MACP-0011-quorum-mode.md).
 
-If a runtime exposes `ListModes`, the manifest SHOULD be consistent with the runtime's mode registry output.
+The `supported_modes` field in an AgentManifest MAY include both standards-track and non-standard mode identifiers (for example extension modes using the `ext.*` namespace). Clients SHOULD NOT assume that every identifier in `supported_modes` is a standards-track mode.
+
+If a runtime exposes `ListModes`, the manifest's `supported_modes` MAY be a superset of the `ListModes` output because `ListModes` SHOULD return only standards-track modes while the manifest advertises the full runtime capability.
 
 ## 6. Transport Endpoints
 
@@ -107,7 +109,7 @@ Supported transport types include registered MACP transport identifiers such as:
 
 Registered transport identifiers are listed in [`registries/transports.md`](../registries/transports.md).
 
-`transport_endpoints` is OPTIONAL, but publishers SHOULD include at least one entry when the manifest is intended for network discovery by third parties.
+`transport_endpoints` is OPTIONAL, but publishers SHOULD include at least one entry when the manifest is intended for network discovery by third parties. A directly connected `GetManifest` response MAY omit `transport_endpoints` when the current channel already establishes delivery coordinates or when deployment policy intentionally withholds them.
 
 ## 7. Discovery Mechanisms
 
@@ -129,7 +131,8 @@ For the gRPC binding:
 
 - an empty `GetManifestRequest.agent_id` requests the manifest of the serving runtime or agent,
 - a non-empty `agent_id` requests a locally-known manifest for that identifier,
-- if no such manifest is available, the runtime SHOULD return a transport-native not-found error.
+- if no such manifest is available, the runtime SHOULD return a transport-native not-found error,
+- self-manifests returned over an already-established channel MAY omit `transport_endpoints` when the serving channel itself is the relevant delivery coordinate.
 
 ## 8. Manifest Versioning
 

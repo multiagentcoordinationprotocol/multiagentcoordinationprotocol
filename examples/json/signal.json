@@ -1,6 +1,6 @@
 {
   "macp_version": "1.0",
-  "mode": "macp.core.signal.v1",
+  "mode": "",
   "message_type": "Signal",
   "message_id": "01HV0Q1Y8J1J9Q3C2A6JH0ZP3K",
   "session_id": "",

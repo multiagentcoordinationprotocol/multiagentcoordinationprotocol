@@ -80,7 +80,8 @@ The runtime replies with `InitializeResponse` containing:
 - the selected protocol version,
 - runtime identity and implementation information,
 - the runtime capabilities it supports,
-- optionally, a summary of supported modes.
+- optionally, a summary of supported modes,
+- optionally, runtime-specific `instructions` (human-readable guidance or constraints for the client).
 
 The `InitializeRequest` and `InitializeResponse` messages are defined in [`schemas/proto/macp/v1/core.proto`](../schemas/proto/macp/v1/core.proto).
 
@@ -123,6 +124,8 @@ The Ambient Plane carries Signals. Signals MAY be exchanged continuously. Signal
 - change the participant set,
 - resolve or expire a session.
 
+In the base protocol, ambient Signals MUST carry an empty `session_id` and an empty `mode`. If a Signal needs to correlate with a Session, that correlation SHOULD be expressed inside `SignalPayload.correlation_session_id` or another payload-defined field rather than by making the Envelope session-scoped.
+
 ### 5.2 Coordination Plane
 
 The Coordination Plane carries session-scoped messages. A session begins only when `SessionStart` is accepted. There is no implicit coordination.
@@ -154,7 +157,8 @@ For all accepted Envelopes:
 - `message_type` MUST be non-empty,
 - `message_id` MUST be non-empty,
 - `sender` MUST be non-empty,
-- `session_id` MUST be non-empty for session-scoped messages,
+- `session_id` MUST be empty for ambient Signals and non-empty for session-scoped messages,
+- `mode` MUST be empty for ambient Signals and non-empty for session-scoped messages,
 - `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
 
 Unknown fields MUST be ignored for forward compatibility.
@@ -202,6 +206,8 @@ A session transitions from OPEN to EXPIRED when:
 
 Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
+By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. Deployments MAY extend cancellation authority to additional roles through policy, but `CancelSession` MUST be subject to the same authentication and authorization requirements as any session-scoped operation.
+
 ---
 
 ## 8. Delivery, Ordering, and Idempotency
@@ -222,9 +228,9 @@ Duplicate `SessionStart` messages with the same `session_id` but different `mess
 
 ### 8.3 Accepted-History Discipline
 
-Only **accepted** Envelopes become part of accepted history.
+Only **accepted session-scoped** Envelopes become part of authoritative accepted history. Ambient Signals MAY be handled ephemerally and are not required to enter durable replay history unless a deployment explicitly defines a signal-log profile.
 
-Therefore, for any individual Envelope:
+Therefore, for any individual session-scoped Envelope:
 
 - validation,
 - authentication,
@@ -237,7 +243,7 @@ MUST all succeed before the Envelope is appended to accepted history or consumes
 
 Rejected Envelopes MUST NOT:
 
-- be appended to accepted history,
+- be appended to authoritative accepted history,
 - consume `message_id` deduplication slots,
 - mutate session state,
 - or alter replay outcomes except through transient transport-level error reporting.
@@ -285,6 +291,7 @@ MACP defines a canonical JSON mapping for interoperability with REST gateways, d
 |----------------|-----------|---------|
 | `timestamp_unix_ms` (int64) | `timestamp` | RFC3339 string (UTC recommended) |
 | `payload` (bytes) | `payload` or `payload_b64` | See §10.2 |
+| `mode` (string) | `mode` | Empty string for ambient Signals; non-empty for session-scoped messages |
 | `session_id` (string) | `session_id` | Empty string for ambient Signals |
 | All enum fields | Same name | String form of protobuf enum name |
 

@@ -98,9 +98,13 @@ Runtimes SHOULD implement admission control for `SessionStart`:
 - Quota enforcement (max concurrent sessions per agent)
 - Policy checks (e.g., only certain agents can initiate certain modes)
 
+### CancelSession Authorization
+
+By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority, but cancellation MUST always require authentication and authorization.
+
 ### Signal Authorization
 
-Signals are ambient and non-binding, but implementations MAY:
+Signals are ambient and non-binding. In the base protocol they carry an empty `session_id` and an empty `mode`; session correlation, if needed, belongs inside `SignalPayload`. Implementations MAY:
 
 - Require authentication for Signal submission
 - Rate limit Signals per agent
@@ -259,6 +263,8 @@ Monitor for:
 | `MODE_NOT_SUPPORTED` | 400 | Referenced mode or mode version not supported | Mode mismatch |
 | `PAYLOAD_TOO_LARGE` | 413 | Payload exceeds limit | DoS mitigation |
 | `RATE_LIMITED` | 429 | Too many requests | DoS mitigation |
+| `INVALID_SESSION_ID` | 400 | session_id format does not meet requirements | Possible attack |
+| `INTERNAL_ERROR` | 500 | Unrecoverable internal runtime error | Retry or escalate |
 | `UNAUTHORIZED` | 403 | Deprecated alias for `FORBIDDEN` | Use `FORBIDDEN` instead |
 
 ## Deployment Best Practices
