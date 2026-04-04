@@ -126,6 +126,8 @@ The Ambient Plane carries Signals. Signals MAY be exchanged continuously. Signal
 
 In the base protocol, ambient Signals MUST carry an empty `session_id` and an empty `mode`. If a Signal needs to correlate with a Session, that correlation SHOULD be expressed inside `SignalPayload.correlation_session_id` or another payload-defined field rather than by making the Envelope session-scoped.
 
+Runtimes MAY support a `WatchSignals` streaming RPC (see RFC-MACP-0006 §3.4) to broadcast accepted Signal envelopes to all subscribers in real time. Signals are ephemeral and are not required to enter durable replay history.
+
 ### 5.2 Coordination Plane
 
 The Coordination Plane carries session-scoped messages. A session begins only when `SessionStart` is accepted. There is no implicit coordination.

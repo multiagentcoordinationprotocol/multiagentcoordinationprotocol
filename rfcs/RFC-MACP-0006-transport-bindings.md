@@ -43,6 +43,7 @@ service MACPRuntimeService {
   rpc WatchModeRegistry(WatchModeRegistryRequest) returns (stream WatchModeRegistryResponse);
   rpc ListRoots(ListRootsRequest) returns (ListRootsResponse);
   rpc WatchRoots(WatchRootsRequest) returns (stream WatchRootsResponse);
+  rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
 }
 ```
 
@@ -81,6 +82,21 @@ A runtime MUST advertise `mode_registry.list_changed = true` before `WatchModeRe
 A runtime MUST advertise `roots.list_changed = true` before `WatchRoots` can be assumed interoperable.
 
 A watch notification indicates that the corresponding registry or roots view may have changed. Clients SHOULD re-query the full surface (`ListModes` or `ListRoots`) after receiving a change notification. A minimal compliant implementation MAY send an initial change hint immediately after stream establishment and then remain idle until a later change occurs.
+
+### 3.4 `WatchSignals`
+
+`WatchSignals` is an optional server-streaming RPC that broadcasts ambient Signal envelopes to all subscribers.
+
+Signals are non-binding messages on the ambient plane (per RFC-MACP-0001 §5.1). They MUST carry empty `session_id` and empty `mode` in the Envelope. Signals MUST NOT enter any session's accepted history or mutate session state.
+
+A `WatchSignalsResponse` contains the full `Envelope` of each accepted Signal. The `SignalPayload` within the envelope MAY include a `correlation_session_id` to indicate which session the signal relates to, without making the Signal session-scoped.
+
+Use cases include:
+- progress notifications from agents working on evaluations
+- heartbeat and liveness signals
+- status updates between coordination steps
+
+A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelopes to all active subscribers. Signals are ephemeral — they are not persisted and are not available for replay.
 
 ## 4. HTTP Binding
 
