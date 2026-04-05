@@ -269,13 +269,16 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 - `Initialize` — unary initialization and capability negotiation
 - `Send` — unary envelope send with acknowledgement
 - `StreamSession` — bidirectional session streaming
-- `GetSession` — session metadata query
+- `GetSession` — session metadata query; returns `SessionMetadata` including the current participant list and per-participant activity summaries (`ParticipantActivity`)
 - `CancelSession` — explicit session cancellation
 - `GetManifest` — agent or runtime manifest retrieval
 - `ListModes` — mode registry query
 - `WatchModeRegistry` — mode registry change notifications
 - `ListRoots` — root listing
 - `WatchRoots` — root change notifications
+- `WatchSignals` — ambient signal observation (server streaming)
+
+The proto file also defines extension mode lifecycle RPCs (`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`); see [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics.
 
 Runtimes MAY expose additional bindings, including REST/JSON, provided the canonical Envelope and JSON mapping semantics are preserved. Standard transport bindings are defined in [RFC-MACP-0006](RFC-MACP-0006-transport-bindings.md).
 

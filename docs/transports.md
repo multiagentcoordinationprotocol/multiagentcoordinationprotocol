@@ -34,6 +34,14 @@ An optional interactive envelope stream, advertised by `sessions.stream = true`.
 
 Optional discovery hint streams. A runtime MUST advertise the corresponding capability (`mode_registry.list_changed` or `roots.list_changed`) before these can be assumed interoperable. After receiving a change notification, clients SHOULD re-query the full surface (`ListModes` or `ListRoots`). Minimal implementations may send an initial change hint immediately after stream establishment and then stay idle until a later change occurs. Note that `ListModes` returns only standards-track modes; extension mode discovery is implementation-defined.
 
+### `WatchSignals` (Server Streaming)
+
+An optional server-streaming RPC that broadcasts ambient Signal envelopes to all subscribers. Signals are non-binding messages on the ambient plane — they carry empty `session_id` and empty `mode` in the Envelope. A `SignalPayload` MAY include a `correlation_session_id` to relate the signal to a session without making it session-scoped. Signals are ephemeral and are not available for replay. See [RFC-MACP-0006 §3.4](../rfcs/RFC-MACP-0006-transport-bindings.md#34-watchsignals).
+
+### `GetSession` (Unary)
+
+Returns a `SessionMetadata` snapshot for a given session, including the session's identity, state, timing, bound version fields, the current participant list, and per-participant activity summaries (`ParticipantActivity` with `participant_id`, `last_message_at_unix_ms`, `message_count`).
+
 ## HTTP
 
 Best for:

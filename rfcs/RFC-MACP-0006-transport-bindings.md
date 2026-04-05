@@ -43,6 +43,12 @@ service MACPRuntimeService {
   rpc WatchModeRegistry(WatchModeRegistryRequest) returns (stream WatchModeRegistryResponse);
   rpc ListRoots(ListRootsRequest) returns (ListRootsResponse);
   rpc WatchRoots(WatchRootsRequest) returns (stream WatchRootsResponse);
+  // Extension mode lifecycle
+  rpc ListExtModes(ListExtModesRequest) returns (ListExtModesResponse);
+  rpc RegisterExtMode(RegisterExtModeRequest) returns (RegisterExtModeResponse);
+  rpc UnregisterExtMode(UnregisterExtModeRequest) returns (UnregisterExtModeResponse);
+  rpc PromoteMode(PromoteModeRequest) returns (PromoteModeResponse);
+  // Ambient signal observation
   rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
 }
 ```
@@ -97,6 +103,14 @@ Use cases include:
 - status updates between coordination steps
 
 A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelopes to all active subscribers. Signals are ephemeral — they are not persisted and are not available for replay.
+
+### 3.5 `GetSession`
+
+`GetSession` returns a `SessionMetadata` snapshot for the given session. The response includes the session's identity, state, timing, and bound version fields (`mode_version`, `configuration_version`, `policy_version`), as well as the current participant list and per-participant activity summaries (`ParticipantActivity`). The `ParticipantActivity` entries provide `participant_id`, `last_message_at_unix_ms`, and `message_count` for each participant that has sent at least one accepted message.
+
+### 3.6 Extension Mode Lifecycle RPCs
+
+`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, and `PromoteMode` manage the lifecycle of non-standards-track (extension) coordination modes. These RPCs are implementation-defined surfaces for registering, discovering, and promoting experimental modes. See [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics and the relationship between extension and standards-track modes.
 
 ## 4. HTTP Binding
 
