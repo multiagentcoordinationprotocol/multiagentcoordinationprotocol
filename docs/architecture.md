@@ -396,6 +396,8 @@ Therefore, sessions MUST bind:
 
 as immutable session metadata. These values MUST NOT change within an OPEN session.
 
+`SessionMetadata` also carries mutable runtime-derived fields — the current participant list and per-participant activity summaries (`ParticipantActivity`) — that reflect evolving session state rather than bound-at-start configuration.
+
 If policies evolve over time, they evolve between sessions, not within one.
 
 ### 9.4 Mode-level determinism claims
