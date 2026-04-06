@@ -19,7 +19,19 @@ Handoff Mode exists for responsibility transfer, not ordinary task assignment. T
 - **Mode identifier:** `macp.mode.handoff.v1`
 - **Participant model:** `delegated`
 
-The current owner or a policy-defined coordinator is the default `Commitment` authority.
+The accepted `SessionStart` sender is the current responsibility owner and the default `Commitment` authority. Only the current owner is authorized to emit `HandoffOffer` messages. Policy MAY delegate commitment authority to a separate coordinator role.
+
+### 2.1 Authority Matrix
+
+| Message Type | Authorized Sender |
+|-------------|-------------------|
+| `HandoffOffer` | Current responsibility owner (session initiator) |
+| `HandoffContext` | Current responsibility owner |
+| `HandoffAccept` | Target participant of the referenced offer |
+| `HandoffDecline` | Target participant of the referenced offer |
+| `Commitment` | Current responsibility owner (default) or policy-designated authority |
+
+Runtimes MUST reject messages from senders not authorized per this matrix.
 
 ## 3. SessionStart requirements
 
@@ -49,14 +61,19 @@ Implementations MUST enforce the following:
 1. Every `handoff_id` MUST identify one specific handoff offer.
 2. `HandoffContext`, `HandoffAccept`, and `HandoffDecline` MUST reference an existing `handoff_id`.
 3. `HandoffAccept` and `HandoffDecline` MUST come from the offer's `target_participant`.
+3a. A `HandoffOffer.target_participant` MUST NOT be changed after the offer is accepted into session history. If the target declines or is unreachable, a new `HandoffOffer` MUST be issued with a different `target_participant` and a new `handoff_id`.
 4. Once an offer has been accepted, no competing accept for that same `handoff_id` is valid.
-5. A Session MAY contain multiple serial handoff offers, but only one final `Commitment` may resolve the Session.
+5. A Session MAY contain multiple sequential handoff offers to different targets. At most one offer may be outstanding (unaccepted and undeclined) at any time. A new `HandoffOffer` MUST NOT be issued while a prior offer is still pending. Once an offer is accepted, no further offers may be issued for the Session. Only one final `Commitment` may resolve the Session.
 
 ## 6. Terminal semantics
 
 Handoff Mode resolves only when an authorized `Commitment` is accepted.
 
 Positive commitments SHOULD make the transfer explicit, for example `handoff.accepted`, and SHOULD bind the new responsibility holder in the reason or bound context. Negative commitments MAY bind a definitive no-target or declined outcome if policy requires an explicit failure record.
+
+### 6.1 Governance Policy
+
+Handoff sessions MAY be governed by declarative policies that constrain acceptance timeouts and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/handoff-rules.schema.json` for the Handoff Mode rule schema.
 
 ## 7. Determinism class
 

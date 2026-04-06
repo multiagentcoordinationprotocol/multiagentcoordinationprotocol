@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/policy/decision-rules.schema.json",
+  "title": "Decision Mode Governance Rules",
+  "description": "JSON Schema for governance rules applied to macp.mode.decision.v1 sessions. See RFC-MACP-0012 Section 4.1.",
+  "type": "object",
+  "properties": {
+    "voting": {
+      "type": "object",
+      "description": "Voting algorithm and quorum requirements.",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["none", "majority", "supermajority", "unanimous", "weighted", "plurality"],
+          "default": "none",
+          "description": "Voting algorithm. 'none' means no voting constraint is enforced."
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5,
+          "description": "Fraction of cast votes required for approval. Used by 'supermajority' and 'weighted' algorithms."
+        },
+        "quorum": {
+          "type": "object",
+          "description": "Minimum participation required before votes are counted.",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["count", "percentage"],
+              "default": "count"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0,
+              "description": "Minimum count or percentage (0-1) of participants that must vote."
+            }
+          },
+          "additionalProperties": false
+        },
+        "weights": {
+          "type": "object",
+          "description": "Per-participant vote weights. Keys are participant IDs. Used only with 'weighted' algorithm.",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "objection_handling": {
+      "type": "object",
+      "description": "How blocking objections affect commitment eligibility.",
+      "properties": {
+        "block_severity_vetoes": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, objections with severity 'block' prevent commitment."
+        },
+        "veto_threshold": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of blocking objections required to veto commitment."
+        }
+      },
+      "additionalProperties": false
+    },
+    "evaluation": {
+      "type": "object",
+      "description": "Constraints on evaluations before voting or commitment.",
+      "properties": {
+        "minimum_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Minimum confidence level for evaluations to be considered valid."
+        },
+        "required_before_voting": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, at least one evaluation must exist before votes are counted."
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitment": {
+      "type": "object",
+      "description": "Who can commit and under what conditions.",
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "default": "initiator_only",
+          "description": "Who is authorized to emit a Commitment."
+        },
+        "designated_roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Participant IDs or roles authorized to commit. Used only with 'designated_role' authority."
+        },
+        "require_vote_quorum": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, commitment is only allowed after vote quorum is met."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "voting": {
+            "properties": { "algorithm": { "const": "weighted" } },
+            "required": ["algorithm"]
+          }
+        },
+        "required": ["voting"]
+      },
+      "then": {
+        "properties": {
+          "voting": { "required": ["weights"] }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "voting": {
+            "properties": { "algorithm": { "const": "supermajority" } },
+            "required": ["algorithm"]
+          }
+        },
+        "required": ["voting"]
+      },
+      "then": {
+        "properties": {
+          "voting": {
+            "properties": {
+              "threshold": { "exclusiveMinimum": 0.5 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "commitment": {
+            "properties": { "authority": { "const": "designated_role" } },
+            "required": ["authority"]
+          }
+        },
+        "required": ["commitment"]
+      },
+      "then": {
+        "properties": {
+          "commitment": {
+            "required": ["designated_roles"],
+            "properties": {
+              "designated_roles": { "minItems": 1 }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

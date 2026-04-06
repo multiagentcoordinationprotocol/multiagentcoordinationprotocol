@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/policy/proposal-rules.schema.json",
+  "title": "Proposal Mode Governance Rules",
+  "description": "JSON Schema for governance rules applied to macp.mode.proposal.v1 sessions. See RFC-MACP-0012 Section 4.3.",
+  "type": "object",
+  "properties": {
+    "acceptance": {
+      "type": "object",
+      "properties": {
+        "criterion": {
+          "type": "string",
+          "enum": ["all_parties", "counterparty", "initiator"],
+          "default": "all_parties",
+          "description": "Who must accept for a proposal to be considered accepted."
+        }
+      },
+      "additionalProperties": false
+    },
+    "counter_proposal": {
+      "type": "object",
+      "properties": {
+        "max_rounds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Maximum negotiation rounds. 0 means unlimited."
+        }
+      },
+      "additionalProperties": false
+    },
+    "rejection": {
+      "type": "object",
+      "properties": {
+        "terminal_on_any_reject": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, any rejection terminates the session."
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitment": {
+      "type": "object",
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "default": "initiator_only"
+        },
+        "designated_roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

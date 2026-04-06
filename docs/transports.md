@@ -36,7 +36,7 @@ Optional discovery hint streams. A runtime MUST advertise the corresponding capa
 
 ### `WatchSignals` (Server Streaming)
 
-An optional server-streaming RPC that broadcasts ambient Signal envelopes to all subscribers. Signals are non-binding messages on the ambient plane — they carry empty `session_id` and empty `mode` in the Envelope. A `SignalPayload` MAY include a `correlation_session_id` to relate the signal to a session without making it session-scoped. Signals are ephemeral and are not available for replay. See [RFC-MACP-0006 §3.4](../rfcs/RFC-MACP-0006-transport-bindings.md#34-watchsignals).
+An optional server-streaming RPC that broadcasts Ambient Signal Envelopes to all subscribers. Signals are non-binding messages on the ambient plane — they carry empty `session_id` and empty `mode` in the Envelope. A `SignalPayload` MAY include a `correlation_session_id` to relate the signal to a session without making it session-scoped. Signals are ephemeral and are not available for replay. See [RFC-MACP-0006 §3.4](../rfcs/RFC-MACP-0006-transport-bindings.md#34-watchsignals).
 
 ### `GetSession` (Unary)
 

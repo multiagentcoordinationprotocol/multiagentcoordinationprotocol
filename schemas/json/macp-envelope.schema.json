@@ -22,7 +22,7 @@
     },
     "mode": {
       "type": "string",
-      "description": "Empty string for ambient Signals; canonical mode identifier for session-scoped messages (for example macp.mode.decision.v1)."
+      "description": "Empty string for Ambient Signals; canonical mode identifier for session-scoped messages (for example macp.mode.decision.v1)."
     },
     "message_type": {
       "type": "string",
@@ -36,7 +36,7 @@
     },
     "session_id": {
       "type": "string",
-      "description": "Empty string for ambient Signals; non-empty for session-scoped messages."
+      "description": "Empty string for Ambient Signals; non-empty for session-scoped messages."
     },
     "sender": {
       "type": "string",
@@ -300,7 +300,8 @@
           "minLength": 1
         },
         "action": {
-          "type": "string"
+          "type": "string",
+          "description": "Action identifier describing the outcome. Mode RFCs define the normative vocabulary (e.g., 'decision.approved', 'task.failed', 'quorum.rejected')."
         },
         "authority_scope": {
           "type": "string"
@@ -316,6 +317,10 @@
         },
         "configuration_version": {
           "type": "string"
+        },
+        "outcome_positive": {
+          "type": "boolean",
+          "description": "True for positive/successful outcomes; false for definitive negative outcomes. Modes that allow negative commitments MUST set this field explicitly."
         }
       }
     }

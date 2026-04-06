@@ -15,7 +15,7 @@ See [RFC-MACP-0001 Section 11](RFC-MACP-0001-core.md#11-discovery-manifests-and-
 ## 2. Terminology
 
 Agent -- A computational entity participating in coordination.
-Runtime -- A MACP kernel responsible for enforcing coordination sessions.
+Runtime -- A MACP kernel responsible for enforcing Coordination Sessions.
 Manifest -- A machine-readable document describing identity, capabilities, modes, and transports.
 
 ## 3. Manifest Structure
@@ -74,7 +74,10 @@ Example:
       "uri": "grpcs://fraud.example.com:50051",
       "content_types": [
         "application/macp-envelope+proto"
-      ]
+      ],
+      "metadata": {
+        "tls_version": "1.3"
+      }
     }
   ],
   "metadata": {
@@ -120,6 +123,8 @@ Implementations MAY support multiple discovery mechanisms.
 A runtime or agent MAY publish its manifest at:
 
 `https://<host>/.well-known/macp.json`
+
+The endpoint SHOULD respond with Content-Type `application/macp-manifest+json` (see `registries/media-types.md`).
 
 ### 7.2 Registry Services
 

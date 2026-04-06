@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/policy/quorum-rules.schema.json",
+  "title": "Quorum Mode Governance Rules",
+  "description": "JSON Schema for governance rules applied to macp.mode.quorum.v1 sessions. See RFC-MACP-0012 Section 4.2.",
+  "type": "object",
+  "properties": {
+    "threshold": {
+      "type": "object",
+      "description": "Override the required_approvals from ApprovalRequest. Type 'n_of_m' uses a raw count, 'percentage' uses a fraction (0-1) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["n_of_m", "percentage", "weighted"],
+          "default": "n_of_m"
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Threshold value: count for n_of_m, fraction (0-1) for percentage, weighted sum for weighted."
+        }
+      },
+      "additionalProperties": false
+    },
+    "abstention": {
+      "type": "object",
+      "description": "How abstentions affect quorum calculation.",
+      "properties": {
+        "counts_toward_quorum": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, abstentions count toward the participation quorum but not toward approval."
+        },
+        "interpretation": {
+          "type": "string",
+          "enum": ["neutral", "implicit_reject", "ignored"],
+          "default": "neutral",
+          "description": "How abstentions are interpreted for threshold calculation."
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitment": {
+      "type": "object",
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "default": "initiator_only"
+        },
+        "designated_roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

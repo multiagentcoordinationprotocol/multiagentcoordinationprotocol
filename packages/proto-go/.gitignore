@@ -1,0 +1,3 @@
+# Override root .gitignore: Go proto generated files must be committed
+# for go get / go install to work without requiring protoc/buf.
+!*.pb.go

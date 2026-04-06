@@ -30,7 +30,7 @@ The main MACP standards repo standardizes only foundational coordination primiti
 - highly domain-specific modes,
 - fast-moving experimental coordination patterns,
 - auction and marketplace modes that are still settling semantically,
-- broadcast-style patterns that fit ambient Signals or external pub/sub better than bounded Sessions.
+- broadcast-style patterns that fit Ambient Signals or external pub/sub better than bounded Sessions.
 
 ## Extension and experimental modes
 

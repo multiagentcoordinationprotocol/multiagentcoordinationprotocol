@@ -187,7 +187,7 @@ package macp.v1;
 
 message Envelope {
   string macp_version = 1;
-  string mode = 2;                // empty for ambient Signals
+  string mode = 2;                // empty for Ambient Signals
   string message_type = 3;
   string message_id = 4;
   string session_id = 5;          // empty for Signals
@@ -414,7 +414,7 @@ A voting mode with a fixed quorum threshold can be fully deterministic. A mode t
 
 Replay fails most often at the boundary where coordination causes side effects.
 
-MACP encourages a clean separation: coordination sessions should produce **Commitments**, and side effects should be executed in a way that is either:
+MACP encourages a clean separation: Coordination Sessions should produce **Commitments**, and side effects should be executed in a way that is either:
 
 - deferred and idempotent, or
 - logged as part of the session history.

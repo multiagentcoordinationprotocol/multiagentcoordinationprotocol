@@ -8,7 +8,7 @@
 
 ## Abstract
 
-This document defines `macp.mode.quorum.v1`, the standards-track MACP primitive for threshold approval or rejection. Quorum Mode is narrower than Decision Mode: it standardizes one approval request, participant ballots, and a commitment once the threshold is satisfied or becomes impossible to satisfy.
+This document defines `macp.mode.quorum.v1`, the standards-track MACP primitive for threshold approval or rejection. Quorum Mode is narrower than Decision Mode: it standardizes one approval request, participant ballots, and a `Commitment` once the threshold is satisfied or becomes impossible to satisfy.
 
 ## 1. Purpose
 
@@ -20,6 +20,18 @@ Quorum Mode is appropriate when one bounded action requires N-of-M approval rath
 - **Participant model:** `quorum`
 
 The participant set MUST be declared at `SessionStart`, but resolution is based on a threshold rather than unanimity.
+
+### 2.1 Authority Matrix
+
+| Message Type | Authorized Sender |
+|-------------|-------------------|
+| `ApprovalRequest` | Session initiator (coordinator) |
+| `Approve` | Any eligible declared participant |
+| `Reject` | Any eligible declared participant |
+| `Abstain` | Any eligible declared participant |
+| `Commitment` | Session initiator (default) or policy-designated authority |
+
+Each eligible participant MAY cast at most one ballot across `Approve`, `Reject`, or `Abstain`. Runtimes MUST reject messages from senders not authorized per this matrix.
 
 ## 3. SessionStart requirements
 
@@ -38,7 +50,7 @@ Base Quorum Mode v1 assumes exactly one approval request per Session.
 
 Quorum Mode defines the following mode-specific message types:
 
-- **ApprovalRequest** - opens the approval request and states the threshold.
+- **ApprovalRequest** - opens the approval request. Includes `request_id`, `action` (what is being approved), `summary` (human-readable description), optional `details` (binary context), and `required_approvals` (the approval threshold).
 - **Approve** - records an approval ballot.
 - **Reject** - records a rejection ballot.
 - **Abstain** - records a neutral ballot.
@@ -52,6 +64,8 @@ Implementations MUST enforce the following:
 2. `required_approvals` MUST be greater than zero and MUST NOT exceed the count of eligible participants.
 3. Each eligible participant MAY cast at most one ballot across `Approve`, `Reject`, or `Abstain`.
 4. A Session becomes eligible for `Commitment` when approvals reach the required threshold, or when the remaining possible approvals can no longer reach that threshold.
+4a. `Abstain` ballots do NOT count toward `required_approvals` and do NOT count as rejections. An abstaining participant is removed from the pool of potential approvers. Therefore, a Session becomes eligible for negative `Commitment` when `(remaining_eligible_participants + current_approvals) < required_approvals`, where `remaining_eligible_participants` excludes those who have already voted (approve, reject, or abstain).
+4b. When all eligible participants have abstained (or a combination of abstentions and rejections makes the threshold unreachable), the Session becomes eligible for `Commitment` with a negative outcome (e.g., `action: quorum.rejected`). The `CommitmentPayload.reason` SHOULD indicate that the threshold was not met.
 5. Only an authorized coordinator may emit the final `Commitment`.
 
 ## 6. Terminal semantics
@@ -63,7 +77,11 @@ Recommended `CommitmentPayload.action` values include:
 - `quorum.approved`
 - `quorum.rejected`
 
-The commitment SHOULD bind the approval request identifier and the threshold profile used.
+The `Commitment` SHOULD bind the approval request identifier and the threshold profile used.
+
+### 6.1 Governance Policy
+
+Quorum sessions MAY be governed by declarative policies that constrain approval thresholds, abstention handling, and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/quorum-rules.schema.json` for the Quorum Mode rule schema.
 
 ## 7. Determinism class
 

@@ -1,4 +1,11 @@
-.PHONY: help validate validate-all proto-lint proto-compile proto-gen json-validate json-schema-validate clean install-tools
+.PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate clean install-tools \
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js
+
+PROTO_SRC := schemas/proto
+PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
+	macp/modes/decision/v1/decision.proto macp/modes/proposal/v1/proposal.proto \
+	macp/modes/task/v1/task.proto macp/modes/handoff/v1/handoff.proto \
+	macp/modes/quorum/v1/quorum.proto
 
 # Default target
 help:
@@ -11,8 +18,14 @@ help:
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
 	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
 	@echo ""
-	@echo "Code Generation:"
-	@echo "  make proto-gen             Generate code from protobuf (Go, Python, TypeScript)"
+	@echo "Code Generation (per-language into packages/):"
+	@echo "  make gen-go                Generate Go into packages/proto-go/"
+	@echo "  make gen-python            Generate Python into packages/proto-python/"
+	@echo "  make gen-java              Generate Java into packages/proto-java/"
+	@echo "  make gen-kotlin            Generate Kotlin into packages/proto-kotlin/"
+	@echo "  make gen-csharp            Generate C# into packages/proto-csharp/"
+	@echo "  make gen-js                Generate JavaScript into packages/proto-npm/"
+	@echo "  make proto-gen-all         Generate all languages into their packages"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean                 Remove generated files"
@@ -23,7 +36,7 @@ help:
 validate: json-schema-validate json-validate proto-lint proto-compile
 	@echo "✓ All validations passed"
 
-validate-all: validate proto-gen
+validate-all: validate proto-gen-all
 	@echo "✓ All validations and code generation completed"
 
 # Validate the JSON Schema itself (meta-validation)
@@ -51,21 +64,52 @@ proto-compile:
 	@echo "Compiling Protocol Buffers..."
 	@./scripts/validate-proto.sh
 
-# Generate code from protobuf
-proto-gen:
-	@echo "Generating code from Protocol Buffers..."
-	@if command -v buf >/dev/null 2>&1; then \
-		buf generate; \
-		echo "✓ Code generated in generated/ directory"; \
-	else \
-		echo "⚠️  buf not installed. Run 'make install-tools' or see https://buf.build/docs/installation"; \
-		exit 1; \
-	fi
+# Per-language generation (directly into packages/)
+gen-go:
+	@echo "Generating Go..."
+	@buf generate --template buf/buf.gen.go.yaml
+	@echo "✓ Go code in packages/proto-go/"
 
-# Clean generated files
+gen-python:
+	@echo "Generating Python (via grpc_tools.protoc for version compatibility)..."
+	@python -m grpc_tools.protoc \
+		-I$(PROTO_SRC) \
+		--python_out=packages/proto-python/src \
+		--grpc_python_out=packages/proto-python/src \
+		$(PROTO_FILES)
+	@echo "✓ Python code in packages/proto-python/src/"
+
+gen-java:
+	@echo "Generating Java..."
+	@buf generate --template buf/buf.gen.java.yaml
+	@echo "✓ Java code in packages/proto-java/src/"
+
+gen-kotlin:
+	@echo "Generating Kotlin..."
+	@buf generate --template buf/buf.gen.kotlin.yaml
+	@echo "✓ Kotlin code in packages/proto-kotlin/src/"
+
+gen-csharp:
+	@echo "Generating C#..."
+	@buf generate --template buf/buf.gen.csharp.yaml
+	@echo "✓ C# code in packages/proto-csharp/"
+
+gen-js:
+	@echo "Generating JavaScript..."
+	@buf generate --template buf/buf.gen.js.yaml
+	@echo "✓ JS code in packages/proto-npm/generated/"
+
+proto-gen-all: gen-go gen-python gen-java gen-kotlin gen-csharp gen-js
+	@echo "✓ All languages generated into packages/"
+
+# Clean generated files from packages
 clean:
 	@echo "Cleaning generated files..."
-	@rm -rf generated/
+	@rm -rf packages/proto-go/macp/
+	@rm -f packages/proto-csharp/*.cs
+	@rm -rf packages/proto-java/src/main/java/io/
+	@rm -rf packages/proto-kotlin/src/main/kotlin/io/
+	@rm -rf packages/proto-npm/generated/
 	@echo "✓ Cleaned"
 
 # Install development tools

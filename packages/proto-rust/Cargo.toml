@@ -1,0 +1,9 @@
+[package]
+name = "macp-proto"
+version = "0.1.0"
+edition = "2021"
+description = "MACP protocol buffer definitions for the Multi-Agent Coordination Protocol"
+license = "Apache-2.0"
+repository = "https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol"
+links = "macp_proto"
+include = ["proto/**", "build.rs", "Cargo.toml", "src/**"]

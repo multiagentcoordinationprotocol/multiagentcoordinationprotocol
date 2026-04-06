@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-session-metadata.schema.json",
+  "title": "MACP Session Metadata",
+  "description": "JSON Schema for SessionMetadata returned by GetSession. See RFC-MACP-0001 Section 9 and RFC-MACP-0006 Section 3.5.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "mode",
+    "state",
+    "started_at_unix_ms",
+    "expires_at_unix_ms",
+    "mode_version",
+    "configuration_version"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique session identifier."
+    },
+    "mode": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical mode identifier (e.g., macp.mode.decision.v1)."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "SESSION_STATE_UNSPECIFIED",
+        "SESSION_STATE_OPEN",
+        "SESSION_STATE_RESOLVED",
+        "SESSION_STATE_EXPIRED"
+      ],
+      "description": "Current session lifecycle state."
+    },
+    "started_at_unix_ms": {
+      "type": "integer",
+      "description": "Timestamp when the session was created (milliseconds since Unix epoch)."
+    },
+    "expires_at_unix_ms": {
+      "type": "integer",
+      "description": "Timestamp when the session will expire (milliseconds since Unix epoch). Computed as started_at_unix_ms + ttl_ms."
+    },
+    "mode_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Mode semantic version bound at SessionStart."
+    },
+    "configuration_version": {
+      "type": "string",
+      "description": "Configuration version bound at SessionStart."
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Policy version bound at SessionStart. See RFC-MACP-0012."
+    },
+    "participants": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Declared participant identifiers bound at SessionStart."
+    },
+    "participant_activity": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ParticipantActivity" },
+      "description": "Per-participant activity summaries for participants that have sent at least one accepted message."
+    },
+    "initiator": {
+      "type": "string",
+      "description": "The sender of the accepted SessionStart message. Used for cancellation authorization and audit."
+    }
+  },
+  "$defs": {
+    "ParticipantActivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["participant_id"],
+      "properties": {
+        "participant_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Participant identifier."
+        },
+        "last_message_at_unix_ms": {
+          "type": "integer",
+          "description": "Timestamp of the participant's most recent accepted message."
+        },
+        "message_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of accepted messages from this participant."
+        }
+      }
+    }
+  }
+}

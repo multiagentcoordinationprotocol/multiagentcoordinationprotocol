@@ -21,6 +21,19 @@ Proposal Mode standardizes a common negotiation shape without forcing the heavie
 
 The participant roles are symmetric, but the participant set MUST still be bound at `SessionStart`.
 
+### 2.1 Authority Matrix
+
+| Message Type | Authorized Sender |
+|-------------|-------------------|
+| `Proposal` | Any declared participant |
+| `CounterProposal` | Any declared participant |
+| `Accept` | Any declared participant |
+| `Reject` | Any declared participant |
+| `Withdraw` | The original proposal author only |
+| `Commitment` | Session initiator (default) or policy-designated authority |
+
+Runtimes MUST reject messages from senders not authorized per this matrix.
+
 ## 3. SessionStart requirements
 
 A Proposal Mode Session MUST bind:
@@ -51,16 +64,21 @@ Implementations MUST enforce the following:
 
 1. Every `proposal_id` MUST be unique within the Session.
 2. `CounterProposal.supersedes_proposal_id` MUST reference an existing proposal.
+2a. A `CounterProposal` creates a new `proposal_id`. The `supersedes_proposal_id` field records semantic intent (the counteroffer is meant to replace the referenced proposal) but does NOT automatically retire the original proposal. Participants MAY accept either the original or the counteroffer. Implementations MUST track all live proposals independently.
 3. `Accept`, `Reject`, and `Withdraw` MUST reference an existing proposal.
 4. A withdrawn proposal MUST NOT later be accepted or committed.
 5. A participant MAY change its acceptance target by sending a later `Accept` for a different live proposal. The latest accepted `Accept` from a participant supersedes earlier accepts from the same participant.
-6. A Session becomes eligible for `Commitment` when all required participants have accepted the same live proposal, or when a terminal rejection is recorded and the authority chooses to bind that rejection.
+6. A Session becomes eligible for `Commitment` when all required participants have accepted the same live proposal, or when a `Reject` with `terminal=true` has been accepted. The Commitment authority (session initiator by default, or as overridden by policy) MAY emit `Commitment` to bind either a successful acceptance or a definitive rejection. The Commitment authority MAY choose not to bind a terminal rejection and MAY await further proposals instead.
 
 ## 6. Terminal semantics
 
 Proposal Mode resolves only when an authorized `Commitment` is accepted.
 
 Successful commitments SHOULD bind the accepted proposal by referencing it in the `CommitmentPayload.reason` or associated context. Negative commitments MAY bind a definitive rejected outcome, for example `proposal.rejected`, when a terminal reject has been accepted into history.
+
+### 6.1 Governance Policy
+
+Proposal sessions MAY be governed by declarative policies that constrain acceptance criteria, negotiation rounds, and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/proposal-rules.schema.json` for the Proposal Mode rule schema.
 
 ## 7. Determinism class
 

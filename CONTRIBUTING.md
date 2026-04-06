@@ -53,6 +53,31 @@ To propose a new RFC:
 - Backward compatibility MUST be addressed explicitly.
 - Mode extensions MUST NOT violate MACP Core invariants.
 
+## Proto Package Publishing
+
+Proto definitions are published as versioned packages for downstream consumers:
+
+| Package | Language | Registry |
+|---------|----------|----------|
+| `@macp/proto` | TypeScript / Node.js | npm (GitHub Packages) |
+| `macp-proto` | Python | PyPI |
+| `macp-proto` | Rust | Crate (git tag) |
+| `macp-proto-go` | Go | Go module proxy (git tag) |
+| `io.macp:macp-proto` | Java | Maven (GitHub Packages) |
+| `io.macp:macp-proto-kotlin` | Kotlin | Maven (GitHub Packages) |
+| `Macp.Proto` | C# | NuGet (GitHub Packages) |
+| `MACPProto` | Swift | Swift Package (git tag) |
+
+### Releasing a new proto version
+
+1. Merge proto schema changes to `main` (the BSR push happens automatically).
+2. Tag the commit: `git tag proto-v0.X.0 && git push origin proto-v0.X.0`
+3. The `publish-proto-packages.yml` workflow publishes all three packages.
+4. Downstream projects upgrade by bumping the dependency version in their manifest.
+
+Each downstream project pins a specific proto version and upgrades on its own schedule.
+Proto changes no longer block unrelated PRs in downstream repos.
+
 ## Normative RFCs
 
 - **[RFC-MACP-0001 Core](rfcs/RFC-MACP-0001-core.md)** — base protocol, lifecycle, transport, registries, and compatibility model

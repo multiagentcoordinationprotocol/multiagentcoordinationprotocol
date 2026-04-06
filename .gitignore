@@ -49,6 +49,9 @@ Temporary Items
 # Generated code from protobuf
 generated/
 
+# Gradle
+.gradle/
+
 # Build artifacts
 build/
 dist/

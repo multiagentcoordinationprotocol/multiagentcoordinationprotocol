@@ -1,0 +1,9 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: csharp_namespace_prefix
+      value: Macp.Proto
+plugins:
+  - remote: buf.build/protocolbuffers/csharp
+    out: packages/proto-csharp

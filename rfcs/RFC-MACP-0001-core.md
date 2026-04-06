@@ -87,21 +87,26 @@ The `InitializeRequest` and `InitializeResponse` messages are defined in [`schem
 
 If there is no mutually supported protocol version, initialization MUST fail with `UNSUPPORTED_PROTOCOL_VERSION`.
 
+If the client requires a capability that the runtime does not advertise in `InitializeResponse.capabilities`, the client SHOULD either proceed with reduced functionality or terminate the connection. Runtimes MUST NOT fail initialization due to unknown or unsupported capabilities in the request; they MUST advertise only the capabilities they support in the response.
+
 ### 4.2 Capability Objects
 
 Capability negotiation is explicit. A side MUST NOT assume support for an optional feature unless that feature was successfully negotiated.
 
-The initial registry of capabilities is defined in [registries/capabilities.md](../registries/capabilities.md). The most important initial capability surfaces are:
+Capabilities are exchanged as nested Protobuf messages defined in `core.proto`. Each capability group corresponds to a field in the `Capabilities` message:
 
-- `sessions.stream`
-- `cancellation.cancelSession`
-- `progress.progress`
-- `manifest.getManifest`
-- `modeRegistry.listModes`
-- `modeRegistry.listChanged`
-- `roots.listRoots`
-- `roots.listChanged`
-- `experimental.*`
+| Capability Group | Proto Field | Key Flags | Description |
+|-----------------|-------------|-----------|-------------|
+| Sessions | `sessions` | `stream` | Session streaming support |
+| Cancellation | `cancellation` | `cancel_session` | Explicit session cancellation |
+| Progress | `progress` | `progress` | Progress notifications |
+| Manifest | `manifest` | `get_manifest` | Manifest retrieval |
+| Mode Registry | `mode_registry` | `list_modes`, `list_changed` | Mode discovery and change notifications |
+| Roots | `roots` | `list_roots`, `list_changed` | Root listing and change notifications |
+| Policy Registry | `policy_registry` | `register_policy`, `list_policies`, `list_changed` | Governance policy lifecycle (see RFC-MACP-0012) |
+| Experimental | `experimental` | `features` (map) | Implementation-defined experimental features |
+
+These negotiation-time capability objects are distinct from the manifest-level capability URNs defined in `registries/capabilities.md`. Negotiation capabilities describe protocol features exchanged during `Initialize`; manifest capabilities describe agent-level feature support for discovery.
 
 ### 4.3 Compatibility Behavior
 
@@ -124,7 +129,7 @@ The Ambient Plane carries Signals. Signals MAY be exchanged continuously. Signal
 - change the participant set,
 - resolve or expire a session.
 
-In the base protocol, ambient Signals MUST carry an empty `session_id` and an empty `mode`. If a Signal needs to correlate with a Session, that correlation SHOULD be expressed inside `SignalPayload.correlation_session_id` or another payload-defined field rather than by making the Envelope session-scoped.
+In the base protocol, Ambient Signals MUST carry an empty `session_id` and an empty `mode`. If a Signal needs to correlate with a Session, that correlation SHOULD be expressed inside `SignalPayload.correlation_session_id` or another payload-defined field rather than by making the Envelope session-scoped.
 
 Runtimes MAY support a `WatchSignals` streaming RPC (see RFC-MACP-0006 §3.4) to broadcast accepted Signal envelopes to all subscribers in real time. Signals are ephemeral and are not required to enter durable replay history.
 
@@ -159,8 +164,8 @@ For all accepted Envelopes:
 - `message_type` MUST be non-empty,
 - `message_id` MUST be non-empty,
 - `sender` MUST be non-empty,
-- `session_id` MUST be empty for ambient Signals and non-empty for session-scoped messages,
-- `mode` MUST be empty for ambient Signals and non-empty for session-scoped messages,
+- `session_id` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
+- `mode` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
 - `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
 
 Unknown fields MUST be ignored for forward compatibility.
@@ -173,14 +178,13 @@ Unknown fields MUST be ignored for forward compatibility.
 
 A session is created by accepting a valid `SessionStart` message.
 
-A valid `SessionStart` MUST bind:
+A valid `SessionStart` message consists of an Envelope with a non-empty `session_id`, a non-empty `mode` field (the Mode identifier), and a non-empty `sender`, combined with a `SessionStartPayload` that MUST bind:
 
-- `session_id`,
-- Mode identifier,
 - `mode_version`,
 - `configuration_version`,
-- `ttl_ms`,
-- participant information (when used by the Mode),
+- `ttl_ms` (MUST be greater than zero),
+- `participants` (when required by the Mode),
+- `policy_version` (MUST be non-empty when any governance policy is in effect; see RFC-MACP-0012),
 - `context` when present,
 - `roots` when present.
 
@@ -198,7 +202,13 @@ Sessions MUST transition monotonically. No transition from RESOLVED or EXPIRED b
 
 ### 7.3 Termination
 
-A session transitions from OPEN to RESOLVED when the first Mode-defined terminal condition is accepted.
+A session transitions from OPEN to RESOLVED when the first Mode-defined terminal condition is accepted. The runtime MUST process terminal messages in the following order:
+
+1. Verify that the session is in OPEN state (reject otherwise).
+2. Validate the message (authentication, authorization, Mode-specific rules, policy rules).
+3. Accept the message into the session's append-only history.
+4. Transition the session state from OPEN to RESOLVED.
+5. Reject any subsequent session-scoped messages for this session with a non-OPEN session error.
 
 A session transitions from OPEN to EXPIRED when:
 
@@ -208,7 +218,9 @@ A session transitions from OPEN to EXPIRED when:
 
 Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
-By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. Deployments MAY extend cancellation authority to additional roles through policy, but `CancelSession` MUST be subject to the same authentication and authorization requirements as any session-scoped operation.
+By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. The runtime MUST record the initiator in `SessionMetadata.initiator` at session creation time for authorization checks. Deployments MAY extend cancellation authority to additional roles through policy. `CancelSession` MUST be subject to the same authentication requirements as any session-scoped operation.
+
+`CancelSession` is a Core control-plane message. Mode-specific authorization rules (e.g., who can emit which Mode message type) do NOT apply to `CancelSession`. Only the initiator and policy-delegated roles may cancel a session.
 
 ---
 
@@ -220,17 +232,21 @@ MACP assumes at-least-once delivery semantics at the transport layer.
 
 Ordering MUST be preserved within a session according to runtime acceptance order. Cross-session ordering is not guaranteed and MUST NOT be relied upon.
 
+For bidirectional streaming (`StreamSession`), acceptance order is defined as the order in which the runtime completes validation and appends messages to accepted history. Runtimes MUST serialize message acceptance within a single session — no parallel processing of session-scoped messages within one session is permitted.
+
 ### 8.2 Idempotency
 
 Runtimes MUST enforce idempotent handling of duplicates using `message_id`.
 
 If an Envelope with a previously accepted `message_id` is received within the same session, the runtime MUST treat it as a duplicate and MUST NOT create side effects.
 
-Duplicate `SessionStart` messages with the same `session_id` but different `message_id` MUST be rejected.
+If a `SessionStart` is received for a `session_id` that already has an accepted `SessionStart`, the runtime MUST reject the new message with error code `SESSION_ALREADY_EXISTS`, regardless of `message_id`. This is a session-existence check, not a duplicate-detection check.
 
 ### 8.3 Accepted-History Discipline
 
 Only **accepted session-scoped** Envelopes become part of authoritative accepted history. Ambient Signals MAY be handled ephemerally and are not required to enter durable replay history unless a deployment explicitly defines a signal-log profile.
+
+Ambient Signals carry a `message_id` for traceability but do NOT consume session-scoped deduplication slots. Runtimes MAY optionally deduplicate Signals by `message_id` if a deployment tracks them, but this is not required. Duplicate Signals MUST NOT mutate session state regardless of deduplication behavior.
 
 Therefore, for any individual session-scoped Envelope:
 
@@ -276,7 +292,7 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 - `WatchModeRegistry` — mode registry change notifications
 - `ListRoots` — root listing
 - `WatchRoots` — root change notifications
-- `WatchSignals` — ambient signal observation (server streaming)
+- `WatchSignals` — server-streaming RPC that broadcasts accepted Ambient Signal Envelopes in real time. The stream carries only Signals (messages with empty `session_id` and empty `mode`). Signals are ephemeral; there is no built-in backlog or resume mechanism. Clients that disconnect MAY miss Signals.
 
 The proto file also defines extension mode lifecycle RPCs (`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`); see [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics.
 
@@ -296,9 +312,11 @@ MACP defines a canonical JSON mapping for interoperability with REST gateways, d
 |----------------|-----------|---------|
 | `timestamp_unix_ms` (int64) | `timestamp` | RFC3339 string (UTC recommended) |
 | `payload` (bytes) | `payload` or `payload_b64` | See §10.2 |
-| `mode` (string) | `mode` | Empty string for ambient Signals; non-empty for session-scoped messages |
-| `session_id` (string) | `session_id` | Empty string for ambient Signals |
+| `mode` (string) | `mode` | Empty string for Ambient Signals; non-empty for session-scoped messages |
+| `session_id` (string) | `session_id` | Empty string for Ambient Signals |
 | All enum fields | Same name | String form of protobuf enum name |
+
+**Normative mapping rule:** In the canonical JSON form, the Protobuf field `timestamp_unix_ms` (int64, milliseconds since Unix epoch) is **renamed** to `timestamp` and **converted** to an RFC 3339 string. Encoders MUST perform this conversion when producing JSON. Decoders MUST convert `timestamp` back to `timestamp_unix_ms` when producing Protobuf. This is the only Protobuf-to-JSON field rename in the MACP envelope.
 
 ### 10.2 Payload Encoding
 
@@ -325,6 +343,14 @@ Protobuf enum values MUST be represented as their string names (for example `"SE
 JSON consumers SHOULD ignore unrecognized fields for forward compatibility, consistent with the protobuf unknown field rule.
 
 The JSON Schema for envelope validation is maintained at [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
+
+### 10.7 Empty String Representation
+
+In the canonical JSON mapping, empty Protobuf string fields MUST be represented as `""` (the empty string literal), not as JSON `null` and not omitted from the object. This applies to `session_id`, `mode`, and all other string fields.
+
+Decoders MUST treat a missing string field as equivalent to `""` for backward compatibility.
+
+Encoders SHOULD always include `session_id` and `mode` fields in the JSON object, even when empty.
 
 ---
 
@@ -458,3 +484,4 @@ The canonical JSON Schema definitions are:
 - `schemas/json/macp-envelope.schema.json`
 - `schemas/json/macp-agent-manifest.schema.json`
 - `schemas/json/macp-mode-descriptor.schema.json`
+- `schemas/json/macp-session-metadata.schema.json`

@@ -18,7 +18,7 @@ macp.transport.grpc.v1
 
 | Identifier | Description | Status | Reference |
 |------------|-------------|--------|-----------|
-| macp.signal.v1 | Ambient signal messaging | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
+| macp.signal.v1 | Ambient Signal messaging | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | macp.session.v1 | Coordination session support | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | macp.replay.v1 | Deterministic replay support | permanent | [RFC-MACP-0003](../rfcs/RFC-MACP-0003-determinism.md) |
 | macp.discovery.v1 | Manifest discovery support | permanent | [RFC-MACP-0005](../rfcs/RFC-MACP-0005-discovery-and-manifests.md) |
@@ -26,6 +26,7 @@ macp.transport.grpc.v1
 | macp.transport.http.v1 | HTTP transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.websocket.v1 | WebSocket transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.messagebus.v1 | Message bus transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
+| macp.policy.v1 | Governance policy registry and evaluation | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
 
 ## Capability Registry vs. Capability Objects
 
