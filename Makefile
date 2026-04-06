@@ -1,5 +1,5 @@
 .PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -27,13 +27,17 @@ help:
 	@echo "  make gen-js                Generate JavaScript into packages/proto-npm/"
 	@echo "  make proto-gen-all         Generate all languages into their packages"
 	@echo ""
+	@echo "Proto Sync (raw-proto packages):"
+	@echo "  make sync-protos           Copy canonical protos → proto-npm, proto-rust, proto-swift"
+	@echo "  make check-proto-sync      Verify packages match canonical (CI guard)"
+	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean                 Remove generated files"
 	@echo "  make install-tools         Install required development tools"
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate proto-lint proto-compile
+validate: json-schema-validate json-validate proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -58,6 +62,16 @@ proto-lint:
 		echo "⚠️  buf not installed. Skipping protobuf linting."; \
 		echo "   Install buf with 'make install-tools' or see https://buf.build/docs/installation"; \
 	fi
+
+# Sync canonical protos to raw-proto packages (proto-npm, proto-rust, proto-swift)
+sync-protos:
+	@echo "Syncing canonical protos to packages..."
+	@./scripts/sync-proto-packages.sh
+
+# Check that raw-proto packages are in sync (CI guard)
+check-proto-sync:
+	@echo "Checking proto package sync..."
+	@./scripts/sync-proto-packages.sh --check
 
 # Compile protobuf to validate syntax
 proto-compile:

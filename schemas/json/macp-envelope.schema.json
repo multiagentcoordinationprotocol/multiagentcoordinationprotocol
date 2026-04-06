@@ -347,10 +347,28 @@
     "ProgressPayload": {
       "type": "object",
       "properties": {
-        "session_id": { "type": "string" },
-        "progress": { "type": "number", "minimum": 0, "maximum": 1 },
-        "message": { "type": "string" },
-        "metadata": { "type": "object" }
+        "progress_token": {
+          "type": "string",
+          "description": "Token linking this progress update to a prior request."
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Current progress value."
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total work units (progress is relative to this value)."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable progress description."
+        },
+        "target_message_id": {
+          "type": "string",
+          "description": "The message_id of the request this progress relates to."
+        }
       }
     }
   }

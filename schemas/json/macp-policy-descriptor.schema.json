@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://multiagentcoordinationprotocol.dev/schemas/macp-policy-descriptor.schema.json",
+  "$id": "https://macp.dev/schemas/macp-policy-descriptor.schema.json",
   "title": "MACP Policy Descriptor",
   "description": "Validates a PolicyDescriptor document in JSON form. See RFC-MACP-0012.",
   "type": "object",
@@ -15,8 +15,9 @@
       "description": "Mode identifier this policy applies to, or '*' for mode-agnostic."
     },
     "schema_version": {
-      "type": "string",
-      "description": "Semantic version of the rule schema."
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of the rule schema used (currently 1)."
     },
     "rules": {
       "type": "object",

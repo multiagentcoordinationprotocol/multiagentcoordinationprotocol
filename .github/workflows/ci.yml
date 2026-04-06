@@ -45,6 +45,12 @@ jobs:
           chmod +x scripts/validate-proto.sh
           ./scripts/validate-proto.sh
 
+      - name: Check proto package sync
+        run: |
+          echo "Checking raw-proto packages match canonical..."
+          chmod +x scripts/sync-proto-packages.sh
+          ./scripts/sync-proto-packages.sh --check
+
   lint-protobuf:
     name: Lint Protocol Buffers
     runs-on: ubuntu-latest
