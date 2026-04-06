@@ -23,6 +23,15 @@ Replaying identical accepted Envelope sequences under identical:
 
 MUST reproduce identical session state transitions and acceptance/rejection behavior.
 
+Specifically, replay MUST:
+
+- accept the same messages in the same order,
+- reject messages at the same points in the sequence,
+- produce the same terminal state (RESOLVED or EXPIRED) and terminal message,
+- produce the same `Ack` accept/reject decisions for each envelope.
+
+Replay does NOT guarantee identical external side effects (see Section 4). Replay also does not guarantee identical error message text — only identical accept/reject outcomes.
+
 ## 2. What Core Guarantees
 
 Core guarantees determinism for:
@@ -34,7 +43,7 @@ Core guarantees determinism for:
 
 Core does not guarantee semantic determinism unless the Mode claims it.
 
-`timestamp_unix_ms` is informational and MUST NOT influence structural replay. TTL expiration during replay SHOULD use the original session timeline (computed from `SessionStart` timestamp and `ttl_ms`), not wall-clock time.
+`timestamp_unix_ms` is informational and MUST NOT influence structural replay. A session's absolute expiration deadline is computed as `SessionStart_envelope.timestamp_unix_ms + SessionStartPayload.ttl_ms`. During replay, the runtime MUST use this pre-computed deadline from the original session, not wall-clock time. If the TTL has elapsed before a terminal condition is accepted, the session transitions to EXPIRED.
 
 ## 3. Version Binding
 
@@ -42,7 +51,7 @@ Sessions MUST bind these immutable values at SessionStart:
 
 - Mode version,
 - configuration version,
-- policy version (if applicable). Sessions SHOULD bind policy version when applicable.
+- policy version (MUST be bound and non-empty when any governance policy is in effect; see RFC-MACP-0012).
 - any context freeze identifiers required by the Mode.
 
 Replay MUST use the same bound versions. Replaying under a newer policy or Mode version is not historical reconstruction.

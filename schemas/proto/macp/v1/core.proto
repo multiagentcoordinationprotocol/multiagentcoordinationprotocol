@@ -114,12 +114,19 @@ message SessionCancelPayload {
 
 message CommitmentPayload {
   string commitment_id = 1;
+  // Action identifier describing the outcome (e.g., "decision.approved",
+  // "task.completed", "quorum.rejected").  Mode RFCs define the normative
+  // vocabulary for their action values.
   string action = 2;
   string authority_scope = 3;
   string reason = 4;
   string mode_version = 5;
   string policy_version = 6;
   string configuration_version = 7;
+  // True when the commitment represents a positive/successful outcome;
+  // false for definitive negative outcomes (e.g., rejection, failure).
+  // Modes that allow negative commitments MUST set this field explicitly.
+  bool outcome_positive = 8;
 }
 
 message ParticipantActivity {
@@ -139,6 +146,9 @@ message SessionMetadata {
   string policy_version = 8;
   repeated string participants = 9;
   repeated ParticipantActivity participant_activity = 10;
+  // The sender of the accepted SessionStart message.
+  // Used for cancellation authorization and audit.
+  string initiator = 11;
 }
 
 message GetSessionRequest {
@@ -309,7 +319,7 @@ service MACPRuntimeService {
   rpc RegisterExtMode(RegisterExtModeRequest) returns (RegisterExtModeResponse);
   rpc UnregisterExtMode(UnregisterExtModeRequest) returns (UnregisterExtModeResponse);
   rpc PromoteMode(PromoteModeRequest) returns (PromoteModeResponse);
-  // Ambient signal observation
+  // Ambient Signal observation
   rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
   // Governance policy lifecycle (RFC-MACP-0012)
   rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);

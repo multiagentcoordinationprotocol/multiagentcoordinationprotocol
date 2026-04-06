@@ -55,7 +55,7 @@ Mode execution SHOULD be treated as a pure function over accepted history whenev
 
 ## Recovery and rehydration
 
-Because accepted session history is append-only, failed owners can recover by replaying the session log and reconstructing in-memory state. Snapshots are an optimization, not an authority. Ambient Signals may be handled ephemerally unless a deployment defines a separate signal-log profile.
+Because accepted session history is append-only, failed owners can recover by replaying the session log and reconstructing in-memory state. Snapshots are an optimization, not an authority. Ambient Signals MAY be handled ephemerally unless a deployment defines a separate signal-log profile.
 
 ## Cancellation
 

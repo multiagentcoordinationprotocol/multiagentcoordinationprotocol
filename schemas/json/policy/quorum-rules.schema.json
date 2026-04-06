@@ -7,7 +7,7 @@
   "properties": {
     "threshold": {
       "type": "object",
-      "description": "Override the required_approvals from ApprovalRequest.",
+      "description": "Override the required_approvals from ApprovalRequest. Type 'n_of_m' uses a raw count, 'percentage' uses a fraction (0-1) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
       "properties": {
         "type": {
           "type": "string",

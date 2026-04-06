@@ -112,5 +112,64 @@
       "additionalProperties": false
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "voting": {
+            "properties": { "algorithm": { "const": "weighted" } },
+            "required": ["algorithm"]
+          }
+        },
+        "required": ["voting"]
+      },
+      "then": {
+        "properties": {
+          "voting": { "required": ["weights"] }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "voting": {
+            "properties": { "algorithm": { "const": "supermajority" } },
+            "required": ["algorithm"]
+          }
+        },
+        "required": ["voting"]
+      },
+      "then": {
+        "properties": {
+          "voting": {
+            "properties": {
+              "threshold": { "exclusiveMinimum": 0.5 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "commitment": {
+            "properties": { "authority": { "const": "designated_role" } },
+            "required": ["authority"]
+          }
+        },
+        "required": ["commitment"]
+      },
+      "then": {
+        "properties": {
+          "commitment": {
+            "required": ["designated_roles"],
+            "properties": {
+              "designated_roles": { "minItems": 1 }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

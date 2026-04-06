@@ -25,7 +25,21 @@ Decision Mode is intentionally narrower than a general workflow engine:
 - **Mode identifier:** `macp.mode.decision.v1`
 - **Participant model:** `declared`
 
-The eligible participant set is bound at `SessionStart`. Declared participants MAY emit `Proposal`, `Evaluation`, `Objection`, and `Vote`. The accepted `SessionStart` sender (session initiator/coordinator) MAY emit `Proposal` and `Commitment` even if not listed in `participants`, unless a stricter policy is bound by configuration or policy.
+The eligible participant set is bound at `SessionStart`. The session initiator (accepted `SessionStart` sender) MUST be included in the `participants` list if they intend to emit `Proposal`, `Evaluation`, `Objection`, or `Vote` messages. The session initiator is the default `Commitment` authority regardless of participant list membership, unless a stricter policy is bound by configuration or policy.
+
+### 2.1 Authority Matrix
+
+The following table defines which participants are authorized to emit each message type:
+
+| Message Type | Authorized Sender |
+|-------------|-------------------|
+| `Proposal` | Any declared participant |
+| `Evaluation` | Any declared participant |
+| `Objection` | Any declared participant |
+| `Vote` | Any declared participant (at most one per proposal per participant in base v1) |
+| `Commitment` | Session initiator (default) or policy-designated authority |
+
+Runtimes MUST reject messages from senders not authorized per this matrix.
 
 ## 3. SessionStart requirements
 
@@ -44,8 +58,9 @@ Decision Mode defines the following mode-specific message types:
 
 - **Proposal** - creates an option for consideration.
 - **Evaluation** - records analysis of a proposal.
+  Valid recommendation values are: `APPROVE`, `REVIEW`, `BLOCK`, `REJECT`. `REVIEW` indicates that the evaluator has analyzed the proposal but does not issue a definitive recommendation — it is semantically equivalent to "analyzed, no strong stance." `REVIEW` evaluations do not block or approve a proposal; they serve as informational analysis records only.
 - **Objection** - records a concern or blocking issue.
-- **Vote** - records a participant preference.
+- **Vote** - records a participant preference. Valid vote values are: `approve`, `reject`, `abstain`. The semantics of abstention (e.g., impact on quorum and outcome calculation) are defined by the decision policy bound at `SessionStart`. When no policy is bound, abstentions do not count toward any threshold.
 - **Commitment** - authoritative terminal outcome.
 
 Canonical payloads are defined in `decision.proto`.
@@ -73,6 +88,10 @@ The `CommitmentPayload` SHOULD identify:
 
 The mode does not prescribe a single voting algorithm. A runtime or deployment may use majority vote, weighted vote, objection handling, veto rules, or another deterministic policy, provided that the policy is version-bound and replay-safe.
 
+### 6.1 Governance Policy
+
+Decision sessions MAY be governed by declarative policies that constrain voting algorithms, quorum requirements, objection handling, and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/decision-rules.schema.json` for the Decision Mode rule schema.
+
 ## 7. Determinism class
 
 Decision Mode claims **semantic-deterministic** determinism.
@@ -83,7 +102,7 @@ Given the same accepted message history, the same participant set, and the same 
 
 Implementations MUST address all of the following:
 
-- authenticate the sender of each proposal, evaluation, objection, vote, and commitment,
+- authenticate the sender of each `Proposal`, `Evaluation`, `Objection`, `Vote`, and `Commitment`,
 - reject Decision Mode messages from unauthorized senders, distinguishing declared-participant authority from any separately bound coordinator authority,
 - protect confidential decision context and proposal data,
 - ensure only authorized actors can emit `Commitment`,

@@ -50,7 +50,7 @@ The following patterns are intentionally excluded from the main standards set un
 - workflow recipes such as debate, critique, review, pipeline, or swarm patterns,
 - highly domain-specific modes,
 - fast-moving experimental modes,
-- broadcast-style dissemination patterns that are better modeled as ambient Signals or external pub/sub systems.
+- broadcast-style dissemination patterns that are better modeled as Ambient Signals or external pub/sub systems.
 
 Runtimes MAY implement additional non-standard modes. Such modes are not part of the standards-track set unless they are listed in `registries/modes.md` and backed by a main-repo RFC. Discovery surfaces and documentation MUST distinguish these modes from the standards-track set.
 
@@ -89,6 +89,12 @@ A Mode Descriptor SHOULD include:
 - terminal message types,
 - schema URIs.
 
+The `schema_uris` map SHOULD use the following keys:
+
+- `proto` — URL to the Protobuf schema definition
+- `json_schema` — URL to the JSON Schema definition (optional)
+- `docs` — URL to human-readable documentation (optional)
+
 ## 5. Participant models
 
 This specification recognizes the following participant models:
@@ -109,10 +115,12 @@ Core requires sessions to terminate, but Core does not require every possible Mo
 
 A standards-track Mode MAY define intermediate outcome messages such as `TaskComplete` or `HandoffAccept`, but those messages do not resolve the Session on their own. The Session resolves only when an authorized `Commitment` is accepted.
 
+A session remains in OPEN state during all intermediate outcome messages (such as `TaskComplete`, `HandoffAccept`, or `Approve`). These intermediate messages make the session *eligible* for `Commitment` but do not resolve the session on their own. Only an accepted `Commitment` transitions the session from OPEN to RESOLVED.
+
 Each Mode MUST declare:
 
 - who is authorized to emit `Commitment`,
-- what preconditions make a Session eligible for commitment,
+- what preconditions make a Session eligible for `Commitment`,
 - whether the Mode allows definitive negative outcomes to be committed,
 - whether non-terminal intermediate messages have side effects outside the runtime boundary.
 
@@ -140,6 +148,10 @@ Core deduplicates messages by `message_id`, but a Mode MUST define idempotency f
 - approval or release gates.
 
 If a Mode can trigger external side effects, its specification MUST describe how runtimes and participants prevent duplicate execution.
+
+### 8.1 Governance Policy Integration
+
+Modes MAY be governed by declarative policies that constrain commitment evaluation. The governance policy framework is defined in [RFC-MACP-0012](RFC-MACP-0012-policy.md). Policies are additive to mode validation: a `Commitment` must satisfy both the mode's own validation rules and any bound policy governance rules.
 
 ## 9. Standards-track Mode requirements
 
@@ -192,7 +204,7 @@ The following guidance applies:
 - `ListModes` SHOULD return only standards-track modes. Extension mode discovery is implementation-defined; runtimes MAY expose extension modes through separate discovery surfaces.
 - `GetManifest` and `Initialize` MAY include both standards-track and extension mode identifiers in `supported_modes` to advertise the full runtime capability.
 - Runtimes MAY support dynamic registration and removal of extension modes at runtime. Built-in extension modes shipped with the runtime SHOULD NOT be removable.
-- Runtimes MAY support promoting an extension mode to standards-track status. Promotion into the main MACP standards set requires the full process described in §9 and §11.
+- Runtimes MAY support promoting an extension mode to standards-track status. Promotion into the main MACP standards set requires the full process described in §9 and §11. When promoting an extension mode, the runtime MUST NOT rename it to the `macp.mode.*` namespace unless the mode has been published in the main MACP RFC repository or is backed by explicit community governance approval. For proprietary promotions, the runtime SHOULD keep the existing identifier or use a vendor namespace.
 
 ## 13. Security and privacy
 

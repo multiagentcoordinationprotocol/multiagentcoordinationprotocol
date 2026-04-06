@@ -1,5 +1,5 @@
 {
-  "description": "Illustrative Handoff Mode transcript showing offer, context transfer, acceptance, and terminal Commitment.",
+  "description": "Illustrative Handoff Mode transcript showing offer, context transfer, acceptance, and terminal Commitment. Note: 'roots' in SessionStart establish authorization or resource boundaries for the session; they are optional and apply to any mode, not only Handoff Mode.",
   "protocol_version": "1.0",
   "mode": "macp.mode.handoff.v1",
   "session_id": "01JCHAND9Y5P9V4H0A8E0F4H01",

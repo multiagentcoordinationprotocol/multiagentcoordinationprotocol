@@ -37,7 +37,7 @@ Every official MACP SDK MUST provide:
 - `retrySend()` / `retry_send()` with exponential backoff
 
 ### Convenience Methods
-- `sendSignal()` / `send_signal()` — ambient signal emission
+- `sendSignal()` / `send_signal()` — Ambient Signal emission
 - `sendProgress()` / `send_progress()` — progress tracking
 
 ### Envelope Utilities
