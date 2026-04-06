@@ -76,7 +76,7 @@ func (SessionState) EnumDescriptor() ([]byte, []int) {
 type Envelope struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	MacpVersion     string                 `protobuf:"bytes,1,opt,name=macp_version,json=macpVersion,proto3" json:"macp_version,omitempty"`
-	Mode            string                 `protobuf:"bytes,2,opt,name=mode,proto3" json:"mode,omitempty"` // empty for ambient Signals
+	Mode            string                 `protobuf:"bytes,2,opt,name=mode,proto3" json:"mode,omitempty"` // empty for Ambient Signals
 	MessageType     string                 `protobuf:"bytes,3,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"`
 	MessageId       string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	SessionId       string                 `protobuf:"bytes,5,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // empty for ambient messages

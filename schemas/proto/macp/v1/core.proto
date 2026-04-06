@@ -267,7 +267,7 @@ message ListExtModesResponse {
 }
 
 message RegisterExtModeRequest {
-  ModeDescriptor descriptor = 1;
+  ModeDescriptor mode_descriptor = 1;
 }
 
 message RegisterExtModeResponse {

@@ -312,6 +312,33 @@ public object SessionMetadataKt {
     public fun com.google.protobuf.kotlin.DslList<io.macp.proto.macp.v1.ParticipantActivity, ParticipantActivityProxy>.clear() {
       _builder.clearParticipantActivity()
     }
+
+    /**
+     * ```
+     * The sender of the accepted SessionStart message.
+     * Used for cancellation authorization and audit.
+     * ```
+     *
+     * `string initiator = 11 [json_name = "initiator"];`
+     */
+    public var initiator: kotlin.String
+      @kotlin.jvm.JvmName("getInitiator")
+        get() = _builder.initiator
+      @kotlin.jvm.JvmName("setInitiator")
+        set(value) {
+        _builder.initiator = value
+      }
+    /**
+     * ```
+     * The sender of the accepted SessionStart message.
+     * Used for cancellation authorization and audit.
+     * ```
+     *
+     * `string initiator = 11 [json_name = "initiator"];`
+     */
+    public fun clearInitiator() {
+      _builder.clearInitiator()
+    }
   }
 }
 @kotlin.jvm.JvmSynthetic

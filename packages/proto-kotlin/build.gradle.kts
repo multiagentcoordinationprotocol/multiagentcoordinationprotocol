@@ -19,7 +19,7 @@ repositories {
 
 dependencies {
     api("io.macp:macp-proto:0.1.0")
-    api("com.google.protobuf:protobuf-kotlin:4.29.3")
+    api("com.google.protobuf:protobuf-kotlin:4.34.1")
     api("io.grpc:grpc-kotlin-stub:1.4.3")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }

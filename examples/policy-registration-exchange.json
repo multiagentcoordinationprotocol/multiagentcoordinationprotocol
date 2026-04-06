@@ -4,7 +4,7 @@
   "request": {
     "rpc": "RegisterPolicy",
     "body": {
-      "descriptor": {
+      "policy_descriptor": {
         "policy_id": "policy.platform.supermajority",
         "mode": "macp.mode.decision.v1",
         "description": "Supermajority voting with 2/3 threshold and quorum of 3 participants",

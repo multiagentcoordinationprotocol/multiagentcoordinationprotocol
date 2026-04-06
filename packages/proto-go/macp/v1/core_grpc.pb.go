@@ -60,7 +60,7 @@ type MACPRuntimeServiceClient interface {
 	RegisterExtMode(ctx context.Context, in *RegisterExtModeRequest, opts ...grpc.CallOption) (*RegisterExtModeResponse, error)
 	UnregisterExtMode(ctx context.Context, in *UnregisterExtModeRequest, opts ...grpc.CallOption) (*UnregisterExtModeResponse, error)
 	PromoteMode(ctx context.Context, in *PromoteModeRequest, opts ...grpc.CallOption) (*PromoteModeResponse, error)
-	// Ambient signal observation
+	// Ambient Signal observation
 	WatchSignals(ctx context.Context, in *WatchSignalsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchSignalsResponse], error)
 	// Governance policy lifecycle (RFC-MACP-0012)
 	RegisterPolicy(ctx context.Context, in *RegisterPolicyRequest, opts ...grpc.CallOption) (*RegisterPolicyResponse, error)
@@ -336,7 +336,7 @@ type MACPRuntimeServiceServer interface {
 	RegisterExtMode(context.Context, *RegisterExtModeRequest) (*RegisterExtModeResponse, error)
 	UnregisterExtMode(context.Context, *UnregisterExtModeRequest) (*UnregisterExtModeResponse, error)
 	PromoteMode(context.Context, *PromoteModeRequest) (*PromoteModeResponse, error)
-	// Ambient signal observation
+	// Ambient Signal observation
 	WatchSignals(*WatchSignalsRequest, grpc.ServerStreamingServer[WatchSignalsResponse]) error
 	// Governance policy lifecycle (RFC-MACP-0012)
 	RegisterPolicy(context.Context, *RegisterPolicyRequest) (*RegisterPolicyResponse, error)

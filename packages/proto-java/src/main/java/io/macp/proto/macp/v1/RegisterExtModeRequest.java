@@ -49,30 +49,30 @@ private static final long serialVersionUID = 0L;
   }
 
   private int bitField0_;
-  public static final int DESCRIPTOR_FIELD_NUMBER = 1;
-  private io.macp.proto.macp.v1.ModeDescriptor descriptor_;
+  public static final int MODE_DESCRIPTOR_FIELD_NUMBER = 1;
+  private io.macp.proto.macp.v1.ModeDescriptor modeDescriptor_;
   /**
-   * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return Whether the descriptor field is set.
+   * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
+   * @return Whether the modeDescriptor field is set.
    */
   @java.lang.Override
-  public boolean hasDescriptor() {
+  public boolean hasModeDescriptor() {
     return ((bitField0_ & 0x00000001) != 0);
   }
   /**
-   * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return The descriptor.
+   * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
+   * @return The modeDescriptor.
    */
   @java.lang.Override
-  public io.macp.proto.macp.v1.ModeDescriptor getDescriptor() {
-    return descriptor_ == null ? io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : descriptor_;
+  public io.macp.proto.macp.v1.ModeDescriptor getModeDescriptor() {
+    return modeDescriptor_ == null ? io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : modeDescriptor_;
   }
   /**
-   * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+   * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
    */
   @java.lang.Override
-  public io.macp.proto.macp.v1.ModeDescriptorOrBuilder getDescriptorOrBuilder() {
-    return descriptor_ == null ? io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : descriptor_;
+  public io.macp.proto.macp.v1.ModeDescriptorOrBuilder getModeDescriptorOrBuilder() {
+    return modeDescriptor_ == null ? io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : modeDescriptor_;
   }
 
   private byte memoizedIsInitialized = -1;
@@ -90,7 +90,7 @@ private static final long serialVersionUID = 0L;
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
     if (((bitField0_ & 0x00000001) != 0)) {
-      output.writeMessage(1, getDescriptor());
+      output.writeMessage(1, getModeDescriptor());
     }
     getUnknownFields().writeTo(output);
   }
@@ -103,7 +103,7 @@ private static final long serialVersionUID = 0L;
     size = 0;
     if (((bitField0_ & 0x00000001) != 0)) {
       size += com.google.protobuf.CodedOutputStream
-        .computeMessageSize(1, getDescriptor());
+        .computeMessageSize(1, getModeDescriptor());
     }
     size += getUnknownFields().getSerializedSize();
     memoizedSize = size;
@@ -120,10 +120,10 @@ private static final long serialVersionUID = 0L;
     }
     io.macp.proto.macp.v1.RegisterExtModeRequest other = (io.macp.proto.macp.v1.RegisterExtModeRequest) obj;
 
-    if (hasDescriptor() != other.hasDescriptor()) return false;
-    if (hasDescriptor()) {
-      if (!getDescriptor()
-          .equals(other.getDescriptor())) return false;
+    if (hasModeDescriptor() != other.hasModeDescriptor()) return false;
+    if (hasModeDescriptor()) {
+      if (!getModeDescriptor()
+          .equals(other.getModeDescriptor())) return false;
     }
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
@@ -136,9 +136,9 @@ private static final long serialVersionUID = 0L;
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptor().hashCode();
-    if (hasDescriptor()) {
-      hash = (37 * hash) + DESCRIPTOR_FIELD_NUMBER;
-      hash = (53 * hash) + getDescriptor().hashCode();
+    if (hasModeDescriptor()) {
+      hash = (37 * hash) + MODE_DESCRIPTOR_FIELD_NUMBER;
+      hash = (53 * hash) + getModeDescriptor().hashCode();
     }
     hash = (29 * hash) + getUnknownFields().hashCode();
     memoizedHashCode = hash;
@@ -270,17 +270,17 @@ private static final long serialVersionUID = 0L;
     private void maybeForceBuilderInitialization() {
       if (com.google.protobuf.GeneratedMessage
               .alwaysUseFieldBuilders) {
-        internalGetDescriptorFieldBuilder();
+        internalGetModeDescriptorFieldBuilder();
       }
     }
     @java.lang.Override
     public Builder clear() {
       super.clear();
       bitField0_ = 0;
-      descriptor_ = null;
-      if (descriptorBuilder_ != null) {
-        descriptorBuilder_.dispose();
-        descriptorBuilder_ = null;
+      modeDescriptor_ = null;
+      if (modeDescriptorBuilder_ != null) {
+        modeDescriptorBuilder_.dispose();
+        modeDescriptorBuilder_ = null;
       }
       return this;
     }
@@ -317,9 +317,9 @@ private static final long serialVersionUID = 0L;
       int from_bitField0_ = bitField0_;
       int to_bitField0_ = 0;
       if (((from_bitField0_ & 0x00000001) != 0)) {
-        result.descriptor_ = descriptorBuilder_ == null
-            ? descriptor_
-            : descriptorBuilder_.build();
+        result.modeDescriptor_ = modeDescriptorBuilder_ == null
+            ? modeDescriptor_
+            : modeDescriptorBuilder_.build();
         to_bitField0_ |= 0x00000001;
       }
       result.bitField0_ |= to_bitField0_;
@@ -337,8 +337,8 @@ private static final long serialVersionUID = 0L;
 
     public Builder mergeFrom(io.macp.proto.macp.v1.RegisterExtModeRequest other) {
       if (other == io.macp.proto.macp.v1.RegisterExtModeRequest.getDefaultInstance()) return this;
-      if (other.hasDescriptor()) {
-        mergeDescriptor(other.getDescriptor());
+      if (other.hasModeDescriptor()) {
+        mergeModeDescriptor(other.getModeDescriptor());
       }
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
@@ -368,7 +368,7 @@ private static final long serialVersionUID = 0L;
               break;
             case 10: {
               input.readMessage(
-                  internalGetDescriptorFieldBuilder().getBuilder(),
+                  internalGetModeDescriptorFieldBuilder().getBuilder(),
                   extensionRegistry);
               bitField0_ |= 0x00000001;
               break;
@@ -390,125 +390,125 @@ private static final long serialVersionUID = 0L;
     }
     private int bitField0_;
 
-    private io.macp.proto.macp.v1.ModeDescriptor descriptor_;
+    private io.macp.proto.macp.v1.ModeDescriptor modeDescriptor_;
     private com.google.protobuf.SingleFieldBuilder<
-        io.macp.proto.macp.v1.ModeDescriptor, io.macp.proto.macp.v1.ModeDescriptor.Builder, io.macp.proto.macp.v1.ModeDescriptorOrBuilder> descriptorBuilder_;
+        io.macp.proto.macp.v1.ModeDescriptor, io.macp.proto.macp.v1.ModeDescriptor.Builder, io.macp.proto.macp.v1.ModeDescriptorOrBuilder> modeDescriptorBuilder_;
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-     * @return Whether the descriptor field is set.
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
+     * @return Whether the modeDescriptor field is set.
      */
-    public boolean hasDescriptor() {
+    public boolean hasModeDescriptor() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-     * @return The descriptor.
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
+     * @return The modeDescriptor.
      */
-    public io.macp.proto.macp.v1.ModeDescriptor getDescriptor() {
-      if (descriptorBuilder_ == null) {
-        return descriptor_ == null ? io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : descriptor_;
+    public io.macp.proto.macp.v1.ModeDescriptor getModeDescriptor() {
+      if (modeDescriptorBuilder_ == null) {
+        return modeDescriptor_ == null ? io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : modeDescriptor_;
       } else {
-        return descriptorBuilder_.getMessage();
+        return modeDescriptorBuilder_.getMessage();
       }
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
-    public Builder setDescriptor(io.macp.proto.macp.v1.ModeDescriptor value) {
-      if (descriptorBuilder_ == null) {
+    public Builder setModeDescriptor(io.macp.proto.macp.v1.ModeDescriptor value) {
+      if (modeDescriptorBuilder_ == null) {
         if (value == null) {
           throw new NullPointerException();
         }
-        descriptor_ = value;
+        modeDescriptor_ = value;
       } else {
-        descriptorBuilder_.setMessage(value);
+        modeDescriptorBuilder_.setMessage(value);
       }
       bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
-    public Builder setDescriptor(
+    public Builder setModeDescriptor(
         io.macp.proto.macp.v1.ModeDescriptor.Builder builderForValue) {
-      if (descriptorBuilder_ == null) {
-        descriptor_ = builderForValue.build();
+      if (modeDescriptorBuilder_ == null) {
+        modeDescriptor_ = builderForValue.build();
       } else {
-        descriptorBuilder_.setMessage(builderForValue.build());
+        modeDescriptorBuilder_.setMessage(builderForValue.build());
       }
       bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
-    public Builder mergeDescriptor(io.macp.proto.macp.v1.ModeDescriptor value) {
-      if (descriptorBuilder_ == null) {
+    public Builder mergeModeDescriptor(io.macp.proto.macp.v1.ModeDescriptor value) {
+      if (modeDescriptorBuilder_ == null) {
         if (((bitField0_ & 0x00000001) != 0) &&
-          descriptor_ != null &&
-          descriptor_ != io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance()) {
-          getDescriptorBuilder().mergeFrom(value);
+          modeDescriptor_ != null &&
+          modeDescriptor_ != io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance()) {
+          getModeDescriptorBuilder().mergeFrom(value);
         } else {
-          descriptor_ = value;
+          modeDescriptor_ = value;
         }
       } else {
-        descriptorBuilder_.mergeFrom(value);
+        modeDescriptorBuilder_.mergeFrom(value);
       }
-      if (descriptor_ != null) {
+      if (modeDescriptor_ != null) {
         bitField0_ |= 0x00000001;
         onChanged();
       }
       return this;
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
-    public Builder clearDescriptor() {
+    public Builder clearModeDescriptor() {
       bitField0_ = (bitField0_ & ~0x00000001);
-      descriptor_ = null;
-      if (descriptorBuilder_ != null) {
-        descriptorBuilder_.dispose();
-        descriptorBuilder_ = null;
+      modeDescriptor_ = null;
+      if (modeDescriptorBuilder_ != null) {
+        modeDescriptorBuilder_.dispose();
+        modeDescriptorBuilder_ = null;
       }
       onChanged();
       return this;
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
-    public io.macp.proto.macp.v1.ModeDescriptor.Builder getDescriptorBuilder() {
+    public io.macp.proto.macp.v1.ModeDescriptor.Builder getModeDescriptorBuilder() {
       bitField0_ |= 0x00000001;
       onChanged();
-      return internalGetDescriptorFieldBuilder().getBuilder();
+      return internalGetModeDescriptorFieldBuilder().getBuilder();
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
-    public io.macp.proto.macp.v1.ModeDescriptorOrBuilder getDescriptorOrBuilder() {
-      if (descriptorBuilder_ != null) {
-        return descriptorBuilder_.getMessageOrBuilder();
+    public io.macp.proto.macp.v1.ModeDescriptorOrBuilder getModeDescriptorOrBuilder() {
+      if (modeDescriptorBuilder_ != null) {
+        return modeDescriptorBuilder_.getMessageOrBuilder();
       } else {
-        return descriptor_ == null ?
-            io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : descriptor_;
+        return modeDescriptor_ == null ?
+            io.macp.proto.macp.v1.ModeDescriptor.getDefaultInstance() : modeDescriptor_;
       }
     }
     /**
-     * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
      */
     private com.google.protobuf.SingleFieldBuilder<
         io.macp.proto.macp.v1.ModeDescriptor, io.macp.proto.macp.v1.ModeDescriptor.Builder, io.macp.proto.macp.v1.ModeDescriptorOrBuilder> 
-        internalGetDescriptorFieldBuilder() {
-      if (descriptorBuilder_ == null) {
-        descriptorBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+        internalGetModeDescriptorFieldBuilder() {
+      if (modeDescriptorBuilder_ == null) {
+        modeDescriptorBuilder_ = new com.google.protobuf.SingleFieldBuilder<
             io.macp.proto.macp.v1.ModeDescriptor, io.macp.proto.macp.v1.ModeDescriptor.Builder, io.macp.proto.macp.v1.ModeDescriptorOrBuilder>(
-                getDescriptor(),
+                getModeDescriptor(),
                 getParentForChildren(),
                 isClean());
-        descriptor_ = null;
+        modeDescriptor_ = null;
       }
-      return descriptorBuilder_;
+      return modeDescriptorBuilder_;
     }
 
     // @@protoc_insertion_point(builder_scope:macp.v1.RegisterExtModeRequest)

@@ -48,7 +48,7 @@ public object EnvelopeKt {
 
     /**
      * ```
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * ```
      *
      * `string mode = 2 [json_name = "mode"];`
@@ -62,7 +62,7 @@ public object EnvelopeKt {
       }
     /**
      * ```
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * ```
      *
      * `string mode = 2 [json_name = "mode"];`

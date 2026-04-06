@@ -11,17 +11,17 @@ public interface GetPolicyResponseOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return Whether the descriptor field is set.
+   * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
+   * @return Whether the policyDescriptor field is set.
    */
-  boolean hasDescriptor();
+  boolean hasPolicyDescriptor();
   /**
-   * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return The descriptor.
+   * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
+   * @return The policyDescriptor.
    */
-  io.macp.proto.macp.v1.PolicyDescriptor getDescriptor();
+  io.macp.proto.macp.v1.PolicyDescriptor getPolicyDescriptor();
   /**
-   * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+   * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
    */
-  io.macp.proto.macp.v1.PolicyDescriptorOrBuilder getDescriptorOrBuilder();
+  io.macp.proto.macp.v1.PolicyDescriptorOrBuilder getPolicyDescriptorOrBuilder();
 }

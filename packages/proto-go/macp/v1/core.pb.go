@@ -1082,16 +1082,23 @@ func (x *SessionCancelPayload) GetCancelledBy() string {
 }
 
 type CommitmentPayload struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	CommitmentId         string                 `protobuf:"bytes,1,opt,name=commitment_id,json=commitmentId,proto3" json:"commitment_id,omitempty"`
-	Action               string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
-	AuthorityScope       string                 `protobuf:"bytes,3,opt,name=authority_scope,json=authorityScope,proto3" json:"authority_scope,omitempty"`
-	Reason               string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
-	ModeVersion          string                 `protobuf:"bytes,5,opt,name=mode_version,json=modeVersion,proto3" json:"mode_version,omitempty"`
-	PolicyVersion        string                 `protobuf:"bytes,6,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
-	ConfigurationVersion string                 `protobuf:"bytes,7,opt,name=configuration_version,json=configurationVersion,proto3" json:"configuration_version,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	CommitmentId string                 `protobuf:"bytes,1,opt,name=commitment_id,json=commitmentId,proto3" json:"commitment_id,omitempty"`
+	// Action identifier describing the outcome (e.g., "decision.approved",
+	// "task.completed", "quorum.rejected").  Mode RFCs define the normative
+	// vocabulary for their action values.
+	Action               string `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	AuthorityScope       string `protobuf:"bytes,3,opt,name=authority_scope,json=authorityScope,proto3" json:"authority_scope,omitempty"`
+	Reason               string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	ModeVersion          string `protobuf:"bytes,5,opt,name=mode_version,json=modeVersion,proto3" json:"mode_version,omitempty"`
+	PolicyVersion        string `protobuf:"bytes,6,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
+	ConfigurationVersion string `protobuf:"bytes,7,opt,name=configuration_version,json=configurationVersion,proto3" json:"configuration_version,omitempty"`
+	// True when the commitment represents a positive/successful outcome;
+	// false for definitive negative outcomes (e.g., rejection, failure).
+	// Modes that allow negative commitments MUST set this field explicitly.
+	OutcomePositive bool `protobuf:"varint,8,opt,name=outcome_positive,json=outcomePositive,proto3" json:"outcome_positive,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CommitmentPayload) Reset() {
@@ -1173,6 +1180,13 @@ func (x *CommitmentPayload) GetConfigurationVersion() string {
 	return ""
 }
 
+func (x *CommitmentPayload) GetOutcomePositive() bool {
+	if x != nil {
+		return x.OutcomePositive
+	}
+	return false
+}
+
 type ParticipantActivity struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	ParticipantId       string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
@@ -1245,8 +1259,11 @@ type SessionMetadata struct {
 	PolicyVersion        string                 `protobuf:"bytes,8,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
 	Participants         []string               `protobuf:"bytes,9,rep,name=participants,proto3" json:"participants,omitempty"`
 	ParticipantActivity  []*ParticipantActivity `protobuf:"bytes,10,rep,name=participant_activity,json=participantActivity,proto3" json:"participant_activity,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The sender of the accepted SessionStart message.
+	// Used for cancellation authorization and audit.
+	Initiator     string `protobuf:"bytes,11,opt,name=initiator,proto3" json:"initiator,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SessionMetadata) Reset() {
@@ -1347,6 +1364,13 @@ func (x *SessionMetadata) GetParticipantActivity() []*ParticipantActivity {
 		return x.ParticipantActivity
 	}
 	return nil
+}
+
+func (x *SessionMetadata) GetInitiator() string {
+	if x != nil {
+		return x.Initiator
+	}
+	return ""
 }
 
 type GetSessionRequest struct {
@@ -2575,10 +2599,10 @@ func (x *ListExtModesResponse) GetModes() []*ModeDescriptor {
 }
 
 type RegisterExtModeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Descriptor_   *ModeDescriptor        `protobuf:"bytes,1,opt,name=descriptor,proto3" json:"descriptor,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ModeDescriptor *ModeDescriptor        `protobuf:"bytes,1,opt,name=mode_descriptor,json=modeDescriptor,proto3" json:"mode_descriptor,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RegisterExtModeRequest) Reset() {
@@ -2611,9 +2635,9 @@ func (*RegisterExtModeRequest) Descriptor() ([]byte, []int) {
 	return file_macp_v1_core_proto_rawDescGZIP(), []int{45}
 }
 
-func (x *RegisterExtModeRequest) GetDescriptor_() *ModeDescriptor {
+func (x *RegisterExtModeRequest) GetModeDescriptor() *ModeDescriptor {
 	if x != nil {
-		return x.Descriptor_
+		return x.ModeDescriptor
 	}
 	return nil
 }
@@ -3049,7 +3073,7 @@ const file_macp_v1_core_proto_rawDesc = "" +
 	"\x05roots\x18\b \x03(\v2\r.macp.v1.RootR\x05roots\"Q\n" +
 	"\x14SessionCancelPayload\x12\x16\n" +
 	"\x06reason\x18\x01 \x01(\tR\x06reason\x12!\n" +
-	"\fcancelled_by\x18\x02 \x01(\tR\vcancelledBy\"\x90\x02\n" +
+	"\fcancelled_by\x18\x02 \x01(\tR\vcancelledBy\"\xbb\x02\n" +
 	"\x11CommitmentPayload\x12#\n" +
 	"\rcommitment_id\x18\x01 \x01(\tR\fcommitmentId\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12'\n" +
@@ -3057,11 +3081,12 @@ const file_macp_v1_core_proto_rawDesc = "" +
 	"\x06reason\x18\x04 \x01(\tR\x06reason\x12!\n" +
 	"\fmode_version\x18\x05 \x01(\tR\vmodeVersion\x12%\n" +
 	"\x0epolicy_version\x18\x06 \x01(\tR\rpolicyVersion\x123\n" +
-	"\x15configuration_version\x18\a \x01(\tR\x14configurationVersion\"\x97\x01\n" +
+	"\x15configuration_version\x18\a \x01(\tR\x14configurationVersion\x12)\n" +
+	"\x10outcome_positive\x18\b \x01(\bR\x0foutcomePositive\"\x97\x01\n" +
 	"\x13ParticipantActivity\x12%\n" +
 	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x124\n" +
 	"\x17last_message_at_unix_ms\x18\x02 \x01(\x03R\x13lastMessageAtUnixMs\x12#\n" +
-	"\rmessage_count\x18\x03 \x01(\rR\fmessageCount\"\xbf\x03\n" +
+	"\rmessage_count\x18\x03 \x01(\rR\fmessageCount\"\xdd\x03\n" +
 	"\x0fSessionMetadata\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
@@ -3074,7 +3099,8 @@ const file_macp_v1_core_proto_rawDesc = "" +
 	"\x0epolicy_version\x18\b \x01(\tR\rpolicyVersion\x12\"\n" +
 	"\fparticipants\x18\t \x03(\tR\fparticipants\x12O\n" +
 	"\x14participant_activity\x18\n" +
-	" \x03(\v2\x1c.macp.v1.ParticipantActivityR\x13participantActivity\"2\n" +
+	" \x03(\v2\x1c.macp.v1.ParticipantActivityR\x13participantActivity\x12\x1c\n" +
+	"\tinitiator\x18\v \x01(\tR\tinitiator\"2\n" +
 	"\x11GetSessionRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"M\n" +
@@ -3151,11 +3177,9 @@ const file_macp_v1_core_proto_rawDesc = "" +
 	"\x06change\x18\x01 \x01(\v2\x15.macp.v1.RootsChangedR\x06change\"\x15\n" +
 	"\x13ListExtModesRequest\"E\n" +
 	"\x14ListExtModesResponse\x12-\n" +
-	"\x05modes\x18\x01 \x03(\v2\x17.macp.v1.ModeDescriptorR\x05modes\"Q\n" +
-	"\x16RegisterExtModeRequest\x127\n" +
-	"\n" +
-	"descriptor\x18\x01 \x01(\v2\x17.macp.v1.ModeDescriptorR\n" +
-	"descriptor\"?\n" +
+	"\x05modes\x18\x01 \x03(\v2\x17.macp.v1.ModeDescriptorR\x05modes\"Z\n" +
+	"\x16RegisterExtModeRequest\x12@\n" +
+	"\x0fmode_descriptor\x18\x01 \x01(\v2\x17.macp.v1.ModeDescriptorR\x0emodeDescriptor\"?\n" +
 	"\x17RegisterExtModeResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\".\n" +
@@ -3319,7 +3343,7 @@ var file_macp_v1_core_proto_depIdxs = []int32{
 	32, // 29: macp.v1.WatchModeRegistryResponse.change:type_name -> macp.v1.RegistryChanged
 	33, // 30: macp.v1.WatchRootsResponse.change:type_name -> macp.v1.RootsChanged
 	25, // 31: macp.v1.ListExtModesResponse.modes:type_name -> macp.v1.ModeDescriptor
-	25, // 32: macp.v1.RegisterExtModeRequest.descriptor:type_name -> macp.v1.ModeDescriptor
+	25, // 32: macp.v1.RegisterExtModeRequest.mode_descriptor:type_name -> macp.v1.ModeDescriptor
 	59, // 33: macp.v1.WatchSignalsResponse.envelope:type_name -> macp.v1.Envelope
 	11, // 34: macp.v1.MACPRuntimeService.Initialize:input_type -> macp.v1.InitializeRequest
 	34, // 35: macp.v1.MACPRuntimeService.Send:input_type -> macp.v1.SendRequest

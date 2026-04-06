@@ -135,7 +135,7 @@ namespace Macp.Proto.Macp.V1 {
     public const int ModeFieldNumber = 2;
     private string mode_ = "";
     /// <summary>
-    /// empty for ambient Signals
+    /// empty for Ambient Signals
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]

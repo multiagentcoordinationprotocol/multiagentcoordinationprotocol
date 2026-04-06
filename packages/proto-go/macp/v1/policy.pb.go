@@ -178,10 +178,10 @@ func (x *PolicyRegistryCapability) GetListChanged() bool {
 }
 
 type RegisterPolicyRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Descriptor_   *PolicyDescriptor      `protobuf:"bytes,1,opt,name=descriptor,proto3" json:"descriptor,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PolicyDescriptor *PolicyDescriptor      `protobuf:"bytes,1,opt,name=policy_descriptor,json=policyDescriptor,proto3" json:"policy_descriptor,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *RegisterPolicyRequest) Reset() {
@@ -214,9 +214,9 @@ func (*RegisterPolicyRequest) Descriptor() ([]byte, []int) {
 	return file_macp_v1_policy_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *RegisterPolicyRequest) GetDescriptor_() *PolicyDescriptor {
+func (x *RegisterPolicyRequest) GetPolicyDescriptor() *PolicyDescriptor {
 	if x != nil {
-		return x.Descriptor_
+		return x.PolicyDescriptor
 	}
 	return nil
 }
@@ -414,10 +414,10 @@ func (x *GetPolicyRequest) GetPolicyId() string {
 }
 
 type GetPolicyResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Descriptor_   *PolicyDescriptor      `protobuf:"bytes,1,opt,name=descriptor,proto3" json:"descriptor,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PolicyDescriptor *PolicyDescriptor      `protobuf:"bytes,1,opt,name=policy_descriptor,json=policyDescriptor,proto3" json:"policy_descriptor,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetPolicyResponse) Reset() {
@@ -450,9 +450,9 @@ func (*GetPolicyResponse) Descriptor() ([]byte, []int) {
 	return file_macp_v1_policy_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetPolicyResponse) GetDescriptor_() *PolicyDescriptor {
+func (x *GetPolicyResponse) GetPolicyDescriptor() *PolicyDescriptor {
 	if x != nil {
-		return x.Descriptor_
+		return x.PolicyDescriptor
 	}
 	return nil
 }
@@ -650,11 +650,9 @@ const file_macp_v1_policy_proto_rawDesc = "" +
 	"\x18PolicyRegistryCapability\x12'\n" +
 	"\x0fregister_policy\x18\x01 \x01(\bR\x0eregisterPolicy\x12#\n" +
 	"\rlist_policies\x18\x02 \x01(\bR\flistPolicies\x12!\n" +
-	"\flist_changed\x18\x03 \x01(\bR\vlistChanged\"R\n" +
-	"\x15RegisterPolicyRequest\x129\n" +
-	"\n" +
-	"descriptor\x18\x01 \x01(\v2\x19.macp.v1.PolicyDescriptorR\n" +
-	"descriptor\">\n" +
+	"\flist_changed\x18\x03 \x01(\bR\vlistChanged\"_\n" +
+	"\x15RegisterPolicyRequest\x12F\n" +
+	"\x11policy_descriptor\x18\x01 \x01(\v2\x19.macp.v1.PolicyDescriptorR\x10policyDescriptor\">\n" +
 	"\x16RegisterPolicyResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"6\n" +
@@ -664,11 +662,9 @@ const file_macp_v1_policy_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"/\n" +
 	"\x10GetPolicyRequest\x12\x1b\n" +
-	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\"N\n" +
-	"\x11GetPolicyResponse\x129\n" +
-	"\n" +
-	"descriptor\x18\x01 \x01(\v2\x19.macp.v1.PolicyDescriptorR\n" +
-	"descriptor\")\n" +
+	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\"[\n" +
+	"\x11GetPolicyResponse\x12F\n" +
+	"\x11policy_descriptor\x18\x01 \x01(\v2\x19.macp.v1.PolicyDescriptorR\x10policyDescriptor\")\n" +
 	"\x13ListPoliciesRequest\x12\x12\n" +
 	"\x04mode\x18\x01 \x01(\tR\x04mode\"S\n" +
 	"\x14ListPoliciesResponse\x12;\n" +
@@ -707,8 +703,8 @@ var file_macp_v1_policy_proto_goTypes = []any{
 	(*WatchPoliciesResponse)(nil),    // 11: macp.v1.WatchPoliciesResponse
 }
 var file_macp_v1_policy_proto_depIdxs = []int32{
-	0, // 0: macp.v1.RegisterPolicyRequest.descriptor:type_name -> macp.v1.PolicyDescriptor
-	0, // 1: macp.v1.GetPolicyResponse.descriptor:type_name -> macp.v1.PolicyDescriptor
+	0, // 0: macp.v1.RegisterPolicyRequest.policy_descriptor:type_name -> macp.v1.PolicyDescriptor
+	0, // 1: macp.v1.GetPolicyResponse.policy_descriptor:type_name -> macp.v1.PolicyDescriptor
 	0, // 2: macp.v1.ListPoliciesResponse.descriptors:type_name -> macp.v1.PolicyDescriptor
 	0, // 3: macp.v1.WatchPoliciesResponse.descriptors:type_name -> macp.v1.PolicyDescriptor
 	4, // [4:4] is the sub-list for method output_type

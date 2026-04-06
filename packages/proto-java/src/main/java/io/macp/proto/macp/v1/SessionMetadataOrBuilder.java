@@ -141,4 +141,26 @@ public interface SessionMetadataOrBuilder extends
    */
   io.macp.proto.macp.v1.ParticipantActivityOrBuilder getParticipantActivityOrBuilder(
       int index);
+
+  /**
+   * <pre>
+   * The sender of the accepted SessionStart message.
+   * Used for cancellation authorization and audit.
+   * </pre>
+   *
+   * <code>string initiator = 11 [json_name = "initiator"];</code>
+   * @return The initiator.
+   */
+  java.lang.String getInitiator();
+  /**
+   * <pre>
+   * The sender of the accepted SessionStart message.
+   * Used for cancellation authorization and audit.
+   * </pre>
+   *
+   * <code>string initiator = 11 [json_name = "initiator"];</code>
+   * @return The bytes for initiator.
+   */
+  com.google.protobuf.ByteString
+      getInitiatorBytes();
 }

@@ -798,7 +798,7 @@ public final class MACPRuntimeServiceGrpc {
 
     /**
      * <pre>
-     * Ambient signal observation
+     * Ambient Signal observation
      * </pre>
      */
     default void watchSignals(io.macp.proto.macp.v1.WatchSignalsRequest request,
@@ -989,7 +989,7 @@ public final class MACPRuntimeServiceGrpc {
 
     /**
      * <pre>
-     * Ambient signal observation
+     * Ambient Signal observation
      * </pre>
      */
     public void watchSignals(io.macp.proto.macp.v1.WatchSignalsRequest request,
@@ -1167,7 +1167,7 @@ public final class MACPRuntimeServiceGrpc {
 
     /**
      * <pre>
-     * Ambient signal observation
+     * Ambient Signal observation
      * </pre>
      */
     @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/10918")
@@ -1332,7 +1332,7 @@ public final class MACPRuntimeServiceGrpc {
 
     /**
      * <pre>
-     * Ambient signal observation
+     * Ambient Signal observation
      * </pre>
      */
     public java.util.Iterator<io.macp.proto.macp.v1.WatchSignalsResponse> watchSignals(

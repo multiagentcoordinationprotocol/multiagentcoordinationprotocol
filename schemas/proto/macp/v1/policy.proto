@@ -37,7 +37,7 @@ message PolicyRegistryCapability {
 // ── Registration lifecycle RPCs ─────────────────────────────────────
 
 message RegisterPolicyRequest {
-  PolicyDescriptor descriptor = 1;
+  PolicyDescriptor policy_descriptor = 1;
 }
 
 message RegisterPolicyResponse {
@@ -59,7 +59,7 @@ message GetPolicyRequest {
 }
 
 message GetPolicyResponse {
-  PolicyDescriptor descriptor = 1;
+  PolicyDescriptor policy_descriptor = 1;
 }
 
 message ListPoliciesRequest {
