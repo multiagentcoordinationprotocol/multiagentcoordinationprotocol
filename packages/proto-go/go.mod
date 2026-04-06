@@ -1,6 +1,6 @@
 module github.com/multiagentcoordinationprotocol/macp-proto-go
 
-go 1.22
+go 1.23.0
 
 require (
 	google.golang.org/grpc v1.72.2

@@ -23,11 +23,23 @@ public interface CommitmentPayloadOrBuilder extends
       getCommitmentIdBytes();
 
   /**
+   * <pre>
+   * Action identifier describing the outcome (e.g., "decision.approved",
+   * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+   * vocabulary for their action values.
+   * </pre>
+   *
    * <code>string action = 2 [json_name = "action"];</code>
    * @return The action.
    */
   java.lang.String getAction();
   /**
+   * <pre>
+   * Action identifier describing the outcome (e.g., "decision.approved",
+   * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+   * vocabulary for their action values.
+   * </pre>
+   *
    * <code>string action = 2 [json_name = "action"];</code>
    * @return The bytes for action.
    */
@@ -93,4 +105,16 @@ public interface CommitmentPayloadOrBuilder extends
    */
   com.google.protobuf.ByteString
       getConfigurationVersionBytes();
+
+  /**
+   * <pre>
+   * True when the commitment represents a positive/successful outcome;
+   * false for definitive negative outcomes (e.g., rejection, failure).
+   * Modes that allow negative commitments MUST set this field explicitly.
+   * </pre>
+   *
+   * <code>bool outcome_positive = 8 [json_name = "outcomePositive"];</code>
+   * @return The outcomePositive.
+   */
+  boolean getOutcomePositive();
 }

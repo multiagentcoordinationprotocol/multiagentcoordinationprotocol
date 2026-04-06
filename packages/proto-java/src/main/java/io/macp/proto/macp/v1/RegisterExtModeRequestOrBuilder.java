@@ -11,17 +11,17 @@ public interface RegisterExtModeRequestOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return Whether the descriptor field is set.
+   * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
+   * @return Whether the modeDescriptor field is set.
    */
-  boolean hasDescriptor();
+  boolean hasModeDescriptor();
   /**
-   * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return The descriptor.
+   * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
+   * @return The modeDescriptor.
    */
-  io.macp.proto.macp.v1.ModeDescriptor getDescriptor();
+  io.macp.proto.macp.v1.ModeDescriptor getModeDescriptor();
   /**
-   * <code>.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+   * <code>.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];</code>
    */
-  io.macp.proto.macp.v1.ModeDescriptorOrBuilder getDescriptorOrBuilder();
+  io.macp.proto.macp.v1.ModeDescriptorOrBuilder getModeDescriptorOrBuilder();
 }

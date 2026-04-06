@@ -21,6 +21,20 @@ Task Mode is the basic delegation primitive for multi-agent execution. It is int
 
 The session initiator or a policy-defined coordinator is the requester and default `Commitment` authority.
 
+### 2.1 Authority Matrix
+
+| Message Type | Authorized Sender |
+|-------------|-------------------|
+| `TaskRequest` | Session initiator (requester) |
+| `TaskAccept` | Requested assignee, or any eligible participant if `requested_assignee` is empty |
+| `TaskReject` | Requested assignee, or any eligible participant if `requested_assignee` is empty |
+| `TaskUpdate` | Active assignee only |
+| `TaskComplete` | Active assignee only |
+| `TaskFail` | Active assignee only |
+| `Commitment` | Session initiator (default) or policy-designated authority |
+
+Runtimes MUST reject messages from senders not authorized per this matrix.
+
 ## 3. SessionStart requirements
 
 A Task Mode Session MUST bind:
@@ -53,6 +67,8 @@ Implementations MUST enforce the following:
 1. A Task Mode v1 Session MUST accept at most one `TaskRequest`.
 2. `TaskAccept` or `TaskReject` MUST come from the requested assignee, or from an eligible declared participant if `requested_assignee` is empty.
 3. Only one assignee may become active for the Session in base v1.
+3a. The first accepted `TaskAccept` from any eligible participant designates that participant as the active assignee. Subsequent `TaskAccept` messages for the same session MUST be rejected if an active assignee is already designated.
+3b. A participant who has sent `TaskAccept` MUST NOT later send `TaskReject` for the same task in base v1. `TaskAccept` is irrevocable unless policy explicitly permits reassignment.
 4. `TaskUpdate`, `TaskComplete`, and `TaskFail` MUST come from the active assignee.
 5. `TaskComplete` and `TaskFail` do not resolve the Session on their own. They make the Session eligible for `Commitment` by the requester or policy authority.
 
@@ -65,7 +81,11 @@ Implementations SHOULD use `CommitmentPayload.action` values that make the outco
 - `task.completed`
 - `task.failed`
 
-The commitment SHOULD bind the relevant task identifier and the versions that governed execution.
+The `Commitment` SHOULD bind the relevant task identifier and the versions that governed execution.
+
+### 6.1 Governance Policy
+
+Task sessions MAY be governed by declarative policies that constrain assignment rules, completion requirements, and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/task-rules.schema.json` for the Task Mode rule schema.
 
 ## 7. Determinism class
 
@@ -80,7 +100,7 @@ Implementations MUST address all of the following:
 - authenticate requester and assignee identities,
 - ensure only authorized assignees accept or complete tasks,
 - protect sensitive task inputs and outputs,
-- define idempotency keys for any external side effects triggered by task execution,
+- define idempotency keys for any external side effects triggered by task execution. The normative idempotency key for task outcomes is `task_id + assignee + first_accepted_terminal_message_id` (where the terminal message is `TaskComplete` or `TaskFail`). Retransmissions with the same key MUST NOT re-execute side effects.
 - reject forged completions and failures from non-assignees.
 
 ## 9. Canonical schemas and examples

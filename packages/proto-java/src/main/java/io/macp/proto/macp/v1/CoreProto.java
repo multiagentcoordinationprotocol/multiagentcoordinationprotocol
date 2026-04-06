@@ -387,143 +387,145 @@ public final class CoreProto extends com.google.protobuf.GeneratedFile {
       "xt\030\007 \001(\014R\007context\022#\n\005roots\030\010 \003(\0132\r.macp." +
       "v1.RootR\005roots\"Q\n\024SessionCancelPayload\022\026" +
       "\n\006reason\030\001 \001(\tR\006reason\022!\n\014cancelled_by\030\002" +
-      " \001(\tR\013cancelledBy\"\220\002\n\021CommitmentPayload\022" +
+      " \001(\tR\013cancelledBy\"\273\002\n\021CommitmentPayload\022" +
       "#\n\rcommitment_id\030\001 \001(\tR\014commitmentId\022\026\n\006" +
       "action\030\002 \001(\tR\006action\022\'\n\017authority_scope\030" +
       "\003 \001(\tR\016authorityScope\022\026\n\006reason\030\004 \001(\tR\006r" +
       "eason\022!\n\014mode_version\030\005 \001(\tR\013modeVersion" +
       "\022%\n\016policy_version\030\006 \001(\tR\rpolicyVersion\022" +
       "3\n\025configuration_version\030\007 \001(\tR\024configur" +
-      "ationVersion\"\227\001\n\023ParticipantActivity\022%\n\016" +
-      "participant_id\030\001 \001(\tR\rparticipantId\0224\n\027l" +
-      "ast_message_at_unix_ms\030\002 \001(\003R\023lastMessag" +
-      "eAtUnixMs\022#\n\rmessage_count\030\003 \001(\rR\014messag" +
-      "eCount\"\277\003\n\017SessionMetadata\022\035\n\nsession_id" +
-      "\030\001 \001(\tR\tsessionId\022\022\n\004mode\030\002 \001(\tR\004mode\022+\n" +
-      "\005state\030\003 \001(\0162\025.macp.v1.SessionStateR\005sta" +
-      "te\022+\n\022started_at_unix_ms\030\004 \001(\003R\017startedA" +
-      "tUnixMs\022+\n\022expires_at_unix_ms\030\005 \001(\003R\017exp" +
-      "iresAtUnixMs\022!\n\014mode_version\030\006 \001(\tR\013mode" +
-      "Version\0223\n\025configuration_version\030\007 \001(\tR\024" +
-      "configurationVersion\022%\n\016policy_version\030\010" +
-      " \001(\tR\rpolicyVersion\022\"\n\014participants\030\t \003(" +
-      "\tR\014participants\022O\n\024participant_activity\030" +
-      "\n \003(\0132\034.macp.v1.ParticipantActivityR\023par" +
-      "ticipantActivity\"2\n\021GetSessionRequest\022\035\n" +
-      "\nsession_id\030\001 \001(\tR\tsessionId\"M\n\024CancelSe" +
-      "ssionRequest\022\035\n\nsession_id\030\001 \001(\tR\tsessio" +
-      "nId\022\026\n\006reason\030\002 \001(\tR\006reason\"/\n\022GetManife" +
-      "stRequest\022\031\n\010agent_id\030\001 \001(\tR\007agentId\"\353\001\n" +
-      "\021TransportEndpoint\022\034\n\ttransport\030\001 \001(\tR\tt" +
-      "ransport\022\020\n\003uri\030\002 \001(\tR\003uri\022#\n\rcontent_ty" +
-      "pes\030\003 \003(\tR\014contentTypes\022D\n\010metadata\030\004 \003(" +
-      "\0132(.macp.v1.TransportEndpoint.MetadataEn" +
-      "tryR\010metadata\032;\n\rMetadataEntry\022\020\n\003key\030\001 " +
-      "\001(\tR\003key\022\024\n\005value\030\002 \001(\tR\005value:\0028\001\"\271\003\n\rA" +
-      "gentManifest\022\031\n\010agent_id\030\001 \001(\tR\007agentId\022" +
-      "\024\n\005title\030\002 \001(\tR\005title\022 \n\013description\030\003 \001" +
-      "(\tR\013description\022\'\n\017supported_modes\030\004 \003(\t" +
-      "R\016supportedModes\022.\n\023input_content_types\030" +
-      "\005 \003(\tR\021inputContentTypes\0220\n\024output_conte" +
-      "nt_types\030\006 \003(\tR\022outputContentTypes\022@\n\010me" +
-      "tadata\030\007 \003(\0132$.macp.v1.AgentManifest.Met" +
-      "adataEntryR\010metadata\022K\n\023transport_endpoi" +
-      "nts\030\010 \003(\0132\032.macp.v1.TransportEndpointR\022t" +
-      "ransportEndpoints\032;\n\rMetadataEntry\022\020\n\003ke" +
-      "y\030\001 \001(\tR\003key\022\024\n\005value\030\002 \001(\tR\005value:\0028\001\"\275" +
-      "\003\n\016ModeDescriptor\022\022\n\004mode\030\001 \001(\tR\004mode\022!\n" +
-      "\014mode_version\030\002 \001(\tR\013modeVersion\022\024\n\005titl" +
-      "e\030\003 \001(\tR\005title\022 \n\013description\030\004 \001(\tR\013des" +
-      "cription\022+\n\021determinism_class\030\005 \001(\tR\020det" +
-      "erminismClass\022+\n\021participant_model\030\006 \001(\t" +
-      "R\020participantModel\022#\n\rmessage_types\030\007 \003(" +
-      "\tR\014messageTypes\0224\n\026terminal_message_type" +
-      "s\030\010 \003(\tR\024terminalMessageTypes\022H\n\013schema_" +
-      "uris\030\t \003(\0132\'.macp.v1.ModeDescriptor.Sche" +
-      "maUrisEntryR\nschemaUris\032=\n\017SchemaUrisEnt" +
-      "ry\022\020\n\003key\030\001 \001(\tR\003key\022\024\n\005value\030\002 \001(\tR\005val" +
-      "ue:\0028\001\"\022\n\020ListModesRequest\"B\n\021ListModesR" +
-      "esponse\022-\n\005modes\030\001 \003(\0132\027.macp.v1.ModeDes" +
-      "criptorR\005modes\"\022\n\020ListRootsRequest\"8\n\021Li" +
-      "stRootsResponse\022#\n\005roots\030\001 \003(\0132\r.macp.v1" +
-      ".RootR\005roots\"\032\n\030WatchModeRegistryRequest" +
-      "\"\023\n\021WatchRootsRequest\"\\\n\017RegistryChanged" +
-      "\022\032\n\010registry\030\001 \001(\tR\010registry\022-\n\023observed" +
-      "_at_unix_ms\030\002 \001(\003R\020observedAtUnixMs\"=\n\014R" +
-      "ootsChanged\022-\n\023observed_at_unix_ms\030\001 \001(\003" +
-      "R\020observedAtUnixMs\"<\n\013SendRequest\022-\n\010env" +
-      "elope\030\001 \001(\0132\021.macp.v1.EnvelopeR\010envelope" +
-      "\".\n\014SendResponse\022\036\n\003ack\030\001 \001(\0132\014.macp.v1." +
-      "AckR\003ack\"E\n\024StreamSessionRequest\022-\n\010enve" +
-      "lope\030\001 \001(\0132\021.macp.v1.EnvelopeR\010envelope\"" +
-      "F\n\025StreamSessionResponse\022-\n\010envelope\030\001 \001" +
-      "(\0132\021.macp.v1.EnvelopeR\010envelope\"J\n\022GetSe" +
-      "ssionResponse\0224\n\010metadata\030\001 \001(\0132\030.macp.v" +
-      "1.SessionMetadataR\010metadata\"7\n\025CancelSes" +
-      "sionResponse\022\036\n\003ack\030\001 \001(\0132\014.macp.v1.AckR" +
-      "\003ack\"I\n\023GetManifestResponse\0222\n\010manifest\030" +
-      "\001 \001(\0132\026.macp.v1.AgentManifestR\010manifest\"" +
-      "M\n\031WatchModeRegistryResponse\0220\n\006change\030\001" +
-      " \001(\0132\030.macp.v1.RegistryChangedR\006change\"C" +
-      "\n\022WatchRootsResponse\022-\n\006change\030\001 \001(\0132\025.m" +
-      "acp.v1.RootsChangedR\006change\"\025\n\023ListExtMo" +
-      "desRequest\"E\n\024ListExtModesResponse\022-\n\005mo" +
-      "des\030\001 \003(\0132\027.macp.v1.ModeDescriptorR\005mode" +
-      "s\"Q\n\026RegisterExtModeRequest\0227\n\ndescripto" +
-      "r\030\001 \001(\0132\027.macp.v1.ModeDescriptorR\ndescri" +
-      "ptor\"?\n\027RegisterExtModeResponse\022\016\n\002ok\030\001 " +
-      "\001(\010R\002ok\022\024\n\005error\030\002 \001(\tR\005error\".\n\030Unregis" +
-      "terExtModeRequest\022\022\n\004mode\030\001 \001(\tR\004mode\"A\n" +
-      "\031UnregisterExtModeResponse\022\016\n\002ok\030\001 \001(\010R\002" +
-      "ok\022\024\n\005error\030\002 \001(\tR\005error\"V\n\022PromoteModeR" +
-      "equest\022\022\n\004mode\030\001 \001(\tR\004mode\022,\n\022promoted_m" +
-      "ode_name\030\002 \001(\tR\020promotedModeName\"O\n\023Prom" +
-      "oteModeResponse\022\016\n\002ok\030\001 \001(\010R\002ok\022\024\n\005error" +
-      "\030\002 \001(\tR\005error\022\022\n\004mode\030\003 \001(\tR\004mode\"\025\n\023Wat" +
-      "chSignalsRequest\"E\n\024WatchSignalsResponse" +
-      "\022-\n\010envelope\030\001 \001(\0132\021.macp.v1.EnvelopeR\010e" +
-      "nvelope2\233\014\n\022MACPRuntimeService\022E\n\nInitia" +
-      "lize\022\032.macp.v1.InitializeRequest\032\033.macp." +
-      "v1.InitializeResponse\0223\n\004Send\022\024.macp.v1." +
-      "SendRequest\032\025.macp.v1.SendResponse\022R\n\rSt" +
-      "reamSession\022\035.macp.v1.StreamSessionReque" +
-      "st\032\036.macp.v1.StreamSessionResponse(\0010\001\022E" +
-      "\n\nGetSession\022\032.macp.v1.GetSessionRequest" +
-      "\032\033.macp.v1.GetSessionResponse\022N\n\rCancelS" +
-      "ession\022\035.macp.v1.CancelSessionRequest\032\036." +
-      "macp.v1.CancelSessionResponse\022H\n\013GetMani" +
-      "fest\022\033.macp.v1.GetManifestRequest\032\034.macp" +
-      ".v1.GetManifestResponse\022B\n\tListModes\022\031.m" +
-      "acp.v1.ListModesRequest\032\032.macp.v1.ListMo" +
-      "desResponse\022\\\n\021WatchModeRegistry\022!.macp." +
-      "v1.WatchModeRegistryRequest\032\".macp.v1.Wa" +
-      "tchModeRegistryResponse0\001\022B\n\tListRoots\022\031" +
-      ".macp.v1.ListRootsRequest\032\032.macp.v1.List" +
-      "RootsResponse\022G\n\nWatchRoots\022\032.macp.v1.Wa" +
-      "tchRootsRequest\032\033.macp.v1.WatchRootsResp" +
-      "onse0\001\022K\n\014ListExtModes\022\034.macp.v1.ListExt" +
-      "ModesRequest\032\035.macp.v1.ListExtModesRespo" +
-      "nse\022T\n\017RegisterExtMode\022\037.macp.v1.Registe" +
-      "rExtModeRequest\032 .macp.v1.RegisterExtMod" +
-      "eResponse\022Z\n\021UnregisterExtMode\022!.macp.v1" +
-      ".UnregisterExtModeRequest\032\".macp.v1.Unre" +
-      "gisterExtModeResponse\022H\n\013PromoteMode\022\033.m" +
-      "acp.v1.PromoteModeRequest\032\034.macp.v1.Prom" +
-      "oteModeResponse\022M\n\014WatchSignals\022\034.macp.v" +
-      "1.WatchSignalsRequest\032\035.macp.v1.WatchSig" +
-      "nalsResponse0\001\022Q\n\016RegisterPolicy\022\036.macp." +
-      "v1.RegisterPolicyRequest\032\037.macp.v1.Regis" +
-      "terPolicyResponse\022W\n\020UnregisterPolicy\022 ." +
-      "macp.v1.UnregisterPolicyRequest\032!.macp.v" +
-      "1.UnregisterPolicyResponse\022B\n\tGetPolicy\022" +
-      "\031.macp.v1.GetPolicyRequest\032\032.macp.v1.Get" +
-      "PolicyResponse\022K\n\014ListPolicies\022\034.macp.v1" +
-      ".ListPoliciesRequest\032\035.macp.v1.ListPolic" +
-      "iesResponse\022P\n\rWatchPolicies\022\035.macp.v1.W" +
-      "atchPoliciesRequest\032\036.macp.v1.WatchPolic" +
-      "iesResponse0\001B_\n\025io.macp.proto.macp.v1B\t" +
-      "CoreProtoP\001\242\002\003MXX\252\002\007Macp.V1\312\002\007Macp\\V1\342\002\023" +
-      "Macp\\V1\\GPBMetadata\352\002\010Macp::V1b\006proto3"
+      "ationVersion\022)\n\020outcome_positive\030\010 \001(\010R\017" +
+      "outcomePositive\"\227\001\n\023ParticipantActivity\022" +
+      "%\n\016participant_id\030\001 \001(\tR\rparticipantId\0224" +
+      "\n\027last_message_at_unix_ms\030\002 \001(\003R\023lastMes" +
+      "sageAtUnixMs\022#\n\rmessage_count\030\003 \001(\rR\014mes" +
+      "sageCount\"\335\003\n\017SessionMetadata\022\035\n\nsession" +
+      "_id\030\001 \001(\tR\tsessionId\022\022\n\004mode\030\002 \001(\tR\004mode" +
+      "\022+\n\005state\030\003 \001(\0162\025.macp.v1.SessionStateR\005" +
+      "state\022+\n\022started_at_unix_ms\030\004 \001(\003R\017start" +
+      "edAtUnixMs\022+\n\022expires_at_unix_ms\030\005 \001(\003R\017" +
+      "expiresAtUnixMs\022!\n\014mode_version\030\006 \001(\tR\013m" +
+      "odeVersion\0223\n\025configuration_version\030\007 \001(" +
+      "\tR\024configurationVersion\022%\n\016policy_versio" +
+      "n\030\010 \001(\tR\rpolicyVersion\022\"\n\014participants\030\t" +
+      " \003(\tR\014participants\022O\n\024participant_activi" +
+      "ty\030\n \003(\0132\034.macp.v1.ParticipantActivityR\023" +
+      "participantActivity\022\034\n\tinitiator\030\013 \001(\tR\t" +
+      "initiator\"2\n\021GetSessionRequest\022\035\n\nsessio" +
+      "n_id\030\001 \001(\tR\tsessionId\"M\n\024CancelSessionRe" +
+      "quest\022\035\n\nsession_id\030\001 \001(\tR\tsessionId\022\026\n\006" +
+      "reason\030\002 \001(\tR\006reason\"/\n\022GetManifestReque" +
+      "st\022\031\n\010agent_id\030\001 \001(\tR\007agentId\"\353\001\n\021Transp" +
+      "ortEndpoint\022\034\n\ttransport\030\001 \001(\tR\ttranspor" +
+      "t\022\020\n\003uri\030\002 \001(\tR\003uri\022#\n\rcontent_types\030\003 \003" +
+      "(\tR\014contentTypes\022D\n\010metadata\030\004 \003(\0132(.mac" +
+      "p.v1.TransportEndpoint.MetadataEntryR\010me" +
+      "tadata\032;\n\rMetadataEntry\022\020\n\003key\030\001 \001(\tR\003ke" +
+      "y\022\024\n\005value\030\002 \001(\tR\005value:\0028\001\"\271\003\n\rAgentMan" +
+      "ifest\022\031\n\010agent_id\030\001 \001(\tR\007agentId\022\024\n\005titl" +
+      "e\030\002 \001(\tR\005title\022 \n\013description\030\003 \001(\tR\013des" +
+      "cription\022\'\n\017supported_modes\030\004 \003(\tR\016suppo" +
+      "rtedModes\022.\n\023input_content_types\030\005 \003(\tR\021" +
+      "inputContentTypes\0220\n\024output_content_type" +
+      "s\030\006 \003(\tR\022outputContentTypes\022@\n\010metadata\030" +
+      "\007 \003(\0132$.macp.v1.AgentManifest.MetadataEn" +
+      "tryR\010metadata\022K\n\023transport_endpoints\030\010 \003" +
+      "(\0132\032.macp.v1.TransportEndpointR\022transpor" +
+      "tEndpoints\032;\n\rMetadataEntry\022\020\n\003key\030\001 \001(\t" +
+      "R\003key\022\024\n\005value\030\002 \001(\tR\005value:\0028\001\"\275\003\n\016Mode" +
+      "Descriptor\022\022\n\004mode\030\001 \001(\tR\004mode\022!\n\014mode_v" +
+      "ersion\030\002 \001(\tR\013modeVersion\022\024\n\005title\030\003 \001(\t" +
+      "R\005title\022 \n\013description\030\004 \001(\tR\013descriptio" +
+      "n\022+\n\021determinism_class\030\005 \001(\tR\020determinis" +
+      "mClass\022+\n\021participant_model\030\006 \001(\tR\020parti" +
+      "cipantModel\022#\n\rmessage_types\030\007 \003(\tR\014mess" +
+      "ageTypes\0224\n\026terminal_message_types\030\010 \003(\t" +
+      "R\024terminalMessageTypes\022H\n\013schema_uris\030\t " +
+      "\003(\0132\'.macp.v1.ModeDescriptor.SchemaUrisE" +
+      "ntryR\nschemaUris\032=\n\017SchemaUrisEntry\022\020\n\003k" +
+      "ey\030\001 \001(\tR\003key\022\024\n\005value\030\002 \001(\tR\005value:\0028\001\"" +
+      "\022\n\020ListModesRequest\"B\n\021ListModesResponse" +
+      "\022-\n\005modes\030\001 \003(\0132\027.macp.v1.ModeDescriptor" +
+      "R\005modes\"\022\n\020ListRootsRequest\"8\n\021ListRoots" +
+      "Response\022#\n\005roots\030\001 \003(\0132\r.macp.v1.RootR\005" +
+      "roots\"\032\n\030WatchModeRegistryRequest\"\023\n\021Wat" +
+      "chRootsRequest\"\\\n\017RegistryChanged\022\032\n\010reg" +
+      "istry\030\001 \001(\tR\010registry\022-\n\023observed_at_uni" +
+      "x_ms\030\002 \001(\003R\020observedAtUnixMs\"=\n\014RootsCha" +
+      "nged\022-\n\023observed_at_unix_ms\030\001 \001(\003R\020obser" +
+      "vedAtUnixMs\"<\n\013SendRequest\022-\n\010envelope\030\001" +
+      " \001(\0132\021.macp.v1.EnvelopeR\010envelope\".\n\014Sen" +
+      "dResponse\022\036\n\003ack\030\001 \001(\0132\014.macp.v1.AckR\003ac" +
+      "k\"E\n\024StreamSessionRequest\022-\n\010envelope\030\001 " +
+      "\001(\0132\021.macp.v1.EnvelopeR\010envelope\"F\n\025Stre" +
+      "amSessionResponse\022-\n\010envelope\030\001 \001(\0132\021.ma" +
+      "cp.v1.EnvelopeR\010envelope\"J\n\022GetSessionRe" +
+      "sponse\0224\n\010metadata\030\001 \001(\0132\030.macp.v1.Sessi" +
+      "onMetadataR\010metadata\"7\n\025CancelSessionRes" +
+      "ponse\022\036\n\003ack\030\001 \001(\0132\014.macp.v1.AckR\003ack\"I\n" +
+      "\023GetManifestResponse\0222\n\010manifest\030\001 \001(\0132\026" +
+      ".macp.v1.AgentManifestR\010manifest\"M\n\031Watc" +
+      "hModeRegistryResponse\0220\n\006change\030\001 \001(\0132\030." +
+      "macp.v1.RegistryChangedR\006change\"C\n\022Watch" +
+      "RootsResponse\022-\n\006change\030\001 \001(\0132\025.macp.v1." +
+      "RootsChangedR\006change\"\025\n\023ListExtModesRequ" +
+      "est\"E\n\024ListExtModesResponse\022-\n\005modes\030\001 \003" +
+      "(\0132\027.macp.v1.ModeDescriptorR\005modes\"Z\n\026Re" +
+      "gisterExtModeRequest\022@\n\017mode_descriptor\030" +
+      "\001 \001(\0132\027.macp.v1.ModeDescriptorR\016modeDesc" +
+      "riptor\"?\n\027RegisterExtModeResponse\022\016\n\002ok\030" +
+      "\001 \001(\010R\002ok\022\024\n\005error\030\002 \001(\tR\005error\".\n\030Unreg" +
+      "isterExtModeRequest\022\022\n\004mode\030\001 \001(\tR\004mode\"" +
+      "A\n\031UnregisterExtModeResponse\022\016\n\002ok\030\001 \001(\010" +
+      "R\002ok\022\024\n\005error\030\002 \001(\tR\005error\"V\n\022PromoteMod" +
+      "eRequest\022\022\n\004mode\030\001 \001(\tR\004mode\022,\n\022promoted" +
+      "_mode_name\030\002 \001(\tR\020promotedModeName\"O\n\023Pr" +
+      "omoteModeResponse\022\016\n\002ok\030\001 \001(\010R\002ok\022\024\n\005err" +
+      "or\030\002 \001(\tR\005error\022\022\n\004mode\030\003 \001(\tR\004mode\"\025\n\023W" +
+      "atchSignalsRequest\"E\n\024WatchSignalsRespon" +
+      "se\022-\n\010envelope\030\001 \001(\0132\021.macp.v1.EnvelopeR" +
+      "\010envelope2\233\014\n\022MACPRuntimeService\022E\n\nInit" +
+      "ialize\022\032.macp.v1.InitializeRequest\032\033.mac" +
+      "p.v1.InitializeResponse\0223\n\004Send\022\024.macp.v" +
+      "1.SendRequest\032\025.macp.v1.SendResponse\022R\n\r" +
+      "StreamSession\022\035.macp.v1.StreamSessionReq" +
+      "uest\032\036.macp.v1.StreamSessionResponse(\0010\001" +
+      "\022E\n\nGetSession\022\032.macp.v1.GetSessionReque" +
+      "st\032\033.macp.v1.GetSessionResponse\022N\n\rCance" +
+      "lSession\022\035.macp.v1.CancelSessionRequest\032" +
+      "\036.macp.v1.CancelSessionResponse\022H\n\013GetMa" +
+      "nifest\022\033.macp.v1.GetManifestRequest\032\034.ma" +
+      "cp.v1.GetManifestResponse\022B\n\tListModes\022\031" +
+      ".macp.v1.ListModesRequest\032\032.macp.v1.List" +
+      "ModesResponse\022\\\n\021WatchModeRegistry\022!.mac" +
+      "p.v1.WatchModeRegistryRequest\032\".macp.v1." +
+      "WatchModeRegistryResponse0\001\022B\n\tListRoots" +
+      "\022\031.macp.v1.ListRootsRequest\032\032.macp.v1.Li" +
+      "stRootsResponse\022G\n\nWatchRoots\022\032.macp.v1." +
+      "WatchRootsRequest\032\033.macp.v1.WatchRootsRe" +
+      "sponse0\001\022K\n\014ListExtModes\022\034.macp.v1.ListE" +
+      "xtModesRequest\032\035.macp.v1.ListExtModesRes" +
+      "ponse\022T\n\017RegisterExtMode\022\037.macp.v1.Regis" +
+      "terExtModeRequest\032 .macp.v1.RegisterExtM" +
+      "odeResponse\022Z\n\021UnregisterExtMode\022!.macp." +
+      "v1.UnregisterExtModeRequest\032\".macp.v1.Un" +
+      "registerExtModeResponse\022H\n\013PromoteMode\022\033" +
+      ".macp.v1.PromoteModeRequest\032\034.macp.v1.Pr" +
+      "omoteModeResponse\022M\n\014WatchSignals\022\034.macp" +
+      ".v1.WatchSignalsRequest\032\035.macp.v1.WatchS" +
+      "ignalsResponse0\001\022Q\n\016RegisterPolicy\022\036.mac" +
+      "p.v1.RegisterPolicyRequest\032\037.macp.v1.Reg" +
+      "isterPolicyResponse\022W\n\020UnregisterPolicy\022" +
+      " .macp.v1.UnregisterPolicyRequest\032!.macp" +
+      ".v1.UnregisterPolicyResponse\022B\n\tGetPolic" +
+      "y\022\031.macp.v1.GetPolicyRequest\032\032.macp.v1.G" +
+      "etPolicyResponse\022K\n\014ListPolicies\022\034.macp." +
+      "v1.ListPoliciesRequest\032\035.macp.v1.ListPol" +
+      "iciesResponse\022P\n\rWatchPolicies\022\035.macp.v1" +
+      ".WatchPoliciesRequest\032\036.macp.v1.WatchPol" +
+      "iciesResponse0\001B_\n\025io.macp.proto.macp.v1" +
+      "B\tCoreProtoP\001\242\002\003MXX\252\002\007Macp.V1\312\002\007Macp\\V1\342" +
+      "\002\023Macp\\V1\\GPBMetadata\352\002\010Macp::V1b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -644,7 +646,7 @@ public final class CoreProto extends com.google.protobuf.GeneratedFile {
     internal_static_macp_v1_CommitmentPayload_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_macp_v1_CommitmentPayload_descriptor,
-        new java.lang.String[] { "CommitmentId", "Action", "AuthorityScope", "Reason", "ModeVersion", "PolicyVersion", "ConfigurationVersion", });
+        new java.lang.String[] { "CommitmentId", "Action", "AuthorityScope", "Reason", "ModeVersion", "PolicyVersion", "ConfigurationVersion", "OutcomePositive", });
     internal_static_macp_v1_ParticipantActivity_descriptor =
       getDescriptor().getMessageType(18);
     internal_static_macp_v1_ParticipantActivity_fieldAccessorTable = new
@@ -656,7 +658,7 @@ public final class CoreProto extends com.google.protobuf.GeneratedFile {
     internal_static_macp_v1_SessionMetadata_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_macp_v1_SessionMetadata_descriptor,
-        new java.lang.String[] { "SessionId", "Mode", "State", "StartedAtUnixMs", "ExpiresAtUnixMs", "ModeVersion", "ConfigurationVersion", "PolicyVersion", "Participants", "ParticipantActivity", });
+        new java.lang.String[] { "SessionId", "Mode", "State", "StartedAtUnixMs", "ExpiresAtUnixMs", "ModeVersion", "ConfigurationVersion", "PolicyVersion", "Participants", "ParticipantActivity", "Initiator", });
     internal_static_macp_v1_GetSessionRequest_descriptor =
       getDescriptor().getMessageType(20);
     internal_static_macp_v1_GetSessionRequest_fieldAccessorTable = new
@@ -830,7 +832,7 @@ public final class CoreProto extends com.google.protobuf.GeneratedFile {
     internal_static_macp_v1_RegisterExtModeRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_macp_v1_RegisterExtModeRequest_descriptor,
-        new java.lang.String[] { "Descriptor", });
+        new java.lang.String[] { "ModeDescriptor", });
     internal_static_macp_v1_RegisterExtModeResponse_descriptor =
       getDescriptor().getMessageType(46);
     internal_static_macp_v1_RegisterExtModeResponse_fieldAccessorTable = new

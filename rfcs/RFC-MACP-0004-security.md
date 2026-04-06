@@ -112,6 +112,8 @@ When MACP sessions span multiple jurisdictions, deployments SHOULD consider:
 
 Multi-tenant MACP deployments MUST enforce tenant-scoped isolation.
 
+Multi-tenant isolation is an operational concern. MACP Core (RFC-MACP-0001) does not define a `tenant_id` field in the Envelope or SessionMetadata; tenant scoping is an authorization-layer responsibility. Runtimes implementing multi-tenancy MUST enforce the following rules at the authorization layer, using deployment-defined tenant bindings (e.g., derived from authenticated identity, JWT claims, or mTLS certificate attributes).
+
 ### 11.1 Tenant-Scoped Session Namespaces
 
 Session identifiers MUST be scoped to a tenant namespace. A session created by Tenant A MUST NOT be accessible to Tenant B.

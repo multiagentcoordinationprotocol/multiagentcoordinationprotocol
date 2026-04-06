@@ -48,8 +48,14 @@ service MACPRuntimeService {
   rpc RegisterExtMode(RegisterExtModeRequest) returns (RegisterExtModeResponse);
   rpc UnregisterExtMode(UnregisterExtModeRequest) returns (UnregisterExtModeResponse);
   rpc PromoteMode(PromoteModeRequest) returns (PromoteModeResponse);
-  // Ambient signal observation
+  // Ambient Signal observation
   rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
+  // Governance policy lifecycle (RFC-MACP-0012)
+  rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);
+  rpc UnregisterPolicy(UnregisterPolicyRequest) returns (UnregisterPolicyResponse);
+  rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+  rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
 }
 ```
 
@@ -68,7 +74,7 @@ A runtime that advertises `sessions.stream = true` MUST implement `StreamSession
 - the stream carries canonical MACP Envelopes only,
 - once the stream is bound to a non-empty `session_id`, all subsequent session-scoped envelopes on that stream MUST use the same `session_id`,
 - accepted envelopes emitted by the server MUST appear in authoritative acceptance order for that session,
-- the stream MUST NOT invent ad-hoc pseudo-envelopes whose payloads encode JSON-only acks or errors unless an explicitly negotiated experimental capability allows it.
+- the stream MUST NOT invent ad-hoc pseudo-envelopes (informal messages that are not canonical MACP Envelopes) whose payloads encode JSON-only acks or errors unless an explicitly negotiated experimental capability allows it.
 
 `StreamSession` is **not** the standard replacement for unary `Send` acknowledgements. Clients that require standard per-message negative acknowledgements SHOULD use `Send`.
 
@@ -91,7 +97,7 @@ A watch notification indicates that the corresponding registry or roots view may
 
 ### 3.4 `WatchSignals`
 
-`WatchSignals` is an optional server-streaming RPC that broadcasts ambient Signal envelopes to all subscribers.
+`WatchSignals` is an optional server-streaming RPC that broadcasts Ambient Signal Envelopes to all subscribers.
 
 Signals are non-binding messages on the ambient plane (per RFC-MACP-0001 §5.1). They MUST carry empty `session_id` and empty `mode` in the Envelope. Signals MUST NOT enter any session's accepted history or mutate session state.
 
@@ -111,6 +117,22 @@ A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelo
 ### 3.6 Extension Mode Lifecycle RPCs
 
 `ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, and `PromoteMode` manage the lifecycle of non-standards-track (extension) coordination modes. These RPCs are implementation-defined surfaces for registering, discovering, and promoting experimental modes. See [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics and the relationship between extension and standards-track modes.
+
+### 3.7 Policy Lifecycle RPCs
+
+Five RPCs manage the governance policy lifecycle (see [RFC-MACP-0012](RFC-MACP-0012-policy.md)):
+
+```protobuf
+rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);
+rpc UnregisterPolicy(UnregisterPolicyRequest) returns (UnregisterPolicyResponse);
+rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
+rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
+```
+
+`RegisterPolicy` and `UnregisterPolicy` mutate the policy registry. `GetPolicy` and `ListPolicies` are read-only queries. `WatchPolicies` is a server-streaming RPC for policy registry change notifications.
+
+See RFC-MACP-0012 Section 7 for registration constraints and evaluation semantics.
 
 ## 4. HTTP Binding
 

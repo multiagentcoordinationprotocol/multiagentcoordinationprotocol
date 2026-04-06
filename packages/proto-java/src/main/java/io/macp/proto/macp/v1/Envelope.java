@@ -99,7 +99,7 @@ private static final long serialVersionUID = 0L;
   private volatile java.lang.Object mode_ = "";
   /**
    * <pre>
-   * empty for ambient Signals
+   * empty for Ambient Signals
    * </pre>
    *
    * <code>string mode = 2 [json_name = "mode"];</code>
@@ -120,7 +120,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * empty for ambient Signals
+   * empty for Ambient Signals
    * </pre>
    *
    * <code>string mode = 2 [json_name = "mode"];</code>
@@ -867,7 +867,7 @@ private static final long serialVersionUID = 0L;
     private java.lang.Object mode_ = "";
     /**
      * <pre>
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * </pre>
      *
      * <code>string mode = 2 [json_name = "mode"];</code>
@@ -887,7 +887,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * </pre>
      *
      * <code>string mode = 2 [json_name = "mode"];</code>
@@ -908,7 +908,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * </pre>
      *
      * <code>string mode = 2 [json_name = "mode"];</code>
@@ -925,7 +925,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * </pre>
      *
      * <code>string mode = 2 [json_name = "mode"];</code>
@@ -939,7 +939,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * empty for ambient Signals
+     * empty for Ambient Signals
      * </pre>
      *
      * <code>string mode = 2 [json_name = "mode"];</code>

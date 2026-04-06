@@ -1,0 +1,41 @@
+{
+  "$comment": "Example gRPC exchange: RegisterPolicy request and response. See RFC-MACP-0012 Section 7.",
+  "description": "Registers a supermajority voting policy for Decision Mode sessions.",
+  "request": {
+    "rpc": "RegisterPolicy",
+    "body": {
+      "policy_descriptor": {
+        "policy_id": "policy.platform.supermajority",
+        "mode": "macp.mode.decision.v1",
+        "description": "Supermajority voting with 2/3 threshold and quorum of 3 participants",
+        "schema_version": 1,
+        "rules": {
+          "$comment": "Shown as decoded JSON for readability. In proto wire format, this is JSON-encoded bytes (base64 in JSON serialization).",
+          "voting": {
+            "algorithm": "supermajority",
+            "threshold": 0.67,
+            "quorum": {
+              "type": "count",
+              "value": 3
+            }
+          },
+          "objection_handling": {
+            "block_severity_vetoes": true,
+            "veto_threshold": 1
+          },
+          "evaluation": {
+            "required_before_voting": true
+          },
+          "commitment": {
+            "authority": "initiator_only",
+            "require_vote_quorum": true
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "ok": true,
+    "error": ""
+  }
+}

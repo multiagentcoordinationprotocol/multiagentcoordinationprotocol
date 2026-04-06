@@ -47,6 +47,12 @@ public object CommitmentPayloadKt {
     }
 
     /**
+     * ```
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * ```
+     *
      * `string action = 2 [json_name = "action"];`
      */
     public var action: kotlin.String
@@ -57,6 +63,12 @@ public object CommitmentPayloadKt {
         _builder.action = value
       }
     /**
+     * ```
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * ```
+     *
      * `string action = 2 [json_name = "action"];`
      */
     public fun clearAction() {
@@ -146,6 +158,35 @@ public object CommitmentPayloadKt {
      */
     public fun clearConfigurationVersion() {
       _builder.clearConfigurationVersion()
+    }
+
+    /**
+     * ```
+     * True when the commitment represents a positive/successful outcome;
+     * false for definitive negative outcomes (e.g., rejection, failure).
+     * Modes that allow negative commitments MUST set this field explicitly.
+     * ```
+     *
+     * `bool outcome_positive = 8 [json_name = "outcomePositive"];`
+     */
+    public var outcomePositive: kotlin.Boolean
+      @kotlin.jvm.JvmName("getOutcomePositive")
+        get() = _builder.outcomePositive
+      @kotlin.jvm.JvmName("setOutcomePositive")
+        set(value) {
+        _builder.outcomePositive = value
+      }
+    /**
+     * ```
+     * True when the commitment represents a positive/successful outcome;
+     * false for definitive negative outcomes (e.g., rejection, failure).
+     * Modes that allow negative commitments MUST set this field explicitly.
+     * ```
+     *
+     * `bool outcome_positive = 8 [json_name = "outcomePositive"];`
+     */
+    public fun clearOutcomePositive() {
+      _builder.clearOutcomePositive()
     }
   }
 }

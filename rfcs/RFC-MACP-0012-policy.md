@@ -8,7 +8,7 @@
 
 ## Abstract
 
-This document defines the MACP Governance Policy Framework: a declarative, deterministic, and replay-safe mechanism for binding governance rules to coordination sessions. Policies specify how session outcomes are determined — voting algorithms, quorum thresholds, objection handling, commitment authority, and mode-specific governance constraints. Policies are authored via SDKs, registered with the runtime, resolved at `SessionStart`, and evaluated at commitment time.
+This document defines the MACP Governance Policy Framework: a declarative, deterministic, and replay-safe mechanism for binding governance rules to Coordination Sessions. Policies specify how session outcomes are determined — voting algorithms, quorum thresholds, objection handling, commitment authority, and mode-specific governance constraints. Policies are authored via SDKs, registered with the runtime, resolved at `SessionStart`, and evaluated at commitment time.
 
 ## 1. Purpose and Scope
 
@@ -62,6 +62,8 @@ A policy descriptor is a structured document with the following required fields:
 | `schema_version` | uint32 | Version of the rule schema used (currently `1`) |
 
 The canonical wire format is defined in `schemas/proto/macp/v1/policy.proto`. The `rules` field is JSON-encoded bytes to allow mode-specific schemas without requiring proto changes per mode.
+
+**Encoding note:** In the Protobuf wire format, `rules` is `bytes` containing JSON-encoded text. In JSON canonical form (e.g., examples), `rules` is shown as a decoded JSON object for readability. In actual proto-to-JSON serialization, `rules` would be base64-encoded. Examples in this specification use the decoded form unless otherwise noted.
 
 ## 4. Rule Schemas
 
@@ -167,7 +169,7 @@ Every conformant runtime MUST pre-register the following default policy:
 }
 ```
 
-When `policy_version` in `SessionStartPayload` is empty or equals `policy.default`, the runtime MUST apply this default. The default policy imposes no additional governance constraints beyond the mode's own validation rules.
+When `policy_version` in `SessionStartPayload` is empty or equals `policy.default`, the runtime MUST apply this default. The default policy sets all rule parameters to permissive values (`none`, `initiator_only`, zero quorum) such that the mode's built-in validation is the only constraint applied. It does not disable mode validation — it simply adds no governance restrictions on top of it.
 
 ## 6. Evaluation Semantics
 
@@ -297,3 +299,7 @@ Well-known policy identifiers:
 Example transcript:
 
 - `examples/policy-decision-session.json`
+
+Policy registration exchange example:
+
+- `examples/policy-registration-exchange.json`

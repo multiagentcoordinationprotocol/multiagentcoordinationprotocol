@@ -30,37 +30,37 @@ public object RegisterPolicyRequestKt {
     internal fun _build(): io.macp.proto.macp.v1.RegisterPolicyRequest = _builder.build()
 
     /**
-     * `.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];`
+     * `.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];`
      */
-    public var descriptor: io.macp.proto.macp.v1.PolicyDescriptor
-      @kotlin.jvm.JvmName("getDescriptor")
-        get() = _builder.descriptor
-      @kotlin.jvm.JvmName("setDescriptor")
+    public var policyDescriptor: io.macp.proto.macp.v1.PolicyDescriptor
+      @kotlin.jvm.JvmName("getPolicyDescriptor")
+        get() = _builder.policyDescriptor
+      @kotlin.jvm.JvmName("setPolicyDescriptor")
         set(value) {
-        _builder.descriptor = value
+        _builder.policyDescriptor = value
       }
     /**
-     * `.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];`
+     * `.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];`
      */
-    public fun clearDescriptor() {
-      _builder.clearDescriptor()
+    public fun clearPolicyDescriptor() {
+      _builder.clearPolicyDescriptor()
     }
     /**
-     * `.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];`
-     * @return Whether the descriptor field is set.
+     * `.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];`
+     * @return Whether the policyDescriptor field is set.
      */
-    public fun hasDescriptor(): kotlin.Boolean {
-      return _builder.hasDescriptor()
+    public fun hasPolicyDescriptor(): kotlin.Boolean {
+      return _builder.hasPolicyDescriptor()
     }
 
-    public val RegisterPolicyRequestKt.Dsl.descriptorOrNull: io.macp.proto.macp.v1.PolicyDescriptor?
-      get() = _builder.descriptorOrNull
+    public val RegisterPolicyRequestKt.Dsl.policyDescriptorOrNull: io.macp.proto.macp.v1.PolicyDescriptor?
+      get() = _builder.policyDescriptorOrNull
   }
 }
 @kotlin.jvm.JvmSynthetic
 public inline fun io.macp.proto.macp.v1.RegisterPolicyRequest.copy(block: `io.macp.proto.macp.v1`.RegisterPolicyRequestKt.Dsl.() -> kotlin.Unit): io.macp.proto.macp.v1.RegisterPolicyRequest =
   `io.macp.proto.macp.v1`.RegisterPolicyRequestKt.Dsl._create(this.toBuilder()).apply { block() }._build()
 
-public val io.macp.proto.macp.v1.RegisterPolicyRequestOrBuilder.descriptorOrNull: io.macp.proto.macp.v1.PolicyDescriptor?
-  get() = if (hasDescriptor()) getDescriptor() else null
+public val io.macp.proto.macp.v1.RegisterPolicyRequestOrBuilder.policyDescriptorOrNull: io.macp.proto.macp.v1.PolicyDescriptor?
+  get() = if (hasPolicyDescriptor()) getPolicyDescriptor() else null
 

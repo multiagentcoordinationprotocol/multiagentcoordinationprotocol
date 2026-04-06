@@ -257,7 +257,7 @@ message ListExtModesResponse {
 }
 
 message RegisterExtModeRequest {
-  ModeDescriptor descriptor = 1;
+  ModeDescriptor mode_descriptor = 1;
 }
 
 message RegisterExtModeResponse {
@@ -309,7 +309,7 @@ service MACPRuntimeService {
   rpc RegisterExtMode(RegisterExtModeRequest) returns (RegisterExtModeResponse);
   rpc UnregisterExtMode(UnregisterExtModeRequest) returns (UnregisterExtModeResponse);
   rpc PromoteMode(PromoteModeRequest) returns (PromoteModeResponse);
-  // Ambient signal observation
+  // Ambient Signal observation
   rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
   // Governance policy lifecycle (RFC-MACP-0012)
   rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);

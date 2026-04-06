@@ -119,7 +119,7 @@ jobs:
       - uses: bufbuild/buf-setup-action@v1
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
 
       - name: Generate Go code
         run: buf generate --template buf/buf.gen.go.yaml
@@ -152,6 +152,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Generate Java code
         run: buf generate --template buf/buf.gen.java.yaml
@@ -161,7 +162,7 @@ jobs:
           cd packages/proto-java
           VERSION="${{ needs.extract-version.outputs.version }}"
           sed -i "s/version = .*/version = \"${VERSION}\"/" build.gradle.kts
-          ./gradlew publish
+          gradle publish
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -178,6 +179,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Generate Kotlin code
         run: buf generate --template buf/buf.gen.kotlin.yaml
@@ -187,7 +189,7 @@ jobs:
           cd packages/proto-kotlin
           VERSION="${{ needs.extract-version.outputs.version }}"
           sed -i "s/version = .*/version = \"${VERSION}\"/" build.gradle.kts
-          ./gradlew publish
+          gradle publish
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

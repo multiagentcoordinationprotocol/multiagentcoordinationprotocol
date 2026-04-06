@@ -32,35 +32,36 @@ namespace Macp.Proto.Macp.V1 {
             "c3RlcmVkQXQiiwEKGFBvbGljeVJlZ2lzdHJ5Q2FwYWJpbGl0eRInCg9yZWdp",
             "c3Rlcl9wb2xpY3kYASABKAhSDnJlZ2lzdGVyUG9saWN5EiMKDWxpc3RfcG9s",
             "aWNpZXMYAiABKAhSDGxpc3RQb2xpY2llcxIhCgxsaXN0X2NoYW5nZWQYAyAB",
-            "KAhSC2xpc3RDaGFuZ2VkIlIKFVJlZ2lzdGVyUG9saWN5UmVxdWVzdBI5Cgpk",
-            "ZXNjcmlwdG9yGAEgASgLMhkubWFjcC52MS5Qb2xpY3lEZXNjcmlwdG9yUgpk",
-            "ZXNjcmlwdG9yIj4KFlJlZ2lzdGVyUG9saWN5UmVzcG9uc2USDgoCb2sYASAB",
-            "KAhSAm9rEhQKBWVycm9yGAIgASgJUgVlcnJvciI2ChdVbnJlZ2lzdGVyUG9s",
-            "aWN5UmVxdWVzdBIbCglwb2xpY3lfaWQYASABKAlSCHBvbGljeUlkIkAKGFVu",
-            "cmVnaXN0ZXJQb2xpY3lSZXNwb25zZRIOCgJvaxgBIAEoCFICb2sSFAoFZXJy",
-            "b3IYAiABKAlSBWVycm9yIi8KEEdldFBvbGljeVJlcXVlc3QSGwoJcG9saWN5",
-            "X2lkGAEgASgJUghwb2xpY3lJZCJOChFHZXRQb2xpY3lSZXNwb25zZRI5Cgpk",
-            "ZXNjcmlwdG9yGAEgASgLMhkubWFjcC52MS5Qb2xpY3lEZXNjcmlwdG9yUgpk",
-            "ZXNjcmlwdG9yIikKE0xpc3RQb2xpY2llc1JlcXVlc3QSEgoEbW9kZRgBIAEo",
-            "CVIEbW9kZSJTChRMaXN0UG9saWNpZXNSZXNwb25zZRI7CgtkZXNjcmlwdG9y",
-            "cxgBIAMoCzIZLm1hY3AudjEuUG9saWN5RGVzY3JpcHRvclILZGVzY3JpcHRv",
-            "cnMiFgoUV2F0Y2hQb2xpY2llc1JlcXVlc3QigwEKFVdhdGNoUG9saWNpZXNS",
-            "ZXNwb25zZRI7CgtkZXNjcmlwdG9ycxgBIAMoCzIZLm1hY3AudjEuUG9saWN5",
-            "RGVzY3JpcHRvclILZGVzY3JpcHRvcnMSLQoTb2JzZXJ2ZWRfYXRfdW5peF9t",
-            "cxgCIAEoBFIQb2JzZXJ2ZWRBdFVuaXhNc0JiCgtjb20ubWFjcC52MUILUG9s",
-            "aWN5UHJvdG9QAaICA01YWKoCEk1hY3AuUHJvdG8uTWFjcC5WMcoCB01hY3Bc",
-            "VjHiAhNNYWNwXFYxXEdQQk1ldGFkYXRh6gIITWFjcDo6VjFiBnByb3RvMw=="));
+            "KAhSC2xpc3RDaGFuZ2VkIl8KFVJlZ2lzdGVyUG9saWN5UmVxdWVzdBJGChFw",
+            "b2xpY3lfZGVzY3JpcHRvchgBIAEoCzIZLm1hY3AudjEuUG9saWN5RGVzY3Jp",
+            "cHRvclIQcG9saWN5RGVzY3JpcHRvciI+ChZSZWdpc3RlclBvbGljeVJlc3Bv",
+            "bnNlEg4KAm9rGAEgASgIUgJvaxIUCgVlcnJvchgCIAEoCVIFZXJyb3IiNgoX",
+            "VW5yZWdpc3RlclBvbGljeVJlcXVlc3QSGwoJcG9saWN5X2lkGAEgASgJUghw",
+            "b2xpY3lJZCJAChhVbnJlZ2lzdGVyUG9saWN5UmVzcG9uc2USDgoCb2sYASAB",
+            "KAhSAm9rEhQKBWVycm9yGAIgASgJUgVlcnJvciIvChBHZXRQb2xpY3lSZXF1",
+            "ZXN0EhsKCXBvbGljeV9pZBgBIAEoCVIIcG9saWN5SWQiWwoRR2V0UG9saWN5",
+            "UmVzcG9uc2USRgoRcG9saWN5X2Rlc2NyaXB0b3IYASABKAsyGS5tYWNwLnYx",
+            "LlBvbGljeURlc2NyaXB0b3JSEHBvbGljeURlc2NyaXB0b3IiKQoTTGlzdFBv",
+            "bGljaWVzUmVxdWVzdBISCgRtb2RlGAEgASgJUgRtb2RlIlMKFExpc3RQb2xp",
+            "Y2llc1Jlc3BvbnNlEjsKC2Rlc2NyaXB0b3JzGAEgAygLMhkubWFjcC52MS5Q",
+            "b2xpY3lEZXNjcmlwdG9yUgtkZXNjcmlwdG9ycyIWChRXYXRjaFBvbGljaWVz",
+            "UmVxdWVzdCKDAQoVV2F0Y2hQb2xpY2llc1Jlc3BvbnNlEjsKC2Rlc2NyaXB0",
+            "b3JzGAEgAygLMhkubWFjcC52MS5Qb2xpY3lEZXNjcmlwdG9yUgtkZXNjcmlw",
+            "dG9ycxItChNvYnNlcnZlZF9hdF91bml4X21zGAIgASgEUhBvYnNlcnZlZEF0",
+            "VW5peE1zQmIKC2NvbS5tYWNwLnYxQgtQb2xpY3lQcm90b1ABogIDTVhYqgIS",
+            "TWFjcC5Qcm90by5NYWNwLlYxygIHTWFjcFxWMeICE01hY3BcVjFcR1BCTWV0",
+            "YWRhdGHqAghNYWNwOjpWMWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.PolicyDescriptor), global::Macp.Proto.Macp.V1.PolicyDescriptor.Parser, new[]{ "PolicyId", "Mode", "Description", "Rules", "SchemaVersion", "RegisteredAt" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.PolicyRegistryCapability), global::Macp.Proto.Macp.V1.PolicyRegistryCapability.Parser, new[]{ "RegisterPolicy", "ListPolicies", "ListChanged" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.RegisterPolicyRequest), global::Macp.Proto.Macp.V1.RegisterPolicyRequest.Parser, new[]{ "Descriptor_" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.RegisterPolicyRequest), global::Macp.Proto.Macp.V1.RegisterPolicyRequest.Parser, new[]{ "PolicyDescriptor" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.RegisterPolicyResponse), global::Macp.Proto.Macp.V1.RegisterPolicyResponse.Parser, new[]{ "Ok", "Error" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.UnregisterPolicyRequest), global::Macp.Proto.Macp.V1.UnregisterPolicyRequest.Parser, new[]{ "PolicyId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.UnregisterPolicyResponse), global::Macp.Proto.Macp.V1.UnregisterPolicyResponse.Parser, new[]{ "Ok", "Error" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.GetPolicyRequest), global::Macp.Proto.Macp.V1.GetPolicyRequest.Parser, new[]{ "PolicyId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.GetPolicyResponse), global::Macp.Proto.Macp.V1.GetPolicyResponse.Parser, new[]{ "Descriptor_" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.GetPolicyResponse), global::Macp.Proto.Macp.V1.GetPolicyResponse.Parser, new[]{ "PolicyDescriptor" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.ListPoliciesRequest), global::Macp.Proto.Macp.V1.ListPoliciesRequest.Parser, new[]{ "Mode" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.ListPoliciesResponse), global::Macp.Proto.Macp.V1.ListPoliciesResponse.Parser, new[]{ "Descriptors" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Macp.Proto.Macp.V1.WatchPoliciesRequest), global::Macp.Proto.Macp.V1.WatchPoliciesRequest.Parser, null, null, null, null, null),
@@ -789,7 +790,7 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public RegisterPolicyRequest(RegisterPolicyRequest other) : this() {
-      descriptor_ = other.descriptor_ != null ? other.descriptor_.Clone() : null;
+      policyDescriptor_ = other.policyDescriptor_ != null ? other.policyDescriptor_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -799,15 +800,15 @@ namespace Macp.Proto.Macp.V1 {
       return new RegisterPolicyRequest(this);
     }
 
-    /// <summary>Field number for the "descriptor" field.</summary>
-    public const int Descriptor_FieldNumber = 1;
-    private global::Macp.Proto.Macp.V1.PolicyDescriptor descriptor_;
+    /// <summary>Field number for the "policy_descriptor" field.</summary>
+    public const int PolicyDescriptorFieldNumber = 1;
+    private global::Macp.Proto.Macp.V1.PolicyDescriptor policyDescriptor_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Macp.Proto.Macp.V1.PolicyDescriptor Descriptor_ {
-      get { return descriptor_; }
+    public global::Macp.Proto.Macp.V1.PolicyDescriptor PolicyDescriptor {
+      get { return policyDescriptor_; }
       set {
-        descriptor_ = value;
+        policyDescriptor_ = value;
       }
     }
 
@@ -826,7 +827,7 @@ namespace Macp.Proto.Macp.V1 {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!object.Equals(Descriptor_, other.Descriptor_)) return false;
+      if (!object.Equals(PolicyDescriptor, other.PolicyDescriptor)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -834,7 +835,7 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (descriptor_ != null) hash ^= Descriptor_.GetHashCode();
+      if (policyDescriptor_ != null) hash ^= PolicyDescriptor.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -853,9 +854,9 @@ namespace Macp.Proto.Macp.V1 {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (descriptor_ != null) {
+      if (policyDescriptor_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(Descriptor_);
+        output.WriteMessage(PolicyDescriptor);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -867,9 +868,9 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (descriptor_ != null) {
+      if (policyDescriptor_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(Descriptor_);
+        output.WriteMessage(PolicyDescriptor);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -881,8 +882,8 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (descriptor_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Descriptor_);
+      if (policyDescriptor_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(PolicyDescriptor);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -896,11 +897,11 @@ namespace Macp.Proto.Macp.V1 {
       if (other == null) {
         return;
       }
-      if (other.descriptor_ != null) {
-        if (descriptor_ == null) {
-          Descriptor_ = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
+      if (other.policyDescriptor_ != null) {
+        if (policyDescriptor_ == null) {
+          PolicyDescriptor = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
         }
-        Descriptor_.MergeFrom(other.Descriptor_);
+        PolicyDescriptor.MergeFrom(other.PolicyDescriptor);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -922,10 +923,10 @@ namespace Macp.Proto.Macp.V1 {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            if (descriptor_ == null) {
-              Descriptor_ = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
+            if (policyDescriptor_ == null) {
+              PolicyDescriptor = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
             }
-            input.ReadMessage(Descriptor_);
+            input.ReadMessage(PolicyDescriptor);
             break;
           }
         }
@@ -948,10 +949,10 @@ namespace Macp.Proto.Macp.V1 {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
-            if (descriptor_ == null) {
-              Descriptor_ = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
+            if (policyDescriptor_ == null) {
+              PolicyDescriptor = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
             }
-            input.ReadMessage(Descriptor_);
+            input.ReadMessage(PolicyDescriptor);
             break;
           }
         }
@@ -1862,7 +1863,7 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public GetPolicyResponse(GetPolicyResponse other) : this() {
-      descriptor_ = other.descriptor_ != null ? other.descriptor_.Clone() : null;
+      policyDescriptor_ = other.policyDescriptor_ != null ? other.policyDescriptor_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1872,15 +1873,15 @@ namespace Macp.Proto.Macp.V1 {
       return new GetPolicyResponse(this);
     }
 
-    /// <summary>Field number for the "descriptor" field.</summary>
-    public const int Descriptor_FieldNumber = 1;
-    private global::Macp.Proto.Macp.V1.PolicyDescriptor descriptor_;
+    /// <summary>Field number for the "policy_descriptor" field.</summary>
+    public const int PolicyDescriptorFieldNumber = 1;
+    private global::Macp.Proto.Macp.V1.PolicyDescriptor policyDescriptor_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Macp.Proto.Macp.V1.PolicyDescriptor Descriptor_ {
-      get { return descriptor_; }
+    public global::Macp.Proto.Macp.V1.PolicyDescriptor PolicyDescriptor {
+      get { return policyDescriptor_; }
       set {
-        descriptor_ = value;
+        policyDescriptor_ = value;
       }
     }
 
@@ -1899,7 +1900,7 @@ namespace Macp.Proto.Macp.V1 {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!object.Equals(Descriptor_, other.Descriptor_)) return false;
+      if (!object.Equals(PolicyDescriptor, other.PolicyDescriptor)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1907,7 +1908,7 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (descriptor_ != null) hash ^= Descriptor_.GetHashCode();
+      if (policyDescriptor_ != null) hash ^= PolicyDescriptor.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1926,9 +1927,9 @@ namespace Macp.Proto.Macp.V1 {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (descriptor_ != null) {
+      if (policyDescriptor_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(Descriptor_);
+        output.WriteMessage(PolicyDescriptor);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -1940,9 +1941,9 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (descriptor_ != null) {
+      if (policyDescriptor_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(Descriptor_);
+        output.WriteMessage(PolicyDescriptor);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -1954,8 +1955,8 @@ namespace Macp.Proto.Macp.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (descriptor_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Descriptor_);
+      if (policyDescriptor_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(PolicyDescriptor);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1969,11 +1970,11 @@ namespace Macp.Proto.Macp.V1 {
       if (other == null) {
         return;
       }
-      if (other.descriptor_ != null) {
-        if (descriptor_ == null) {
-          Descriptor_ = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
+      if (other.policyDescriptor_ != null) {
+        if (policyDescriptor_ == null) {
+          PolicyDescriptor = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
         }
-        Descriptor_.MergeFrom(other.Descriptor_);
+        PolicyDescriptor.MergeFrom(other.PolicyDescriptor);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1995,10 +1996,10 @@ namespace Macp.Proto.Macp.V1 {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            if (descriptor_ == null) {
-              Descriptor_ = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
+            if (policyDescriptor_ == null) {
+              PolicyDescriptor = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
             }
-            input.ReadMessage(Descriptor_);
+            input.ReadMessage(PolicyDescriptor);
             break;
           }
         }
@@ -2021,10 +2022,10 @@ namespace Macp.Proto.Macp.V1 {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
-            if (descriptor_ == null) {
-              Descriptor_ = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
+            if (policyDescriptor_ == null) {
+              PolicyDescriptor = new global::Macp.Proto.Macp.V1.PolicyDescriptor();
             }
-            input.ReadMessage(Descriptor_);
+            input.ReadMessage(PolicyDescriptor);
             break;
           }
         }

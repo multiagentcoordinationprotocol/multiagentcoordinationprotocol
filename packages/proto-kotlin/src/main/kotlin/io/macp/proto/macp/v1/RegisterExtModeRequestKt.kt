@@ -30,37 +30,37 @@ public object RegisterExtModeRequestKt {
     internal fun _build(): io.macp.proto.macp.v1.RegisterExtModeRequest = _builder.build()
 
     /**
-     * `.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];`
+     * `.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];`
      */
-    public var descriptor: io.macp.proto.macp.v1.ModeDescriptor
-      @kotlin.jvm.JvmName("getDescriptor")
-        get() = _builder.descriptor
-      @kotlin.jvm.JvmName("setDescriptor")
+    public var modeDescriptor: io.macp.proto.macp.v1.ModeDescriptor
+      @kotlin.jvm.JvmName("getModeDescriptor")
+        get() = _builder.modeDescriptor
+      @kotlin.jvm.JvmName("setModeDescriptor")
         set(value) {
-        _builder.descriptor = value
+        _builder.modeDescriptor = value
       }
     /**
-     * `.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];`
+     * `.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];`
      */
-    public fun clearDescriptor() {
-      _builder.clearDescriptor()
+    public fun clearModeDescriptor() {
+      _builder.clearModeDescriptor()
     }
     /**
-     * `.macp.v1.ModeDescriptor descriptor = 1 [json_name = "descriptor"];`
-     * @return Whether the descriptor field is set.
+     * `.macp.v1.ModeDescriptor mode_descriptor = 1 [json_name = "modeDescriptor"];`
+     * @return Whether the modeDescriptor field is set.
      */
-    public fun hasDescriptor(): kotlin.Boolean {
-      return _builder.hasDescriptor()
+    public fun hasModeDescriptor(): kotlin.Boolean {
+      return _builder.hasModeDescriptor()
     }
 
-    public val RegisterExtModeRequestKt.Dsl.descriptorOrNull: io.macp.proto.macp.v1.ModeDescriptor?
-      get() = _builder.descriptorOrNull
+    public val RegisterExtModeRequestKt.Dsl.modeDescriptorOrNull: io.macp.proto.macp.v1.ModeDescriptor?
+      get() = _builder.modeDescriptorOrNull
   }
 }
 @kotlin.jvm.JvmSynthetic
 public inline fun io.macp.proto.macp.v1.RegisterExtModeRequest.copy(block: `io.macp.proto.macp.v1`.RegisterExtModeRequestKt.Dsl.() -> kotlin.Unit): io.macp.proto.macp.v1.RegisterExtModeRequest =
   `io.macp.proto.macp.v1`.RegisterExtModeRequestKt.Dsl._create(this.toBuilder()).apply { block() }._build()
 
-public val io.macp.proto.macp.v1.RegisterExtModeRequestOrBuilder.descriptorOrNull: io.macp.proto.macp.v1.ModeDescriptor?
-  get() = if (hasDescriptor()) getDescriptor() else null
+public val io.macp.proto.macp.v1.RegisterExtModeRequestOrBuilder.modeDescriptorOrNull: io.macp.proto.macp.v1.ModeDescriptor?
+  get() = if (hasModeDescriptor()) getModeDescriptor() else null
 

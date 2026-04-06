@@ -104,27 +104,27 @@ public final class PolicyProto extends com.google.protobuf.GeneratedFile {
       "licyRegistryCapability\022\'\n\017register_polic" +
       "y\030\001 \001(\010R\016registerPolicy\022#\n\rlist_policies" +
       "\030\002 \001(\010R\014listPolicies\022!\n\014list_changed\030\003 \001" +
-      "(\010R\013listChanged\"R\n\025RegisterPolicyRequest" +
-      "\0229\n\ndescriptor\030\001 \001(\0132\031.macp.v1.PolicyDes" +
-      "criptorR\ndescriptor\">\n\026RegisterPolicyRes" +
-      "ponse\022\016\n\002ok\030\001 \001(\010R\002ok\022\024\n\005error\030\002 \001(\tR\005er" +
-      "ror\"6\n\027UnregisterPolicyRequest\022\033\n\tpolicy" +
-      "_id\030\001 \001(\tR\010policyId\"@\n\030UnregisterPolicyR" +
-      "esponse\022\016\n\002ok\030\001 \001(\010R\002ok\022\024\n\005error\030\002 \001(\tR\005" +
-      "error\"/\n\020GetPolicyRequest\022\033\n\tpolicy_id\030\001" +
-      " \001(\tR\010policyId\"N\n\021GetPolicyResponse\0229\n\nd" +
-      "escriptor\030\001 \001(\0132\031.macp.v1.PolicyDescript" +
-      "orR\ndescriptor\")\n\023ListPoliciesRequest\022\022\n" +
-      "\004mode\030\001 \001(\tR\004mode\"S\n\024ListPoliciesRespons" +
-      "e\022;\n\013descriptors\030\001 \003(\0132\031.macp.v1.PolicyD" +
-      "escriptorR\013descriptors\"\026\n\024WatchPoliciesR" +
-      "equest\"\203\001\n\025WatchPoliciesResponse\022;\n\013desc" +
-      "riptors\030\001 \003(\0132\031.macp.v1.PolicyDescriptor" +
-      "R\013descriptors\022-\n\023observed_at_unix_ms\030\002 \001" +
-      "(\004R\020observedAtUnixMsBa\n\025io.macp.proto.ma" +
-      "cp.v1B\013PolicyProtoP\001\242\002\003MXX\252\002\007Macp.V1\312\002\007M" +
-      "acp\\V1\342\002\023Macp\\V1\\GPBMetadata\352\002\010Macp::V1b" +
-      "\006proto3"
+      "(\010R\013listChanged\"_\n\025RegisterPolicyRequest" +
+      "\022F\n\021policy_descriptor\030\001 \001(\0132\031.macp.v1.Po" +
+      "licyDescriptorR\020policyDescriptor\">\n\026Regi" +
+      "sterPolicyResponse\022\016\n\002ok\030\001 \001(\010R\002ok\022\024\n\005er" +
+      "ror\030\002 \001(\tR\005error\"6\n\027UnregisterPolicyRequ" +
+      "est\022\033\n\tpolicy_id\030\001 \001(\tR\010policyId\"@\n\030Unre" +
+      "gisterPolicyResponse\022\016\n\002ok\030\001 \001(\010R\002ok\022\024\n\005" +
+      "error\030\002 \001(\tR\005error\"/\n\020GetPolicyRequest\022\033" +
+      "\n\tpolicy_id\030\001 \001(\tR\010policyId\"[\n\021GetPolicy" +
+      "Response\022F\n\021policy_descriptor\030\001 \001(\0132\031.ma" +
+      "cp.v1.PolicyDescriptorR\020policyDescriptor" +
+      "\")\n\023ListPoliciesRequest\022\022\n\004mode\030\001 \001(\tR\004m" +
+      "ode\"S\n\024ListPoliciesResponse\022;\n\013descripto" +
+      "rs\030\001 \003(\0132\031.macp.v1.PolicyDescriptorR\013des" +
+      "criptors\"\026\n\024WatchPoliciesRequest\"\203\001\n\025Wat" +
+      "chPoliciesResponse\022;\n\013descriptors\030\001 \003(\0132" +
+      "\031.macp.v1.PolicyDescriptorR\013descriptors\022" +
+      "-\n\023observed_at_unix_ms\030\002 \001(\004R\020observedAt" +
+      "UnixMsBa\n\025io.macp.proto.macp.v1B\013PolicyP" +
+      "rotoP\001\242\002\003MXX\252\002\007Macp.V1\312\002\007Macp\\V1\342\002\023Macp\\" +
+      "V1\\GPBMetadata\352\002\010Macp::V1b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -147,7 +147,7 @@ public final class PolicyProto extends com.google.protobuf.GeneratedFile {
     internal_static_macp_v1_RegisterPolicyRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_macp_v1_RegisterPolicyRequest_descriptor,
-        new java.lang.String[] { "Descriptor", });
+        new java.lang.String[] { "PolicyDescriptor", });
     internal_static_macp_v1_RegisterPolicyResponse_descriptor =
       getDescriptor().getMessageType(3);
     internal_static_macp_v1_RegisterPolicyResponse_fieldAccessorTable = new
@@ -177,7 +177,7 @@ public final class PolicyProto extends com.google.protobuf.GeneratedFile {
     internal_static_macp_v1_GetPolicyResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_macp_v1_GetPolicyResponse_descriptor,
-        new java.lang.String[] { "Descriptor", });
+        new java.lang.String[] { "PolicyDescriptor", });
     internal_static_macp_v1_ListPoliciesRequest_descriptor =
       getDescriptor().getMessageType(8);
     internal_static_macp_v1_ListPoliciesRequest_fieldAccessorTable = new

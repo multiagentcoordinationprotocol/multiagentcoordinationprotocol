@@ -49,30 +49,30 @@ private static final long serialVersionUID = 0L;
   }
 
   private int bitField0_;
-  public static final int DESCRIPTOR_FIELD_NUMBER = 1;
-  private io.macp.proto.macp.v1.PolicyDescriptor descriptor_;
+  public static final int POLICY_DESCRIPTOR_FIELD_NUMBER = 1;
+  private io.macp.proto.macp.v1.PolicyDescriptor policyDescriptor_;
   /**
-   * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return Whether the descriptor field is set.
+   * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
+   * @return Whether the policyDescriptor field is set.
    */
   @java.lang.Override
-  public boolean hasDescriptor() {
+  public boolean hasPolicyDescriptor() {
     return ((bitField0_ & 0x00000001) != 0);
   }
   /**
-   * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-   * @return The descriptor.
+   * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
+   * @return The policyDescriptor.
    */
   @java.lang.Override
-  public io.macp.proto.macp.v1.PolicyDescriptor getDescriptor() {
-    return descriptor_ == null ? io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : descriptor_;
+  public io.macp.proto.macp.v1.PolicyDescriptor getPolicyDescriptor() {
+    return policyDescriptor_ == null ? io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : policyDescriptor_;
   }
   /**
-   * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+   * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
    */
   @java.lang.Override
-  public io.macp.proto.macp.v1.PolicyDescriptorOrBuilder getDescriptorOrBuilder() {
-    return descriptor_ == null ? io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : descriptor_;
+  public io.macp.proto.macp.v1.PolicyDescriptorOrBuilder getPolicyDescriptorOrBuilder() {
+    return policyDescriptor_ == null ? io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : policyDescriptor_;
   }
 
   private byte memoizedIsInitialized = -1;
@@ -90,7 +90,7 @@ private static final long serialVersionUID = 0L;
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
     if (((bitField0_ & 0x00000001) != 0)) {
-      output.writeMessage(1, getDescriptor());
+      output.writeMessage(1, getPolicyDescriptor());
     }
     getUnknownFields().writeTo(output);
   }
@@ -103,7 +103,7 @@ private static final long serialVersionUID = 0L;
     size = 0;
     if (((bitField0_ & 0x00000001) != 0)) {
       size += com.google.protobuf.CodedOutputStream
-        .computeMessageSize(1, getDescriptor());
+        .computeMessageSize(1, getPolicyDescriptor());
     }
     size += getUnknownFields().getSerializedSize();
     memoizedSize = size;
@@ -120,10 +120,10 @@ private static final long serialVersionUID = 0L;
     }
     io.macp.proto.macp.v1.RegisterPolicyRequest other = (io.macp.proto.macp.v1.RegisterPolicyRequest) obj;
 
-    if (hasDescriptor() != other.hasDescriptor()) return false;
-    if (hasDescriptor()) {
-      if (!getDescriptor()
-          .equals(other.getDescriptor())) return false;
+    if (hasPolicyDescriptor() != other.hasPolicyDescriptor()) return false;
+    if (hasPolicyDescriptor()) {
+      if (!getPolicyDescriptor()
+          .equals(other.getPolicyDescriptor())) return false;
     }
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
@@ -136,9 +136,9 @@ private static final long serialVersionUID = 0L;
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptor().hashCode();
-    if (hasDescriptor()) {
-      hash = (37 * hash) + DESCRIPTOR_FIELD_NUMBER;
-      hash = (53 * hash) + getDescriptor().hashCode();
+    if (hasPolicyDescriptor()) {
+      hash = (37 * hash) + POLICY_DESCRIPTOR_FIELD_NUMBER;
+      hash = (53 * hash) + getPolicyDescriptor().hashCode();
     }
     hash = (29 * hash) + getUnknownFields().hashCode();
     memoizedHashCode = hash;
@@ -270,17 +270,17 @@ private static final long serialVersionUID = 0L;
     private void maybeForceBuilderInitialization() {
       if (com.google.protobuf.GeneratedMessage
               .alwaysUseFieldBuilders) {
-        internalGetDescriptorFieldBuilder();
+        internalGetPolicyDescriptorFieldBuilder();
       }
     }
     @java.lang.Override
     public Builder clear() {
       super.clear();
       bitField0_ = 0;
-      descriptor_ = null;
-      if (descriptorBuilder_ != null) {
-        descriptorBuilder_.dispose();
-        descriptorBuilder_ = null;
+      policyDescriptor_ = null;
+      if (policyDescriptorBuilder_ != null) {
+        policyDescriptorBuilder_.dispose();
+        policyDescriptorBuilder_ = null;
       }
       return this;
     }
@@ -317,9 +317,9 @@ private static final long serialVersionUID = 0L;
       int from_bitField0_ = bitField0_;
       int to_bitField0_ = 0;
       if (((from_bitField0_ & 0x00000001) != 0)) {
-        result.descriptor_ = descriptorBuilder_ == null
-            ? descriptor_
-            : descriptorBuilder_.build();
+        result.policyDescriptor_ = policyDescriptorBuilder_ == null
+            ? policyDescriptor_
+            : policyDescriptorBuilder_.build();
         to_bitField0_ |= 0x00000001;
       }
       result.bitField0_ |= to_bitField0_;
@@ -337,8 +337,8 @@ private static final long serialVersionUID = 0L;
 
     public Builder mergeFrom(io.macp.proto.macp.v1.RegisterPolicyRequest other) {
       if (other == io.macp.proto.macp.v1.RegisterPolicyRequest.getDefaultInstance()) return this;
-      if (other.hasDescriptor()) {
-        mergeDescriptor(other.getDescriptor());
+      if (other.hasPolicyDescriptor()) {
+        mergePolicyDescriptor(other.getPolicyDescriptor());
       }
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
@@ -368,7 +368,7 @@ private static final long serialVersionUID = 0L;
               break;
             case 10: {
               input.readMessage(
-                  internalGetDescriptorFieldBuilder().getBuilder(),
+                  internalGetPolicyDescriptorFieldBuilder().getBuilder(),
                   extensionRegistry);
               bitField0_ |= 0x00000001;
               break;
@@ -390,125 +390,125 @@ private static final long serialVersionUID = 0L;
     }
     private int bitField0_;
 
-    private io.macp.proto.macp.v1.PolicyDescriptor descriptor_;
+    private io.macp.proto.macp.v1.PolicyDescriptor policyDescriptor_;
     private com.google.protobuf.SingleFieldBuilder<
-        io.macp.proto.macp.v1.PolicyDescriptor, io.macp.proto.macp.v1.PolicyDescriptor.Builder, io.macp.proto.macp.v1.PolicyDescriptorOrBuilder> descriptorBuilder_;
+        io.macp.proto.macp.v1.PolicyDescriptor, io.macp.proto.macp.v1.PolicyDescriptor.Builder, io.macp.proto.macp.v1.PolicyDescriptorOrBuilder> policyDescriptorBuilder_;
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-     * @return Whether the descriptor field is set.
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
+     * @return Whether the policyDescriptor field is set.
      */
-    public boolean hasDescriptor() {
+    public boolean hasPolicyDescriptor() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
-     * @return The descriptor.
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
+     * @return The policyDescriptor.
      */
-    public io.macp.proto.macp.v1.PolicyDescriptor getDescriptor() {
-      if (descriptorBuilder_ == null) {
-        return descriptor_ == null ? io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : descriptor_;
+    public io.macp.proto.macp.v1.PolicyDescriptor getPolicyDescriptor() {
+      if (policyDescriptorBuilder_ == null) {
+        return policyDescriptor_ == null ? io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : policyDescriptor_;
       } else {
-        return descriptorBuilder_.getMessage();
+        return policyDescriptorBuilder_.getMessage();
       }
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
-    public Builder setDescriptor(io.macp.proto.macp.v1.PolicyDescriptor value) {
-      if (descriptorBuilder_ == null) {
+    public Builder setPolicyDescriptor(io.macp.proto.macp.v1.PolicyDescriptor value) {
+      if (policyDescriptorBuilder_ == null) {
         if (value == null) {
           throw new NullPointerException();
         }
-        descriptor_ = value;
+        policyDescriptor_ = value;
       } else {
-        descriptorBuilder_.setMessage(value);
+        policyDescriptorBuilder_.setMessage(value);
       }
       bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
-    public Builder setDescriptor(
+    public Builder setPolicyDescriptor(
         io.macp.proto.macp.v1.PolicyDescriptor.Builder builderForValue) {
-      if (descriptorBuilder_ == null) {
-        descriptor_ = builderForValue.build();
+      if (policyDescriptorBuilder_ == null) {
+        policyDescriptor_ = builderForValue.build();
       } else {
-        descriptorBuilder_.setMessage(builderForValue.build());
+        policyDescriptorBuilder_.setMessage(builderForValue.build());
       }
       bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
-    public Builder mergeDescriptor(io.macp.proto.macp.v1.PolicyDescriptor value) {
-      if (descriptorBuilder_ == null) {
+    public Builder mergePolicyDescriptor(io.macp.proto.macp.v1.PolicyDescriptor value) {
+      if (policyDescriptorBuilder_ == null) {
         if (((bitField0_ & 0x00000001) != 0) &&
-          descriptor_ != null &&
-          descriptor_ != io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance()) {
-          getDescriptorBuilder().mergeFrom(value);
+          policyDescriptor_ != null &&
+          policyDescriptor_ != io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance()) {
+          getPolicyDescriptorBuilder().mergeFrom(value);
         } else {
-          descriptor_ = value;
+          policyDescriptor_ = value;
         }
       } else {
-        descriptorBuilder_.mergeFrom(value);
+        policyDescriptorBuilder_.mergeFrom(value);
       }
-      if (descriptor_ != null) {
+      if (policyDescriptor_ != null) {
         bitField0_ |= 0x00000001;
         onChanged();
       }
       return this;
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
-    public Builder clearDescriptor() {
+    public Builder clearPolicyDescriptor() {
       bitField0_ = (bitField0_ & ~0x00000001);
-      descriptor_ = null;
-      if (descriptorBuilder_ != null) {
-        descriptorBuilder_.dispose();
-        descriptorBuilder_ = null;
+      policyDescriptor_ = null;
+      if (policyDescriptorBuilder_ != null) {
+        policyDescriptorBuilder_.dispose();
+        policyDescriptorBuilder_ = null;
       }
       onChanged();
       return this;
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
-    public io.macp.proto.macp.v1.PolicyDescriptor.Builder getDescriptorBuilder() {
+    public io.macp.proto.macp.v1.PolicyDescriptor.Builder getPolicyDescriptorBuilder() {
       bitField0_ |= 0x00000001;
       onChanged();
-      return internalGetDescriptorFieldBuilder().getBuilder();
+      return internalGetPolicyDescriptorFieldBuilder().getBuilder();
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
-    public io.macp.proto.macp.v1.PolicyDescriptorOrBuilder getDescriptorOrBuilder() {
-      if (descriptorBuilder_ != null) {
-        return descriptorBuilder_.getMessageOrBuilder();
+    public io.macp.proto.macp.v1.PolicyDescriptorOrBuilder getPolicyDescriptorOrBuilder() {
+      if (policyDescriptorBuilder_ != null) {
+        return policyDescriptorBuilder_.getMessageOrBuilder();
       } else {
-        return descriptor_ == null ?
-            io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : descriptor_;
+        return policyDescriptor_ == null ?
+            io.macp.proto.macp.v1.PolicyDescriptor.getDefaultInstance() : policyDescriptor_;
       }
     }
     /**
-     * <code>.macp.v1.PolicyDescriptor descriptor = 1 [json_name = "descriptor"];</code>
+     * <code>.macp.v1.PolicyDescriptor policy_descriptor = 1 [json_name = "policyDescriptor"];</code>
      */
     private com.google.protobuf.SingleFieldBuilder<
         io.macp.proto.macp.v1.PolicyDescriptor, io.macp.proto.macp.v1.PolicyDescriptor.Builder, io.macp.proto.macp.v1.PolicyDescriptorOrBuilder> 
-        internalGetDescriptorFieldBuilder() {
-      if (descriptorBuilder_ == null) {
-        descriptorBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+        internalGetPolicyDescriptorFieldBuilder() {
+      if (policyDescriptorBuilder_ == null) {
+        policyDescriptorBuilder_ = new com.google.protobuf.SingleFieldBuilder<
             io.macp.proto.macp.v1.PolicyDescriptor, io.macp.proto.macp.v1.PolicyDescriptor.Builder, io.macp.proto.macp.v1.PolicyDescriptorOrBuilder>(
-                getDescriptor(),
+                getPolicyDescriptor(),
                 getParentForChildren(),
                 isClean());
-        descriptor_ = null;
+        policyDescriptor_ = null;
       }
-      return descriptorBuilder_;
+      return policyDescriptorBuilder_;
     }
 
     // @@protoc_insertion_point(builder_scope:macp.v1.RegisterPolicyRequest)

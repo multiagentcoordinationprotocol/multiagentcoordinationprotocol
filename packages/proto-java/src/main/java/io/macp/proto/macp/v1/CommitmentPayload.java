@@ -98,6 +98,12 @@ private static final long serialVersionUID = 0L;
   @SuppressWarnings("serial")
   private volatile java.lang.Object action_ = "";
   /**
+   * <pre>
+   * Action identifier describing the outcome (e.g., "decision.approved",
+   * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+   * vocabulary for their action values.
+   * </pre>
+   *
    * <code>string action = 2 [json_name = "action"];</code>
    * @return The action.
    */
@@ -115,6 +121,12 @@ private static final long serialVersionUID = 0L;
     }
   }
   /**
+   * <pre>
+   * Action identifier describing the outcome (e.g., "decision.approved",
+   * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+   * vocabulary for their action values.
+   * </pre>
+   *
    * <code>string action = 2 [json_name = "action"];</code>
    * @return The bytes for action.
    */
@@ -328,6 +340,23 @@ private static final long serialVersionUID = 0L;
     }
   }
 
+  public static final int OUTCOME_POSITIVE_FIELD_NUMBER = 8;
+  private boolean outcomePositive_ = false;
+  /**
+   * <pre>
+   * True when the commitment represents a positive/successful outcome;
+   * false for definitive negative outcomes (e.g., rejection, failure).
+   * Modes that allow negative commitments MUST set this field explicitly.
+   * </pre>
+   *
+   * <code>bool outcome_positive = 8 [json_name = "outcomePositive"];</code>
+   * @return The outcomePositive.
+   */
+  @java.lang.Override
+  public boolean getOutcomePositive() {
+    return outcomePositive_;
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -363,6 +392,9 @@ private static final long serialVersionUID = 0L;
     if (!com.google.protobuf.GeneratedMessage.isStringEmpty(configurationVersion_)) {
       com.google.protobuf.GeneratedMessage.writeString(output, 7, configurationVersion_);
     }
+    if (outcomePositive_ != false) {
+      output.writeBool(8, outcomePositive_);
+    }
     getUnknownFields().writeTo(output);
   }
 
@@ -393,6 +425,10 @@ private static final long serialVersionUID = 0L;
     if (!com.google.protobuf.GeneratedMessage.isStringEmpty(configurationVersion_)) {
       size += com.google.protobuf.GeneratedMessage.computeStringSize(7, configurationVersion_);
     }
+    if (outcomePositive_ != false) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeBoolSize(8, outcomePositive_);
+    }
     size += getUnknownFields().getSerializedSize();
     memoizedSize = size;
     return size;
@@ -422,6 +458,8 @@ private static final long serialVersionUID = 0L;
         .equals(other.getPolicyVersion())) return false;
     if (!getConfigurationVersion()
         .equals(other.getConfigurationVersion())) return false;
+    if (getOutcomePositive()
+        != other.getOutcomePositive()) return false;
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
   }
@@ -447,6 +485,9 @@ private static final long serialVersionUID = 0L;
     hash = (53 * hash) + getPolicyVersion().hashCode();
     hash = (37 * hash) + CONFIGURATION_VERSION_FIELD_NUMBER;
     hash = (53 * hash) + getConfigurationVersion().hashCode();
+    hash = (37 * hash) + OUTCOME_POSITIVE_FIELD_NUMBER;
+    hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+        getOutcomePositive());
     hash = (29 * hash) + getUnknownFields().hashCode();
     memoizedHashCode = hash;
     return hash;
@@ -585,6 +626,7 @@ private static final long serialVersionUID = 0L;
       modeVersion_ = "";
       policyVersion_ = "";
       configurationVersion_ = "";
+      outcomePositive_ = false;
       return this;
     }
 
@@ -639,6 +681,9 @@ private static final long serialVersionUID = 0L;
       if (((from_bitField0_ & 0x00000040) != 0)) {
         result.configurationVersion_ = configurationVersion_;
       }
+      if (((from_bitField0_ & 0x00000080) != 0)) {
+        result.outcomePositive_ = outcomePositive_;
+      }
     }
 
     @java.lang.Override
@@ -687,6 +732,9 @@ private static final long serialVersionUID = 0L;
         configurationVersion_ = other.configurationVersion_;
         bitField0_ |= 0x00000040;
         onChanged();
+      }
+      if (other.getOutcomePositive() != false) {
+        setOutcomePositive(other.getOutcomePositive());
       }
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
@@ -749,6 +797,11 @@ private static final long serialVersionUID = 0L;
               bitField0_ |= 0x00000040;
               break;
             } // case 58
+            case 64: {
+              outcomePositive_ = input.readBool();
+              bitField0_ |= 0x00000080;
+              break;
+            } // case 64
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -840,6 +893,12 @@ private static final long serialVersionUID = 0L;
 
     private java.lang.Object action_ = "";
     /**
+     * <pre>
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * </pre>
+     *
      * <code>string action = 2 [json_name = "action"];</code>
      * @return The action.
      */
@@ -856,6 +915,12 @@ private static final long serialVersionUID = 0L;
       }
     }
     /**
+     * <pre>
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * </pre>
+     *
      * <code>string action = 2 [json_name = "action"];</code>
      * @return The bytes for action.
      */
@@ -873,6 +938,12 @@ private static final long serialVersionUID = 0L;
       }
     }
     /**
+     * <pre>
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * </pre>
+     *
      * <code>string action = 2 [json_name = "action"];</code>
      * @param value The action to set.
      * @return This builder for chaining.
@@ -886,6 +957,12 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
+     * <pre>
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * </pre>
+     *
      * <code>string action = 2 [json_name = "action"];</code>
      * @return This builder for chaining.
      */
@@ -896,6 +973,12 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
+     * <pre>
+     * Action identifier describing the outcome (e.g., "decision.approved",
+     * "task.completed", "quorum.rejected").  Mode RFCs define the normative
+     * vocabulary for their action values.
+     * </pre>
+     *
      * <code>string action = 2 [json_name = "action"];</code>
      * @param value The bytes for action to set.
      * @return This builder for chaining.
@@ -1266,6 +1349,56 @@ private static final long serialVersionUID = 0L;
       checkByteStringIsUtf8(value);
       configurationVersion_ = value;
       bitField0_ |= 0x00000040;
+      onChanged();
+      return this;
+    }
+
+    private boolean outcomePositive_ ;
+    /**
+     * <pre>
+     * True when the commitment represents a positive/successful outcome;
+     * false for definitive negative outcomes (e.g., rejection, failure).
+     * Modes that allow negative commitments MUST set this field explicitly.
+     * </pre>
+     *
+     * <code>bool outcome_positive = 8 [json_name = "outcomePositive"];</code>
+     * @return The outcomePositive.
+     */
+    @java.lang.Override
+    public boolean getOutcomePositive() {
+      return outcomePositive_;
+    }
+    /**
+     * <pre>
+     * True when the commitment represents a positive/successful outcome;
+     * false for definitive negative outcomes (e.g., rejection, failure).
+     * Modes that allow negative commitments MUST set this field explicitly.
+     * </pre>
+     *
+     * <code>bool outcome_positive = 8 [json_name = "outcomePositive"];</code>
+     * @param value The outcomePositive to set.
+     * @return This builder for chaining.
+     */
+    public Builder setOutcomePositive(boolean value) {
+
+      outcomePositive_ = value;
+      bitField0_ |= 0x00000080;
+      onChanged();
+      return this;
+    }
+    /**
+     * <pre>
+     * True when the commitment represents a positive/successful outcome;
+     * false for definitive negative outcomes (e.g., rejection, failure).
+     * Modes that allow negative commitments MUST set this field explicitly.
+     * </pre>
+     *
+     * <code>bool outcome_positive = 8 [json_name = "outcomePositive"];</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearOutcomePositive() {
+      bitField0_ = (bitField0_ & ~0x00000080);
+      outcomePositive_ = false;
       onChanged();
       return this;
     }

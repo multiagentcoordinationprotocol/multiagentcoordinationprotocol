@@ -24,7 +24,7 @@ public interface EnvelopeOrBuilder extends
 
   /**
    * <pre>
-   * empty for ambient Signals
+   * empty for Ambient Signals
    * </pre>
    *
    * <code>string mode = 2 [json_name = "mode"];</code>
@@ -33,7 +33,7 @@ public interface EnvelopeOrBuilder extends
   java.lang.String getMode();
   /**
    * <pre>
-   * empty for ambient Signals
+   * empty for Ambient Signals
    * </pre>
    *
    * <code>string mode = 2 [json_name = "mode"];</code>
