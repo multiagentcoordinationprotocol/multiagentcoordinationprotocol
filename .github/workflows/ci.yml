@@ -91,22 +91,40 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
 
       - name: Generate Go and verify
         run: |
           buf generate --template buf/buf.gen.go.yaml
           cd packages/proto-go
+          go mod tidy
           go build ./...
 
-      - name: Generate Java
-        run: buf generate --template buf/buf.gen.java.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Generate Java and verify
+        run: |
+          buf generate --template buf/buf.gen.java.yaml
+          cd packages/proto-java
+          gradle compileJava
 
       - name: Generate Kotlin
         run: buf generate --template buf/buf.gen.kotlin.yaml
 
-      - name: Generate C#
-        run: buf generate --template buf/buf.gen.csharp.yaml
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Generate C# and verify
+        run: |
+          buf generate --template buf/buf.gen.csharp.yaml
+          cd packages/proto-csharp
+          dotnet build
 
       - name: Generate JS
         run: buf generate --template buf/buf.gen.js.yaml
