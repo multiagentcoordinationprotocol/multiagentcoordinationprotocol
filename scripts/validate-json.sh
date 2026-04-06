@@ -12,7 +12,7 @@ MANIFEST_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-manifest.schema.json"
 DESCRIPTOR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-mode-descriptor.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
-TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*-mode-session.json"
+TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*.json"
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -88,7 +88,7 @@ if [ -d "$DISCOVERY_DIR" ]; then
     done
 fi
 
-echo "-- Composite transcripts (syntax check only) --"
+echo "-- Composite transcripts and policy examples (syntax check only) --"
 echo ""
 
 for transcript in ${TRANSCRIPT_GLOB}; do
