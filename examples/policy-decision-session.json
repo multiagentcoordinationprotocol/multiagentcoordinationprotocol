@@ -15,7 +15,7 @@
         "quorum": { "type": "count", "value": 2 }
       },
       "objection_handling": {
-        "block_severity_vetoes": true,
+        "critical_severity_vetoes": true,
         "veto_threshold": 1
       },
       "evaluation": {
@@ -93,7 +93,7 @@
       "sender": "fraud-agent",
       "payload": {
         "proposal_id": "p1",
-        "vote": "approve",
+        "vote": "APPROVE",
         "reason": "Risk score within tolerance"
       }
     },
@@ -103,7 +103,7 @@
       "sender": "growth-agent",
       "payload": {
         "proposal_id": "p1",
-        "vote": "approve",
+        "vote": "APPROVE",
         "reason": "Customer value justifies approval"
       }
     },
@@ -113,7 +113,7 @@
       "sender": "compliance-agent",
       "payload": {
         "proposal_id": "p1",
-        "vote": "reject",
+        "vote": "REJECT",
         "reason": "Threshold exceeded on new device"
       }
     },
@@ -123,6 +123,7 @@
       "sender": "coordinator",
       "payload": {
         "commitment_id": "c1",
+        "outcome_positive": true,
         "action": "approve-transaction",
         "authority_scope": "transaction_review",
         "reason": "Supermajority achieved: 2 approve, 1 reject (67% threshold met). No blocking objections.",

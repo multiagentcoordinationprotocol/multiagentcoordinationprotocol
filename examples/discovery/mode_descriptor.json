@@ -17,7 +17,7 @@
     "Commitment"
   ],
   "schema_uris": {
-    "protobuf": "schemas/proto/macp/modes/decision/v1/decision.proto",
-    "entrypoint": "schemas/modes/decision.proto"
+    "proto": "schemas/proto/macp/modes/decision/v1/decision.proto",
+    "docs": "schemas/modes/decision.proto"
   }
 }

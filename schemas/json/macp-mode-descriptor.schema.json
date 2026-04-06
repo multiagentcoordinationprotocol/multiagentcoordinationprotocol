@@ -3,7 +3,6 @@
   "$id": "https://macp.dev/schemas/macp-mode-descriptor.schema.json",
   "title": "MACP Mode Descriptor",
   "type": "object",
-  "additionalProperties": false,
   "required": [
     "mode",
     "mode_version",

@@ -48,7 +48,7 @@ A Decision Mode Session MUST bind the following fields explicitly in `SessionSta
 - `participants` - decision participants,
 - `mode_version` - the decision-mode semantic profile,
 - `configuration_version` - voting or evaluation profile,
-- `policy_version` - decision policy or governance profile,
+- `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - explicit decision deadline,
 - `context` - optional bound decision context.
 
@@ -60,7 +60,12 @@ Decision Mode defines the following mode-specific message types:
 - **Evaluation** - records analysis of a proposal.
   Valid recommendation values are: `APPROVE`, `REVIEW`, `BLOCK`, `REJECT`. `REVIEW` indicates that the evaluator has analyzed the proposal but does not issue a definitive recommendation — it is semantically equivalent to "analyzed, no strong stance." `REVIEW` evaluations do not block or approve a proposal; they serve as informational analysis records only.
 - **Objection** - records a concern or blocking issue.
-- **Vote** - records a participant preference. Valid vote values are: `approve`, `reject`, `abstain`. The semantics of abstention (e.g., impact on quorum and outcome calculation) are defined by the decision policy bound at `SessionStart`. When no policy is bound, abstentions do not count toward any threshold.
+
+An Evaluation with `BLOCK` recommendation is an advisory assessment indicating the evaluator recommends against proceeding. An `Objection` is a formal blocking action with a severity level (`low`, `medium`, `high`, `critical`). Only Objections are subject to `objection_handling` governance rules (e.g., `critical_severity_vetoes`). A `BLOCK` evaluation does not trigger veto logic.
+
+- **Vote** - records a participant preference. Valid vote values are: `APPROVE`, `REJECT`, `ABSTAIN`. The semantics of abstention (e.g., impact on quorum and outcome calculation) are defined by the decision policy bound at `SessionStart`. When no policy is bound, abstentions do not count toward any threshold.
+
+All enum-like string values in Decision Mode use UPPER_CASE. Comparisons MUST be case-sensitive.
 - **Commitment** - authoritative terminal outcome.
 
 Canonical payloads are defined in `decision.proto`.
@@ -87,6 +92,8 @@ The `CommitmentPayload` SHOULD identify:
 - a reason that can be replayed and audited.
 
 The mode does not prescribe a single voting algorithm. A runtime or deployment may use majority vote, weighted vote, objection handling, veto rules, or another deterministic policy, provided that the policy is version-bound and replay-safe.
+
+Decision Mode allows both positive and negative committed outcomes. `CommitmentPayload.outcome_positive` MUST be set explicitly on all Decision Mode commitments.
 
 ### 6.1 Governance Policy
 

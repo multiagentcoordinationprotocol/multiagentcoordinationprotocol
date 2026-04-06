@@ -102,8 +102,8 @@ This specification recognizes the following participant models:
 - **declared** - participant set is bound at `SessionStart`.
 - **quorum** - a subset of eligible participants may be sufficient for resolution.
 - **orchestrated** - one coordinator assigns work or finalizes outcomes.
-- **peer** - participants are symmetric and negotiate directly.
-- **delegated** - participants may transfer or accept scoped authority.
+- **peer** - participants have symmetric negotiation authority (all may propose, counter, accept, reject). Terminal (Commitment) authority MAY be asymmetric as declared by the Mode.
+- **delegated** - one party (the current authority holder) offers transfer to a specific named recipient. Only the current holder can initiate; only the named target can accept or decline.
 
 A Mode MUST declare which participant model it uses.
 
@@ -112,6 +112,8 @@ A Mode MUST declare which participant model it uses.
 Core requires sessions to terminate, but Core does not require every possible Mode in the ecosystem to share the same terminal message shape. For standards-track modes in this main repo, however, v1 uses a single rule:
 
 - `Commitment` is the authoritative terminal message for a successful or definitive outcome.
+
+The `terminal_message_types` field in `ModeDescriptor` exists to support extension modes that may define alternative terminal message types. All v1 standards-track modes in this repository use `["Commitment"]` as the sole terminal message type.
 
 A standards-track Mode MAY define intermediate outcome messages such as `TaskComplete` or `HandoffAccept`, but those messages do not resolve the Session on their own. The Session resolves only when an authorized `Commitment` is accepted.
 
@@ -136,6 +138,8 @@ A Mode MUST declare one of the following determinism classes:
 - **non-deterministic** - runtime or external side effects may change semantic outcomes.
 
 The full determinism and replay integrity model is specified in [RFC-MACP-0003](RFC-MACP-0003-determinism.md).
+
+Normative replay semantics for each determinism class are specified in RFC-MACP-0003 Section 5.
 
 ## 8. Semantic idempotency
 

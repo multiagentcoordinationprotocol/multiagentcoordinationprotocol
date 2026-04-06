@@ -14,8 +14,7 @@
           "default": 0,
           "description": "Auto-accept after this many milliseconds. 0 means no implicit accept."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "commitment": {
       "type": "object",
@@ -29,9 +28,7 @@
           "type": "array",
           "items": { "type": "string" }
         }
-      },
-      "additionalProperties": false
+      }
     }
-  },
-  "additionalProperties": false
+  }
 }

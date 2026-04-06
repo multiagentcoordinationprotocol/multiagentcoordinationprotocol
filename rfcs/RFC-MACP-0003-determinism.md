@@ -26,7 +26,7 @@ MUST reproduce identical session state transitions and acceptance/rejection beha
 Specifically, replay MUST:
 
 - accept the same messages in the same order,
-- reject messages at the same points in the sequence,
+- produce the same acceptance/rejection decisions for each envelope, given identical validation rules and bound versions (operational rejections such as rate limiting or transient authentication failures are outside the replay determinism boundary),
 - produce the same terminal state (RESOLVED or EXPIRED) and terminal message,
 - produce the same `Ack` accept/reject decisions for each envelope.
 
@@ -43,7 +43,7 @@ Core guarantees determinism for:
 
 Core does not guarantee semantic determinism unless the Mode claims it.
 
-`timestamp_unix_ms` is informational and MUST NOT influence structural replay. A session's absolute expiration deadline is computed as `SessionStart_envelope.timestamp_unix_ms + SessionStartPayload.ttl_ms`. During replay, the runtime MUST use this pre-computed deadline from the original session, not wall-clock time. If the TTL has elapsed before a terminal condition is accepted, the session transitions to EXPIRED.
+`timestamp_unix_ms` is informational for ordering and display purposes and MUST NOT be used for message acceptance decisions. However, `timestamp_unix_ms` on the `SessionStart` envelope is normative for TTL computation: the session's absolute expiration deadline is computed as `SessionStart_envelope.timestamp_unix_ms + SessionStartPayload.ttl_ms`. During replay, the runtime MUST use this pre-computed deadline from the original session, not wall-clock time. If the TTL has elapsed before a terminal condition is accepted, the session transitions to EXPIRED.
 
 ## 3. Version Binding
 
@@ -99,7 +99,15 @@ Modes that touch the external world SHOULD use one of these patterns:
 
 ## 5. Determinism Classes
 
-The determinism classes defined by RFC-MACP-0002 are normative for descriptors and manifests.
+The determinism classes defined by RFC-MACP-0002 are normative for descriptors and manifests. Each class provides the following replay guarantees:
+
+- **structural-only**: Replay reproduces identical lifecycle transitions (OPEN, RESOLVED, EXPIRED) and identical accept/reject decisions for each envelope. Semantic outcomes (e.g., which proposal wins a decision) are NOT guaranteed to be identical.
+
+- **semantic-deterministic**: Replay reproduces identical lifecycle transitions AND the same semantic outcome — the terminal action, committed values, and resolution are identical given the same accepted envelope sequence.
+
+- **context-frozen**: Same guarantees as semantic-deterministic, but ONLY when the external context bound at `SessionStart` (via `context` and `roots`) is replayed exactly. If bound context differs from the original session, replay outcomes are undefined.
+
+- **non-deterministic**: Replay reproduces identical lifecycle transitions and accept/reject decisions, but semantic outcomes may differ due to runtime state or external side effects. Runtimes SHOULD NOT attempt semantic replay for non-deterministic modes.
 
 Modes SHOULD state which inputs are inside the determinism boundary and which are excluded.
 

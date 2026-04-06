@@ -13,8 +13,7 @@
           "default": false,
           "description": "If true, a rejected task can be reassigned to a different participant."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "completion": {
       "type": "object",
@@ -24,8 +23,7 @@
           "default": false,
           "description": "If true, TaskComplete must include a non-empty output field."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "commitment": {
       "type": "object",
@@ -39,9 +37,7 @@
           "type": "array",
           "items": { "type": "string" }
         }
-      },
-      "additionalProperties": false
+      }
     }
-  },
-  "additionalProperties": false
+  }
 }

@@ -77,6 +77,7 @@
       "timestamp": "2026-03-14T09:30:30Z",
       "payload": {
         "commitment_id": "cmt-01JCQUOR000000000000000005",
+        "outcome_positive": true,
         "action": "quorum.approved",
         "authority_scope": "deployment",
         "reason": "2-of-3 approvals satisfied for deploy-2026-03-14-01",
