@@ -63,8 +63,9 @@ jobs:
 
       - name: Check for breaking changes
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         run: |
-          # Only check breaking changes on pull requests
+          # Informational during pre-1.0 development; breaking changes are expected.
           # Compare against main branch
           git fetch origin main
           buf breaking --against '.git#branch=origin/main'
