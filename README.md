@@ -160,6 +160,38 @@ MACP uses a layered compatibility model:
 
 Major protocol version mismatches are not compatible. Minor versions are expected to be backward compatible. Unknown fields MUST be ignored to preserve forward compatibility.
 
+## Using MACP Proto Packages
+
+Proto definitions are published as versioned packages. Install them as regular dependencies:
+
+```bash
+# TypeScript / Node.js
+npm install @macp/proto
+
+# Python
+pip install macp-proto
+
+# Go
+go get github.com/multiagentcoordinationprotocol/macp-proto-go@proto-v0.1.0
+
+# Java (build.gradle.kts)
+# implementation("io.macp:macp-proto:0.1.0")
+
+# Kotlin (build.gradle.kts)
+# implementation("io.macp:macp-proto-kotlin:0.1.0")
+
+# C# (.csproj)
+# <PackageReference Include="Macp.Proto" Version="0.1.0" />
+
+# Swift (Package.swift)
+# .package(url: "https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol.git", from: "0.1.0")
+
+# Rust (Cargo.toml)
+# macp-proto = { git = "https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol.git", tag = "proto-v0.1.0" }
+```
+
+See `CONTRIBUTING.md` for the release workflow.
+
 ## Repository highlights
 
 - **Human-friendly schema entrypoints** live directly under `schemas/`.

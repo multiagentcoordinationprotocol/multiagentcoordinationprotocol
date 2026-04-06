@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+
+    <!-- NuGet metadata -->
+    <PackageId>Macp.Proto</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>multiagentcoordinationprotocol</Authors>
+    <Description>Pre-generated C# protobuf bindings for the Multi-Agent Coordination Protocol (MACP)</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol</RepositoryUrl>
+    <PackageTags>macp;protobuf;grpc;multi-agent;coordination</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.68.0" />
+  </ItemGroup>
+
+</Project>

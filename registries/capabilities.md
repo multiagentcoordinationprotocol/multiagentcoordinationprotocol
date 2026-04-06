@@ -26,6 +26,7 @@ macp.transport.grpc.v1
 | macp.transport.http.v1 | HTTP transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.websocket.v1 | WebSocket transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.messagebus.v1 | Message bus transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
+| macp.policy.v1 | Governance policy registry and evaluation | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
 
 ## Capability Registry vs. Capability Objects
 

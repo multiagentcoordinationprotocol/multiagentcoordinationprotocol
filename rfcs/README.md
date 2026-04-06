@@ -13,6 +13,7 @@ The MACP standard is intentionally split.
 - **RFC-MACP-0009 Task Mode** - bounded task delegation
 - **RFC-MACP-0010 Handoff Mode** - responsibility transfer between participants
 - **RFC-MACP-0011 Quorum Mode** - threshold approval and rejection
+- **RFC-MACP-0012 Policy** - governance policy framework for declarative, replay-safe session governance
 
 ### Companion Content
 

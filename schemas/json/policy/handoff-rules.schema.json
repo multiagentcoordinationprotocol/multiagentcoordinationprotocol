@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/policy/handoff-rules.schema.json",
+  "title": "Handoff Mode Governance Rules",
+  "description": "JSON Schema for governance rules applied to macp.mode.handoff.v1 sessions. See RFC-MACP-0012 Section 4.5.",
+  "type": "object",
+  "properties": {
+    "acceptance": {
+      "type": "object",
+      "properties": {
+        "implicit_accept_timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Auto-accept after this many milliseconds. 0 means no implicit accept."
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitment": {
+      "type": "object",
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "default": "initiator_only"
+        },
+        "designated_roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@macp/proto",
+  "version": "0.1.0",
+  "description": "MACP protocol buffer definitions — raw .proto files for the Multi-Agent Coordination Protocol",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "proto"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol.git",
+    "directory": "packages/proto-npm"
+  },
+  "keywords": [
+    "macp",
+    "protobuf",
+    "grpc",
+    "multi-agent",
+    "coordination"
+  ]
+}

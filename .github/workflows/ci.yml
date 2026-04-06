@@ -89,25 +89,27 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate code from protobuf
-        run: buf generate
-
-      - name: Check generated code compiles (Go)
-        run: |
-          if [ -d "generated/go" ]; then
-            echo "Checking Go generated code..."
-            cd generated/go
-            go mod init github.com/macp/proto/gen/go || true
-            go mod tidy || true
-            go build ./... || echo "Go build skipped (no Go modules configured)"
-          fi
-
-      - name: Upload generated code as artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/setup-go@v5
         with:
-          name: generated-code
-          path: generated/
-          retention-days: 7
+          go-version: '1.22'
+
+      - name: Generate Go and verify
+        run: |
+          buf generate --template buf/buf.gen.go.yaml
+          cd packages/proto-go
+          go build ./...
+
+      - name: Generate Java
+        run: buf generate --template buf/buf.gen.java.yaml
+
+      - name: Generate Kotlin
+        run: buf generate --template buf/buf.gen.kotlin.yaml
+
+      - name: Generate C#
+        run: buf generate --template buf/buf.gen.csharp.yaml
+
+      - name: Generate JS
+        run: buf generate --template buf/buf.gen.js.yaml
 
   validate-all:
     name: All Validations Passed
@@ -122,4 +124,4 @@ jobs:
           echo "  - JSON examples validated"
           echo "  - Protobuf schemas validated"
           echo "  - Protobuf linting passed"
-          echo "  - Code generation successful"
+          echo "  - Per-language code generation successful"

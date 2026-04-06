@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/policy/task-rules.schema.json",
+  "title": "Task Mode Governance Rules",
+  "description": "JSON Schema for governance rules applied to macp.mode.task.v1 sessions. See RFC-MACP-0012 Section 4.4.",
+  "type": "object",
+  "properties": {
+    "assignment": {
+      "type": "object",
+      "properties": {
+        "allow_reassignment_on_reject": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, a rejected task can be reassigned to a different participant."
+        }
+      },
+      "additionalProperties": false
+    },
+    "completion": {
+      "type": "object",
+      "properties": {
+        "require_output": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, TaskComplete must include a non-empty output field."
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitment": {
+      "type": "object",
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "default": "initiator_only"
+        },
+        "designated_roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

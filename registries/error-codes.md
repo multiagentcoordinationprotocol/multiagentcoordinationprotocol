@@ -22,6 +22,9 @@ UPPER_SNAKE_CASE
 | RATE_LIMITED | Too many requests | 429 | permanent | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) |
 | INVALID_SESSION_ID | `session_id` format does not meet deployment requirements (e.g., not a valid UUID or base64url token) | 400 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | INTERNAL_ERROR | Unrecoverable internal runtime error (e.g., storage failure); clients SHOULD retry or escalate | 500 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
+| UNKNOWN_POLICY_VERSION | `policy_version` not found in policy registry at SessionStart | 400 | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
+| POLICY_DENIED | Commitment rejected because governance policy rules are not satisfied | 403 | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
+| INVALID_POLICY_DEFINITION | Policy descriptor fails validation (bad JSON, schema mismatch, mode mismatch) | 400 | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
 | UNAUTHORIZED | Historical alias for `FORBIDDEN`; new implementations SHOULD use `FORBIDDEN` | 403 | deprecated | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) |
 
 ## Error Design Principles
