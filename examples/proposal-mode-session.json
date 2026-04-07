@@ -95,6 +95,7 @@
       "timestamp": "2026-03-14T09:00:45Z",
       "payload": {
         "commitment_id": "cmt-01JCPROP000000000000000006",
+        "outcome_positive": true,
         "action": "proposal.accepted",
         "authority_scope": "commercial-renewal",
         "reason": "All declared parties accepted offer-2",

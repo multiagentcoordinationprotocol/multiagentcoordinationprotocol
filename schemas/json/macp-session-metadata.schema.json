@@ -4,7 +4,6 @@
   "title": "MACP Session Metadata",
   "description": "JSON Schema for SessionMetadata returned by GetSession. See RFC-MACP-0001 Section 9 and RFC-MACP-0006 Section 3.5.",
   "type": "object",
-  "additionalProperties": false,
   "required": [
     "session_id",
     "mode",
@@ -74,7 +73,6 @@
   "$defs": {
     "ParticipantActivity": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["participant_id"],
       "properties": {
         "participant_id": {

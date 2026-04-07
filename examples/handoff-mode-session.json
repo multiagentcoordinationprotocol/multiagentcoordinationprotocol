@@ -83,6 +83,7 @@
       "timestamp": "2026-03-14T09:20:40Z",
       "payload": {
         "commitment_id": "cmt-01JCHAND000000000000000005",
+        "outcome_positive": true,
         "action": "handoff.accepted",
         "authority_scope": "support-escalation",
         "reason": "Responsibility transferred to agent://payments.specialist under handoff-001",

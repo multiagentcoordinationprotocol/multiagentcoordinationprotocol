@@ -17,9 +17,9 @@ Handoff Mode exists for responsibility transfer, not ordinary task assignment. T
 ## 2. Identifier and participant model
 
 - **Mode identifier:** `macp.mode.handoff.v1`
-- **Participant model:** `delegated`
+- **Participant model:** `delegated` — one party (the current responsibility owner) offers authority transfer to a specific named recipient. Only the current owner can emit `HandoffOffer` messages; only the named target can accept or decline.
 
-The accepted `SessionStart` sender is the current responsibility owner and the default `Commitment` authority. Only the current owner is authorized to emit `HandoffOffer` messages. Policy MAY delegate commitment authority to a separate coordinator role.
+The accepted `SessionStart` sender is the current responsibility owner and the default `Commitment` authority. Policy MAY delegate commitment authority to a separate coordinator role.
 
 ### 2.1 Authority Matrix
 
@@ -27,6 +27,9 @@ The accepted `SessionStart` sender is the current responsibility owner and the d
 |-------------|-------------------|
 | `HandoffOffer` | Current responsibility owner (session initiator) |
 | `HandoffContext` | Current responsibility owner |
+
+`HandoffContext` SHOULD be sent before `HandoffAccept` or `HandoffDecline` for the referenced `handoff_id`. Late context (sent after the target has already accepted or declined) is permitted but serves only as supplementary documentation, not as input to the accept/decline decision.
+
 | `HandoffAccept` | Target participant of the referenced offer |
 | `HandoffDecline` | Target participant of the referenced offer |
 | `Commitment` | Current responsibility owner (default) or policy-designated authority |
@@ -40,7 +43,7 @@ A Handoff Mode Session MUST bind:
 - `participants` - current owner and eligible targets,
 - `mode_version` - handoff semantic profile,
 - `configuration_version` - transfer profile,
-- `policy_version` - authority policy,
+- `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - deadline for the transfer,
 - `context` and `roots` - any frozen handoff context or trust boundary needed for replay.
 
@@ -70,6 +73,8 @@ Implementations MUST enforce the following:
 Handoff Mode resolves only when an authorized `Commitment` is accepted.
 
 Positive commitments SHOULD make the transfer explicit, for example `handoff.accepted`, and SHOULD bind the new responsibility holder in the reason or bound context. Negative commitments MAY bind a definitive no-target or declined outcome if policy requires an explicit failure record.
+
+Handoff Mode allows negative committed outcomes (declined or no-target). `CommitmentPayload.outcome_positive` MUST be set explicitly on all Handoff Mode commitments.
 
 ### 6.1 Governance Policy
 

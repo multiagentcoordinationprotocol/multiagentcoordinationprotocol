@@ -43,9 +43,13 @@ Before accepting a session-scoped Envelope, the runtime MUST verify:
 - the sender is authorized for the session,
 - the sender is allowed to emit that message type under the Mode.
 
+### 4.1 Signal Authentication
+
+Ambient Signals SHOULD be authenticated using the same mechanisms as session-scoped messages. Runtimes MAY accept unauthenticated Signals but MUST document this as a deployment-specific policy. Unauthenticated Signals MUST NOT influence operational decisions or be forwarded to `WatchSignals` subscribers without annotation indicating their unauthenticated status.
+
 ## 5. Replay Protection
 
-`message_id` deduplication is REQUIRED. Session identifiers MUST be cryptographically strong and unguessable.
+`message_id` deduplication is REQUIRED for idempotency within sessions. Transport-layer replay protection (TLS) provides the primary defense against network-level replay attacks. Implementations SHOULD additionally validate token freshness and MAY enforce timestamp-based anti-replay windows. `message_id` deduplication alone does not constitute complete replay protection against an attacker who can craft new messages with fresh `message_id` values. Session identifiers MUST be cryptographically strong and unguessable.
 
 ## 6. Isolation and Injection Prevention
 

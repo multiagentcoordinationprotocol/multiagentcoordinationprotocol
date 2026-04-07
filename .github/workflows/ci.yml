@@ -45,6 +45,12 @@ jobs:
           chmod +x scripts/validate-proto.sh
           ./scripts/validate-proto.sh
 
+      - name: Check proto package sync
+        run: |
+          echo "Checking raw-proto packages match canonical..."
+          chmod +x scripts/sync-proto-packages.sh
+          ./scripts/sync-proto-packages.sh --check
+
   lint-protobuf:
     name: Lint Protocol Buffers
     runs-on: ubuntu-latest
@@ -114,8 +120,16 @@ jobs:
           cd packages/proto-java
           gradle compileJava
 
-      - name: Generate Kotlin
-        run: buf generate --template buf/buf.gen.kotlin.yaml
+      - name: Publish Java to mavenLocal for Kotlin dependency
+        run: |
+          cd packages/proto-java
+          gradle publishToMavenLocal
+
+      - name: Generate Kotlin and verify
+        run: |
+          buf generate --template buf/buf.gen.kotlin.yaml
+          cd packages/proto-kotlin
+          gradle compileKotlin
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -127,8 +141,30 @@ jobs:
           cd packages/proto-csharp
           dotnet build
 
-      - name: Generate JS
-        run: buf generate --template buf/buf.gen.js.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Generate Python and verify
+        run: |
+          pip install grpcio-tools
+          python -m grpc_tools.protoc \
+            -Ischemas/proto \
+            --python_out=packages/proto-python/src \
+            --grpc_python_out=packages/proto-python/src \
+            macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
+            macp/modes/decision/v1/decision.proto macp/modes/proposal/v1/proposal.proto \
+            macp/modes/task/v1/task.proto macp/modes/handoff/v1/handoff.proto \
+            macp/modes/quorum/v1/quorum.proto
+          python -c "import importlib, sys; sys.path.insert(0, 'packages/proto-python/src'); importlib.import_module('macp.v1.envelope_pb2'); print('Python imports OK')"
+
+      - name: Generate JS and verify
+        run: |
+          buf generate --template buf/buf.gen.js.yaml
+          test -d packages/proto-npm/generated && \
+            find packages/proto-npm/generated -name '*.js' | head -1 | grep -q . && \
+            echo "JS generation OK" || \
+            (echo "ERROR: No JS files generated" && exit 1)
 
   validate-all:
     name: All Validations Passed

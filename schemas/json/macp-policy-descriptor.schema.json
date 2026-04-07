@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-policy-descriptor.schema.json",
+  "title": "MACP Policy Descriptor",
+  "description": "Validates a PolicyDescriptor document in JSON form. See RFC-MACP-0012.",
+  "type": "object",
+  "properties": {
+    "policy_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique policy identifier."
+    },
+    "mode": {
+      "type": "string",
+      "description": "Mode identifier this policy applies to, or '*' for mode-agnostic."
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of the rule schema used (currently 1)."
+    },
+    "rules": {
+      "type": "object",
+      "description": "Mode-specific governance rules. In protobuf, this is bytes containing JSON."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the policy."
+    },
+    "registered_at_unix_ms": {
+      "type": "integer",
+      "description": "Unix epoch milliseconds when registered. Set by runtime."
+    }
+  },
+  "required": ["policy_id", "mode", "schema_version", "rules"]
+}

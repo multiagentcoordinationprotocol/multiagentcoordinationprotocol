@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-error.schema.json",
+  "title": "MACP Error",
+  "description": "Validates an MACPError message in JSON form. See RFC-MACP-0001.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Machine-readable error code from the error code registry."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable error message. Text may vary across implementations."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier related to the error."
+    },
+    "message_id": {
+      "type": "string",
+      "description": "Message identifier that triggered the error."
+    },
+    "details": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "description": "Additional structured error details (protobuf bytes as base64)."
+    }
+  },
+  "required": ["code"]
+}

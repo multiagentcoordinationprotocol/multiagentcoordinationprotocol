@@ -33,6 +33,8 @@ The participant set MUST be declared at `SessionStart`, but resolution is based 
 
 Each eligible participant MAY cast at most one ballot across `Approve`, `Reject`, or `Abstain`. Runtimes MUST reject messages from senders not authorized per this matrix.
 
+The session initiator (coordinator) is NOT an eligible ballot caster unless they are also listed in the `participants` array of the `SessionStart` payload. The `participants` list defines the voter pool, which is distinct from the coordinator role.
+
 ## 3. SessionStart requirements
 
 A Quorum Mode Session MUST bind:
@@ -40,7 +42,7 @@ A Quorum Mode Session MUST bind:
 - `participants` - eligible approvers,
 - `mode_version` - quorum-mode semantic profile,
 - `configuration_version` - approval threshold profile,
-- `policy_version` - governance profile,
+- `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - approval deadline,
 - `context` - optional approval context.
 
@@ -64,9 +66,10 @@ Implementations MUST enforce the following:
 2. `required_approvals` MUST be greater than zero and MUST NOT exceed the count of eligible participants.
 3. Each eligible participant MAY cast at most one ballot across `Approve`, `Reject`, or `Abstain`.
 4. A Session becomes eligible for `Commitment` when approvals reach the required threshold, or when the remaining possible approvals can no longer reach that threshold.
-4a. `Abstain` ballots do NOT count toward `required_approvals` and do NOT count as rejections. An abstaining participant is removed from the pool of potential approvers. Therefore, a Session becomes eligible for negative `Commitment` when `(remaining_eligible_participants + current_approvals) < required_approvals`, where `remaining_eligible_participants` excludes those who have already voted (approve, reject, or abstain).
+4a. `Abstain` ballots do NOT count toward `required_approvals` and do NOT count as rejections. An abstaining participant is removed from the pool of potential approvers. Therefore, a Session becomes eligible for negative `Commitment` when `(remaining_eligible_participants + current_approvals) < required_approvals`, where `remaining_eligible_participants` excludes those who have already voted (approve, reject, or abstain). These are the default semantics. Policy MAY override abstention interpretation (see RFC-MACP-0012 Section 4.2 for `abstention.interpretation` options including `neutral`, `implicit_reject`, and `ignored`).
 4b. When all eligible participants have abstained (or a combination of abstentions and rejections makes the threshold unreachable), the Session becomes eligible for `Commitment` with a negative outcome (e.g., `action: quorum.rejected`). The `CommitmentPayload.reason` SHOULD indicate that the threshold was not met.
 5. Only an authorized coordinator may emit the final `Commitment`.
+6. When policy specifies a `threshold` override, it replaces (not supplements) the `required_approvals` value from `ApprovalRequest`. For the `weighted` threshold type, participant weights are stored in the policy `rules` object, not in individual ballot payloads.
 
 ## 6. Terminal semantics
 
@@ -78,6 +81,8 @@ Recommended `CommitmentPayload.action` values include:
 - `quorum.rejected`
 
 The `Commitment` SHOULD bind the approval request identifier and the threshold profile used.
+
+Quorum Mode allows negative committed outcomes (approval threshold unreachable). `CommitmentPayload.outcome_positive` MUST be set explicitly on all Quorum Mode commitments.
 
 ### 6.1 Governance Policy
 

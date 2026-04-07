@@ -23,6 +23,7 @@ message TaskRejectPayload {
   string reason = 3;
 }
 
+// No explicit assignee field; runtime validates authorship via Envelope.sender.
 message TaskUpdatePayload {
   string task_id = 1;
   string status = 2;

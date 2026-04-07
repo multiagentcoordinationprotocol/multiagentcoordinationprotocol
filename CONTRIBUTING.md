@@ -86,6 +86,12 @@ Proto changes no longer block unrelated PRs in downstream repos.
 - **[RFC-MACP-0004 Security](rfcs/RFC-MACP-0004-security.md)** — threat model and security requirements
 - **[RFC-MACP-0005 Discovery & Manifests](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** — agent/runtime discovery, manifest schemas, well-known endpoints
 - **[RFC-MACP-0006 Transport Bindings](rfcs/RFC-MACP-0006-transport-bindings.md)** — standard transport bindings (gRPC, HTTP, WebSocket, Message Bus)
+- **[RFC-MACP-0007 Decision Mode](rfcs/RFC-MACP-0007-decision-mode.md)** — structured decision-making with proposals, evaluations, and votes
+- **[RFC-MACP-0008 Proposal Mode](rfcs/RFC-MACP-0008-proposal-mode.md)** — offer/counteroffer negotiation
+- **[RFC-MACP-0009 Task Mode](rfcs/RFC-MACP-0009-task-mode.md)** — bounded task delegation
+- **[RFC-MACP-0010 Handoff Mode](rfcs/RFC-MACP-0010-handoff-mode.md)** — responsibility transfer
+- **[RFC-MACP-0011 Quorum Mode](rfcs/RFC-MACP-0011-quorum-mode.md)** — threshold approval/rejection
+- **[RFC-MACP-0012 Policy](rfcs/RFC-MACP-0012-policy.md)** — governance policy framework for declarative, replay-safe session governance
 
 ## Community
 

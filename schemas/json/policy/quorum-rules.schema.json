@@ -15,12 +15,11 @@
           "default": "n_of_m"
         },
         "value": {
-          "type": "number",
+          "type": "integer",
           "minimum": 0,
           "description": "Threshold value: count for n_of_m, fraction (0-1) for percentage, weighted sum for weighted."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "abstention": {
       "type": "object",
@@ -37,8 +36,7 @@
           "default": "neutral",
           "description": "How abstentions are interpreted for threshold calculation."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "commitment": {
       "type": "object",
@@ -52,9 +50,7 @@
           "type": "array",
           "items": { "type": "string" }
         }
-      },
-      "additionalProperties": false
+      }
     }
-  },
-  "additionalProperties": false
+  }
 }

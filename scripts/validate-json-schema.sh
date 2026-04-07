@@ -43,6 +43,25 @@ for schema_file in "${SCHEMA_DIR}"/*.schema.json; do
     fi
 done
 
+# Validate policy rule schemas
+echo "── Policy rule schemas ──"
+echo ""
+for schema_file in "${SCHEMA_DIR}"/policy/*.schema.json; do
+    if [ -f "$schema_file" ]; then
+        TOTAL=$((TOTAL + 1))
+        echo "Validating: policy/$(basename "$schema_file")"
+
+        if ajv compile -s "${schema_file}" --spec=draft2020 --strict=false; then
+            VALIDATED=$((VALIDATED + 1))
+            echo "  ✓ Valid"
+        else
+            echo "  ✗ Invalid"
+            exit 1
+        fi
+        echo ""
+    fi
+done
+
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON Schema files found in ${SCHEMA_DIR}"
     exit 1

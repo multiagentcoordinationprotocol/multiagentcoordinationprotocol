@@ -76,7 +76,7 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 | Rule Group | Parameters | Description |
 |------------|-----------|-------------|
 | `voting` | `algorithm`, `threshold`, `quorum`, `weights` | Voting algorithm and quorum requirements |
-| `objection_handling` | `block_severity_vetoes`, `veto_threshold` | How blocking objections affect commitment eligibility |
+| `objection_handling` | `critical_severity_vetoes`, `veto_threshold` | How critical-severity objections affect commitment eligibility |
 | `evaluation` | `minimum_confidence`, `required_before_voting` | Evaluation constraints |
 | `commitment` | `authority`, `designated_roles`, `require_vote_quorum` | Who can commit and under what conditions |
 
@@ -150,26 +150,13 @@ Every conformant runtime MUST pre-register the following default policy:
   "mode": "*",
   "schema_version": 1,
   "description": "Default policy — mode built-in rules apply with no additional governance constraints",
-  "rules": {
-    "voting": {
-      "algorithm": "none",
-      "quorum": { "type": "count", "value": 0 }
-    },
-    "objection_handling": {
-      "block_severity_vetoes": false
-    },
-    "evaluation": {
-      "required_before_voting": false
-    },
-    "commitment": {
-      "authority": "initiator_only",
-      "require_vote_quorum": false
-    }
-  }
+  "rules": {}
 }
 ```
 
-When `policy_version` in `SessionStartPayload` is empty or equals `policy.default`, the runtime MUST apply this default. The default policy sets all rule parameters to permissive values (`none`, `initiator_only`, zero quorum) such that the mode's built-in validation is the only constraint applied. It does not disable mode validation — it simply adds no governance restrictions on top of it.
+The default policy applies no additional governance constraints beyond base mode validation. Mode-specific default behaviors (e.g., Decision Mode's default voting algorithm, Quorum Mode's default abstention handling) are defined by each mode's base validation rules in their respective RFCs, not by the default policy.
+
+When `policy_version` in `SessionStartPayload` is empty or equals `policy.default`, the runtime MUST apply this default. The default policy sets all rule parameters to permissive values such that the mode's built-in validation is the only constraint applied. It does not disable mode validation — it simply adds no governance restrictions on top of it.
 
 ## 6. Evaluation Semantics
 
@@ -182,13 +169,13 @@ At `SessionStart`:
 3. If non-empty, the runtime looks up the policy in its registry.
 4. If the policy is not found, the runtime MUST reject the `SessionStart` with error code `UNKNOWN_POLICY_VERSION`.
 5. If the policy's `mode` field is not `*` and does not match the session's mode, the runtime MUST reject with `INVALID_POLICY_DEFINITION`.
-6. The resolved `PolicyDefinition` (including the full `rules` object) is stored on the session for the session's lifetime.
+6. The resolved `PolicyDescriptor` (including the full `rules` object) is stored on the session for the session's lifetime.
 
 ### 6.2 Commitment Evaluation
 
 When a `Commitment` envelope is received:
 
-1. The runtime retrieves the resolved `PolicyDefinition` from the session.
+1. The runtime retrieves the resolved `PolicyDescriptor` from the session.
 2. The runtime evaluates the policy's `rules` against the accumulated session state (proposals, evaluations, objections, votes, or mode-equivalent messages).
 3. If the policy rules are satisfied, the `Commitment` is accepted and the session resolves.
 4. If the policy rules are not satisfied, the runtime MUST reject the `Commitment` with error code `POLICY_DENIED` and an informative reason string.
@@ -205,7 +192,7 @@ Policy evaluation MUST NOT depend on wall-clock time, external service calls, ra
 
 ### 6.4 Interaction with Mode Validation
 
-Policy evaluation is **additive** to mode validation, not a replacement:
+Policy evaluation layers on top of mode validation. Policy rules MAY override specific mode defaults (e.g., abstention interpretation in Quorum Mode, reassignment in Task Mode) while preserving Core invariants (isolation, monotonic lifecycle, append-only history). The interaction model is: base mode validation runs first, then policy rules adjust eligible behaviors within the boundaries established by mode validation.
 
 1. The mode's own validation rules (message type authorization, structural validation, phase transitions) execute first.
 2. Policy governance rules execute second, only for `Commitment` messages that pass mode validation.
@@ -223,6 +210,8 @@ Policies are managed through five gRPC RPCs on `MACPRuntimeService`, mirroring t
 | `ListPolicies` | List registered policies, optionally filtered by mode |
 | `WatchPolicies` | Server-streaming RPC for policy registry change notifications |
 
+Unlike `WatchModeRegistry` (which returns a lightweight `RegistryChanged` notification), `WatchPolicies` returns the full set of current policy descriptors on each change. This design reflects that policy consumers typically need the complete rule set for evaluation, not just a change signal.
+
 Registration constraints:
 
 - `policy.default` MUST NOT be registered or unregistered (it is built-in).
@@ -236,9 +225,11 @@ Canonical proto definitions: `schemas/proto/macp/v1/policy.proto`
 
 RFC-MACP-0003 (Determinism) requires that replay under identical bound versions produces identical outcomes. This RFC extends that requirement to policies:
 
-1. The resolved `PolicyDefinition` MUST be persisted as part of the session snapshot.
-2. During replay, the runtime MUST use the stored `PolicyDefinition`, never re-resolving from the registry.
+1. The resolved `PolicyDescriptor` MUST be persisted as part of the session snapshot.
+2. During replay, the runtime MUST use the stored `PolicyDescriptor`, never re-resolving from the registry.
 3. If the stored policy uses `schema_version` N, the runtime MUST evaluate using schema-version-N semantics, even if a newer schema version exists.
+
+`registered_at_unix_ms` is runtime metadata and is not part of the policy's semantic identity. Replay and policy equality comparisons MUST use `policy_id` + `schema_version` + `rules` equality, not full descriptor byte comparison.
 
 This ensures that a session replayed years later produces identical governance outcomes regardless of registry state.
 
@@ -262,7 +253,7 @@ The following error codes are added to the MACP Error Code Registry:
 
 | Code | Description | HTTP Status | Status | Reference |
 |------|-------------|-------------|--------|-----------|
-| `UNKNOWN_POLICY_VERSION` | `policy_version` not found in policy registry at SessionStart | 400 | permanent | RFC-MACP-0012 |
+| `UNKNOWN_POLICY_VERSION` | `policy_version` not found in policy registry at SessionStart | 404 | permanent | RFC-MACP-0012 |
 | `POLICY_DENIED` | Commitment rejected because governance policy rules are not satisfied | 403 | permanent | RFC-MACP-0012 |
 | `INVALID_POLICY_DEFINITION` | Policy descriptor fails validation (bad JSON, schema mismatch, mode mismatch) | 400 | permanent | RFC-MACP-0012 |
 

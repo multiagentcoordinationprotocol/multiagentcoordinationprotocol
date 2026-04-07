@@ -42,7 +42,7 @@ A Task Mode Session MUST bind:
 - `participants` - requester and eligible assignee participants,
 - `mode_version` - task-mode semantic profile,
 - `configuration_version` - execution profile,
-- `policy_version` - governance or authorization profile,
+- `policy_version` — governance or authorization profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - task deadline,
 - `context` - optional task context and constraints.
 
@@ -55,7 +55,7 @@ Task Mode defines the following mode-specific message types:
 - **TaskRequest** - opens the delegated task.
 - **TaskAccept** - assignee accepts responsibility.
 - **TaskReject** - assignee declines responsibility.
-- **TaskUpdate** - non-terminal progress or status update.
+- **TaskUpdate** - non-terminal progress or status update. `TaskUpdate` does not carry an explicit `assignee` field. The runtime validates authorship via the Envelope `sender`, which MUST match the active assignee. This differs from `TaskComplete` and `TaskFail`, which redundantly include `assignee` in the payload for auditability.
 - **TaskComplete** - assignee reports successful completion.
 - **TaskFail** - assignee reports a bounded failure.
 - **Commitment** - authoritative terminal outcome.
@@ -69,6 +69,7 @@ Implementations MUST enforce the following:
 3. Only one assignee may become active for the Session in base v1.
 3a. The first accepted `TaskAccept` from any eligible participant designates that participant as the active assignee. Subsequent `TaskAccept` messages for the same session MUST be rejected if an active assignee is already designated.
 3b. A participant who has sent `TaskAccept` MUST NOT later send `TaskReject` for the same task in base v1. `TaskAccept` is irrevocable unless policy explicitly permits reassignment.
+3c. When policy sets `allow_reassignment_on_reject: true` and the active assignee sends `TaskReject`, the session returns to the pre-assignment state. Other eligible participants MAY then send `TaskAccept` for the same `task_id`. No additional `TaskRequest` is needed; the original request remains active.
 4. `TaskUpdate`, `TaskComplete`, and `TaskFail` MUST come from the active assignee.
 5. `TaskComplete` and `TaskFail` do not resolve the Session on their own. They make the Session eligible for `Commitment` by the requester or policy authority.
 
@@ -82,6 +83,8 @@ Implementations SHOULD use `CommitmentPayload.action` values that make the outco
 - `task.failed`
 
 The `Commitment` SHOULD bind the relevant task identifier and the versions that governed execution.
+
+Task Mode allows both positive and negative committed outcomes (`task.completed` and `task.failed`). `CommitmentPayload.outcome_positive` MUST be set explicitly on all Task Mode commitments.
 
 ### 6.1 Governance Policy
 
@@ -100,7 +103,7 @@ Implementations MUST address all of the following:
 - authenticate requester and assignee identities,
 - ensure only authorized assignees accept or complete tasks,
 - protect sensitive task inputs and outputs,
-- define idempotency keys for any external side effects triggered by task execution. The normative idempotency key for task outcomes is `task_id + assignee + first_accepted_terminal_message_id` (where the terminal message is `TaskComplete` or `TaskFail`). Retransmissions with the same key MUST NOT re-execute side effects.
+- define idempotency keys for any external side effects triggered by task execution. The normative idempotency key for task outcomes is `task_id + assignee + first_accepted_completion_message_id` (where the completion message is `TaskComplete` or `TaskFail`). Retransmissions with the same key MUST NOT re-execute side effects.
 - reject forged completions and failures from non-assignees.
 
 ## 9. Canonical schemas and examples

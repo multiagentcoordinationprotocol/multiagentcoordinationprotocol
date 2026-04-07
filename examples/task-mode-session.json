@@ -96,6 +96,7 @@
       "timestamp": "2026-03-14T09:12:20Z",
       "payload": {
         "commitment_id": "cmt-01JCTASK000000000000000006",
+        "outcome_positive": true,
         "action": "task.completed",
         "authority_scope": "research",
         "reason": "Requester accepted TaskComplete for task-001",

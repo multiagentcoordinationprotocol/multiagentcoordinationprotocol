@@ -22,9 +22,7 @@ message PolicyDescriptor {
   // Version of the rule schema used (currently 1).
   uint32 schema_version = 5;
 
-  // ISO 8601 timestamp of when this policy was registered.
-  // Set by the runtime; ignored in RegisterPolicyRequest.
-  string registered_at = 6;
+  int64 registered_at_unix_ms = 6; // Unix epoch milliseconds; set by the runtime, ignored in RegisterPolicyRequest.
 }
 
 // Policy registry capability advertised during Initialize.
@@ -76,5 +74,5 @@ message WatchPoliciesRequest {}
 
 message WatchPoliciesResponse {
   repeated PolicyDescriptor descriptors = 1;
-  uint64 observed_at_unix_ms = 2;
+  int64 observed_at_unix_ms = 2;
 }

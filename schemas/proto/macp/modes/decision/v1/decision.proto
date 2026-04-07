@@ -24,7 +24,7 @@ message ObjectionPayload {
 
 message VotePayload {
   string proposal_id = 1;
-  string vote = 2; // approve | reject | abstain
+  string vote = 2; // APPROVE | REJECT | ABSTAIN
   string reason = 3;
 }
 

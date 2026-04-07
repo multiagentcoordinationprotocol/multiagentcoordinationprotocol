@@ -35,6 +35,7 @@ MACP/
     RFC-MACP-0009-task-mode.md
     RFC-MACP-0010-handoff-mode.md
     RFC-MACP-0011-quorum-mode.md
+    RFC-MACP-0012-policy.md
 
   docs/
     architecture.md
@@ -48,6 +49,7 @@ MACP/
     discovery.md
     transports.md
     agent-manifest-schema.md
+    sdk-parity.md
 
   registries/
     README.md
@@ -55,11 +57,13 @@ MACP/
     error-codes.md
     media-types.md
     modes.md
+    policies.md
     transports.md
 
   schemas/
     envelope.proto            # flat entrypoints
     core.proto
+    policy.proto
     modes/
       decision.proto
       proposal.proto
@@ -70,6 +74,7 @@ MACP/
       macp/v1/
         envelope.proto
         core.proto
+        policy.proto
       macp/modes/decision/v1/
         decision.proto
       macp/modes/proposal/v1/
@@ -84,6 +89,30 @@ MACP/
       macp-envelope.schema.json
       macp-agent-manifest.schema.json
       macp-mode-descriptor.schema.json
+      macp-session-metadata.schema.json
+      macp-ack.schema.json
+      macp-error.schema.json
+      macp-policy-descriptor.schema.json
+      policy/
+        decision-rules.schema.json
+        quorum-rules.schema.json
+        proposal-rules.schema.json
+        task-rules.schema.json
+        handoff-rules.schema.json
+    conformance/
+      README.md
+      decision_happy_path.json
+      decision_reject_paths.json
+      proposal_happy_path.json
+      proposal_reject_paths.json
+      task_happy_path.json
+      task_reject_paths.json
+      handoff_happy_path.json
+      handoff_reject_paths.json
+      quorum_happy_path.json
+      quorum_reject_paths.json
+      multi_round_happy_path.json
+      multi_round_reject_paths.json
 
   examples/
     decision-mode-session.json
@@ -91,6 +120,8 @@ MACP/
     task-mode-session.json
     handoff-mode-session.json
     quorum-mode-session.json
+    policy-decision-session.json
+    policy-registration-exchange.json
     json/
       signal.json
       session_start.json
@@ -114,10 +145,11 @@ If you are new to MACP, start here:
 2. **[RFC-MACP-0001-core.md](rfcs/RFC-MACP-0001-core.md)** - the normative core protocol.
 3. **[RFC-MACP-0002-modes.md](rfcs/RFC-MACP-0002-modes.md)** - the mode extension framework and the standard-mode boundary for the main repo.
 4. **[RFC-MACP-0007-decision-mode.md](rfcs/RFC-MACP-0007-decision-mode.md)** through **[RFC-MACP-0011-quorum-mode.md](rfcs/RFC-MACP-0011-quorum-mode.md)** - the standard coordination primitives defined in this repository.
-5. **[RFC-MACP-0003-determinism.md](rfcs/RFC-MACP-0003-determinism.md)** - replay integrity and determinism classes.
-6. **[RFC-MACP-0005-discovery-and-manifests.md](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** - agent and runtime discovery, manifest schemas.
-7. **[RFC-MACP-0006-transport-bindings.md](rfcs/RFC-MACP-0006-transport-bindings.md)** - standard transport bindings.
-8. **[docs/architecture.md](docs/architecture.md)** and **[docs/runtime.md](docs/runtime.md)** - how to implement and operate a runtime.
+5. **[RFC-MACP-0012-policy.md](rfcs/RFC-MACP-0012-policy.md)** - governance policy framework for declarative, replay-safe session governance.
+6. **[RFC-MACP-0003-determinism.md](rfcs/RFC-MACP-0003-determinism.md)** - replay integrity and determinism classes.
+7. **[RFC-MACP-0005-discovery-and-manifests.md](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** - agent and runtime discovery, manifest schemas.
+8. **[RFC-MACP-0006-transport-bindings.md](rfcs/RFC-MACP-0006-transport-bindings.md)** - standard transport bindings.
+9. **[docs/architecture.md](docs/architecture.md)** and **[docs/runtime.md](docs/runtime.md)** - how to implement and operate a runtime.
 
 ## Standards posture
 
@@ -130,6 +162,7 @@ MACP is intentionally split into a small set of RFCs because that makes the stan
 - **RFC-MACP-0005 Discovery** defines agent and runtime discovery, manifest schemas, and well-known endpoints.
 - **RFC-MACP-0006 Transport Bindings** defines standard transport bindings (gRPC, HTTP, WebSocket, Message Bus).
 - **RFC-MACP-0007 through RFC-MACP-0011** define the main-repository standard modes: Decision, Proposal, Task, Handoff, and Quorum.
+- **RFC-MACP-0012 Policy** defines the governance policy framework for declarative, deterministic, replay-safe session governance.
 
 The main RFC repo standardizes only foundational coordination primitives. Domain workflows and fast-moving experiments should live in incubator or vendor repositories, not in this standards repo. Runtimes may still ship additional implementation-defined modes, but those modes should not be presented as part of the five-mode standards-track set unless they are promoted into this repo and registry.
 
@@ -147,6 +180,9 @@ The base capability model supports:
 - `modeRegistry.listChanged` - registry change notifications
 - `roots.listRoots` - disclosure of coordination roots/boundaries
 - `roots.listChanged` - root change notifications
+- `policyRegistry.listPolicies` - policy discovery
+- `policyRegistry.registerPolicy` - policy registration
+- `policyRegistry.listChanged` - policy change notifications
 - `experimental` - explicitly non-standard features
 
 ## Compatibility model

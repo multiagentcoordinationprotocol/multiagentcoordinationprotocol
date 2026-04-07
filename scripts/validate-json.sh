@@ -10,9 +10,10 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENVELOPE_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-envelope.schema.json"
 MANIFEST_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-manifest.schema.json"
 DESCRIPTOR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-mode-descriptor.schema.json"
+POLICY_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-policy-descriptor.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
-TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*-mode-session.json"
+TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*.json"
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -86,9 +87,25 @@ if [ -d "$DISCOVERY_DIR" ]; then
             echo ""
         fi
     done
+
+    for policy_file in "${DISCOVERY_DIR}"/policy_descriptor*.json; do
+        if [ -f "$policy_file" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating: discovery/$(basename "$policy_file") against policy-descriptor schema"
+
+            if ajv validate -s "${POLICY_SCHEMA}" -d "${policy_file}" --spec=draft2020 --strict=false; then
+                VALIDATED=$((VALIDATED + 1))
+                echo "  [OK] Valid"
+            else
+                echo "  [X] Invalid"
+                exit 1
+            fi
+            echo ""
+        fi
+    done
 fi
 
-echo "-- Composite transcripts (syntax check only) --"
+echo "-- Composite transcripts and policy examples (syntax check only) --"
 echo ""
 
 for transcript in ${TRANSCRIPT_GLOB}; do

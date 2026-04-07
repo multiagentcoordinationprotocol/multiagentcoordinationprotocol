@@ -109,6 +109,7 @@ message SessionStartPayload {
 
 message SessionCancelPayload {
   string reason = 1;
+  // Set by the runtime; MUST match the authenticated sender of the CancelSession RPC.
   string cancelled_by = 2;
 }
 
@@ -236,7 +237,10 @@ message StreamSessionRequest {
 }
 
 message StreamSessionResponse {
-  Envelope envelope = 1;
+  oneof response {
+    Envelope envelope = 1;
+    MACPError error = 2;  // Application-level validation error; stream remains open.
+  }
 }
 
 message GetSessionResponse {

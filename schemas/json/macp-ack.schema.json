@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-ack.schema.json",
+  "title": "MACP Acknowledgement",
+  "description": "Validates an Ack message in JSON form. See RFC-MACP-0001 Section 8.",
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "True if the envelope was accepted into session history."
+    },
+    "duplicate": {
+      "type": "boolean",
+      "description": "True if the message_id was already seen (idempotent accept)."
+    },
+    "message_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The message_id of the acknowledged envelope."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier the acknowledged message belongs to."
+    },
+    "accepted_at_unix_ms": {
+      "type": "integer",
+      "description": "Unix epoch milliseconds when the message was accepted."
+    },
+    "session_state": {
+      "type": "string",
+      "enum": [
+        "SESSION_STATE_UNSPECIFIED",
+        "SESSION_STATE_OPEN",
+        "SESSION_STATE_RESOLVED",
+        "SESSION_STATE_EXPIRED"
+      ],
+      "description": "Session lifecycle state after accepting the message."
+    },
+    "error": {
+      "$ref": "#/$defs/MACPError",
+      "description": "Present when ok is false."
+    }
+  },
+  "required": ["ok", "message_id"],
+  "$defs": {
+    "MACPError": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "minLength": 1, "description": "Machine-readable error code from the error code registry." },
+        "message": { "type": "string", "description": "Human-readable error message." },
+        "session_id": { "type": "string", "description": "Session identifier related to the error." },
+        "message_id": { "type": "string", "description": "Message identifier that triggered the error." },
+        "details": { "$ref": "#/$defs/Base64Bytes", "description": "Additional structured error details (protobuf bytes as base64)." }
+      },
+      "required": ["code"]
+    },
+    "Base64Bytes": {
+      "type": "string",
+      "description": "Protobuf bytes mapped to base64 string in JSON.",
+      "contentEncoding": "base64"
+    }
+  }
+}

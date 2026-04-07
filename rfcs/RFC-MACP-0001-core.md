@@ -87,6 +87,8 @@ The `InitializeRequest` and `InitializeResponse` messages are defined in [`schem
 
 If there is no mutually supported protocol version, initialization MUST fail with `UNSUPPORTED_PROTOCOL_VERSION`.
 
+After successful initialization, every subsequent Envelope's `macp_version` field MUST match the negotiated `selected_protocol_version`. Runtimes MUST reject envelopes with a mismatched `macp_version` with error code `UNSUPPORTED_PROTOCOL_VERSION`.
+
 If the client requires a capability that the runtime does not advertise in `InitializeResponse.capabilities`, the client SHOULD either proceed with reduced functionality or terminate the connection. Runtimes MUST NOT fail initialization due to unknown or unsupported capabilities in the request; they MUST advertise only the capabilities they support in the response.
 
 ### 4.2 Capability Objects
@@ -168,6 +170,8 @@ For all accepted Envelopes:
 - `mode` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
 - `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
 
+The `cancelled_by` field in `SessionCancelPayload` is set by the runtime and MUST match the authenticated `sender` of the originating `CancelSession` RPC. It is not a self-asserted claim.
+
 Unknown fields MUST be ignored for forward compatibility.
 
 ---
@@ -184,9 +188,11 @@ A valid `SessionStart` message consists of an Envelope with a non-empty `session
 - `configuration_version`,
 - `ttl_ms` (MUST be greater than zero),
 - `participants` (when required by the Mode),
-- `policy_version` (MUST be non-empty when any governance policy is in effect; see RFC-MACP-0012),
+- `policy_version` (MUST be present in the payload; MAY be empty, in which case the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `context` when present,
 - `roots` when present.
+
+`configuration_version` is an opaque string that identifies a mode-specific configuration profile. Its format and interpretation are implementation-defined and not part of the MACP interoperability contract. Runtimes MUST store the bound `configuration_version` in session metadata for replay integrity.
 
 A Mode MAY also bind additional immutable authority roles through the accepted `SessionStart` sender or through mode-specific policy encoded in bound session context.
 
@@ -219,6 +225,8 @@ A session transitions from OPEN to EXPIRED when:
 Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
 By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. The runtime MUST record the initiator in `SessionMetadata.initiator` at session creation time for authorization checks. Deployments MAY extend cancellation authority to additional roles through policy. `CancelSession` MUST be subject to the same authentication requirements as any session-scoped operation.
+
+`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation. `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
 
 `CancelSession` is a Core control-plane message. Mode-specific authorization rules (e.g., who can emit which Mode message type) do NOT apply to `CancelSession`. Only the initiator and policy-delegated roles may cancel a session.
 
@@ -285,6 +293,9 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 - `Initialize` — unary initialization and capability negotiation
 - `Send` — unary envelope send with acknowledgement
 - `StreamSession` — bidirectional session streaming
+
+If a `StreamSession` receives an invalid or unauthorized envelope, the runtime MUST respond with a `StreamSessionResponse` containing an `MACPError` on the same stream rather than terminating the stream. Stream termination is reserved for transport-level failures, not application-level validation errors.
+
 - `GetSession` — session metadata query; returns `SessionMetadata` including the current participant list and per-participant activity summaries (`ParticipantActivity`)
 - `CancelSession` — explicit session cancellation
 - `GetManifest` — agent or runtime manifest retrieval
@@ -340,7 +351,7 @@ Protobuf enum values MUST be represented as their string names (for example `"SE
 
 ### 10.6 Forward Compatibility
 
-JSON consumers SHOULD ignore unrecognized fields for forward compatibility, consistent with the protobuf unknown field rule.
+JSON consumers MUST ignore unrecognized fields for forward compatibility, consistent with the protobuf unknown field rule. The canonical JSON Schema (`schemas/json/macp-envelope.schema.json`) is provided for strict validation contexts (e.g., conformance testing); production consumers MUST be lenient and accept envelopes containing unrecognized fields.
 
 The JSON Schema for envelope validation is maintained at [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
 
@@ -389,6 +400,8 @@ Structural errors, including invalid session state, malformed envelopes, or auth
 All MACP deployments MUST use encrypted transport.
 
 Session-scoped messages MUST be authenticated and authorized before they are accepted.
+
+Ambient Signals SHOULD be authenticated using the same mechanisms as session-scoped messages. Runtimes MAY accept unauthenticated Signals but MUST document this as a deployment-specific policy. Unauthenticated Signals MUST NOT be trusted for operational decisions or forwarded to `WatchSignals` subscribers without annotation.
 
 Runtimes MUST protect against:
 
@@ -445,6 +458,7 @@ MACP maintains initial registries for:
 - error codes,
 - media types,
 - standard mode identifiers,
+- policies (see [registries/policies.md](../registries/policies.md)),
 - transport identifiers (see [registries/transports.md](../registries/transports.md)).
 
 Registry policy and initial values are defined in the `registries/` directory.

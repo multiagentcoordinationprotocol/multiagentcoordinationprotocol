@@ -37,8 +37,7 @@
               "default": 0,
               "description": "Minimum count or percentage (0-1) of participants that must vote."
             }
-          },
-          "additionalProperties": false
+          }
         },
         "weights": {
           "type": "object",
@@ -48,17 +47,16 @@
             "minimum": 0
           }
         }
-      },
-      "additionalProperties": false
+      }
     },
     "objection_handling": {
       "type": "object",
       "description": "How blocking objections affect commitment eligibility.",
       "properties": {
-        "block_severity_vetoes": {
+        "critical_severity_vetoes": {
           "type": "boolean",
           "default": false,
-          "description": "If true, objections with severity 'block' prevent commitment."
+          "description": "If true, objections with severity 'critical' prevent commitment."
         },
         "veto_threshold": {
           "type": "integer",
@@ -66,8 +64,7 @@
           "default": 1,
           "description": "Number of blocking objections required to veto commitment."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "evaluation": {
       "type": "object",
@@ -85,8 +82,7 @@
           "default": false,
           "description": "If true, at least one evaluation must exist before votes are counted."
         }
-      },
-      "additionalProperties": false
+      }
     },
     "commitment": {
       "type": "object",
@@ -108,11 +104,9 @@
           "default": false,
           "description": "If true, commitment is only allowed after vote quorum is met."
         }
-      },
-      "additionalProperties": false
+      }
     }
   },
-  "additionalProperties": false,
   "allOf": [
     {
       "if": {

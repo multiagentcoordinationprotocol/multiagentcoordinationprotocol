@@ -8,6 +8,7 @@
   "timestamp": "2026-03-01T20:30:10Z",
   "payload": {
     "commitment_id": "d4f9c5c0-3c7b-4b70-9f0c-2d57f6a3b1a2",
+    "outcome_positive": true,
     "action": "vendor.select",
     "authority_scope": "procurement",
     "reason": "Vendor B meets security + budget constraints",

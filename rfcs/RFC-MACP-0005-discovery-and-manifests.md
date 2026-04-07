@@ -1,8 +1,10 @@
+# RFC-MACP-0005
+# Multi-Agent Coordination Protocol (MACP) — Discovery and Manifests
 
-# RFC-MACP-0005: Discovery and Manifests
-Status: Draft
-Category: Standards Track
-Author: MACP Working Group
+**Document:** RFC-MACP-0005
+**Version:** 1.0.0-draft
+**Status:** Community Standards Track
+**Updates:** RFC-MACP-0001
 
 ## 1. Introduction
 
