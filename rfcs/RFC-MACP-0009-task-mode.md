@@ -103,7 +103,7 @@ Implementations MUST address all of the following:
 - authenticate requester and assignee identities,
 - ensure only authorized assignees accept or complete tasks,
 - protect sensitive task inputs and outputs,
-- define idempotency keys for any external side effects triggered by task execution. The normative idempotency key for task outcomes is `task_id + assignee + first_accepted_terminal_message_id` (where the terminal message is `TaskComplete` or `TaskFail`). Retransmissions with the same key MUST NOT re-execute side effects.
+- define idempotency keys for any external side effects triggered by task execution. The normative idempotency key for task outcomes is `task_id + assignee + first_accepted_completion_message_id` (where the completion message is `TaskComplete` or `TaskFail`). Retransmissions with the same key MUST NOT re-execute side effects.
 - reject forged completions and failures from non-assignees.
 
 ## 9. Canonical schemas and examples

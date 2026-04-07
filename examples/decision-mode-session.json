@@ -1,6 +1,6 @@
 {
   "$comment": "Initialization (Initialize RPC) occurs before the session transcript. Only session-scoped Envelopes are shown.",
-  "description": "Illustrative Decision Mode transcript showing SessionStart, a proposal, evaluations, and terminal Commitment.",
+  "description": "Illustrative Decision Mode transcript showing SessionStart, a proposal, evaluations, an objection, votes, and terminal Commitment.",
   "protocol_version": "1.0",
   "mode": "macp.mode.decision.v1",
   "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
@@ -86,6 +86,62 @@
         "recommendation": "APPROVE",
         "confidence": 0.83,
         "reason": "Cross-border rule boundary requires step-up verification before release"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Objection",
+      "message_id": "01JCN7XD0K7M2R3S4T5U6V7W8X",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://compliance",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-review",
+        "reason": "Transfer exceeds single-jurisdiction threshold; dual-jurisdiction sign-off may be required",
+        "severity": "medium"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Vote",
+      "message_id": "01JCN7XD3A8N9P0Q1R2S3T4U5V",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://fraud",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-review",
+        "vote": "APPROVE",
+        "reason": "Risk signals support requiring step-up verification"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Vote",
+      "message_id": "01JCN7XD6B9C0D1E2F3G4H5I6J",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://growth",
+      "timestamp": "2026-03-02T12:00:00Z",
+      "payload": {
+        "proposal_id": "transfer-review",
+        "vote": "APPROVE",
+        "reason": "Step-up verification preserves customer experience while addressing risk"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "macp.mode.decision.v1",
+      "message_type": "Vote",
+      "message_id": "01JCN7XD9C0D1E2F3G4H5I6J7K",
+      "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+      "sender": "agent://compliance",
+      "timestamp": "2026-03-02T12:00:01Z",
+      "payload": {
+        "proposal_id": "transfer-review",
+        "vote": "APPROVE",
+        "reason": "Objection recorded but step-up verification adequately addresses jurisdictional concern"
       }
     },
     {

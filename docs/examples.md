@@ -8,7 +8,7 @@ This repository includes illustrative transcripts for each standards-track mode 
 
 | File | Mode | What it shows |
 |------|------|---------------|
-| [`examples/decision-mode-session.json`](../examples/decision-mode-session.json) | `macp.mode.decision.v1` | initialization, `SessionStart`, proposal submission, evaluations, and terminal `Commitment` |
+| [`examples/decision-mode-session.json`](../examples/decision-mode-session.json) | `macp.mode.decision.v1` | initialization, `SessionStart`, proposal, evaluations, objection, votes, and terminal `Commitment` |
 | [`examples/proposal-mode-session.json`](../examples/proposal-mode-session.json) | `macp.mode.proposal.v1` | offer, counteroffer, dual acceptance, and bound agreement |
 | [`examples/task-mode-session.json`](../examples/task-mode-session.json) | `macp.mode.task.v1` | bounded delegation, progress, completion, and bound task outcome |
 | [`examples/handoff-mode-session.json`](../examples/handoff-mode-session.json) | `macp.mode.handoff.v1` | responsibility transfer with context handoff and acceptance |
@@ -21,10 +21,12 @@ This repository includes illustrative transcripts for each standards-track mode 
 Each transcript is an ordered JSON document with:
 
 - top-level metadata such as `description`, `protocol_version`, `mode`, and `session_id`,
-- an ordered `messages` array,
+- an ordered `messages` array containing full Envelope objects in replay order,
 - envelopes and initialization payloads written in replay order.
 
 The ordering of the `messages` array is the replay order.
+
+> **Note:** The policy-governed examples (`policy-decision-session.json`, `policy-registration-exchange.json`) use a simplified `transcript` array with sequence numbers (`seq`) and condensed message representations. This format is intended to illustrate governance evaluation flow rather than serve as a wire-format reference. For canonical Envelope structure, refer to the standard mode transcripts.
 
 ## What the examples demonstrate
 
