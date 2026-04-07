@@ -63,6 +63,7 @@ MACP/
   schemas/
     envelope.proto            # flat entrypoints
     core.proto
+    policy.proto
     modes/
       decision.proto
       proposal.proto
@@ -98,6 +99,20 @@ MACP/
         proposal-rules.schema.json
         task-rules.schema.json
         handoff-rules.schema.json
+    conformance/
+      README.md
+      decision_happy_path.json
+      decision_reject_paths.json
+      proposal_happy_path.json
+      proposal_reject_paths.json
+      task_happy_path.json
+      task_reject_paths.json
+      handoff_happy_path.json
+      handoff_reject_paths.json
+      quorum_happy_path.json
+      quorum_reject_paths.json
+      multi_round_happy_path.json
+      multi_round_reject_paths.json
 
   examples/
     decision-mode-session.json

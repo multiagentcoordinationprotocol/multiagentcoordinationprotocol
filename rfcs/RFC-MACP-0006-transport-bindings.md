@@ -1,8 +1,10 @@
+# RFC-MACP-0006
+# Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
-# RFC-MACP-0006: Transport Bindings
-Status: Draft
-Category: Standards Track
-Author: MACP Working Group
+**Document:** RFC-MACP-0006
+**Version:** 1.0.0-draft
+**Status:** Community Standards Track
+**Updates:** RFC-MACP-0001
 
 ## 1. Introduction
 
