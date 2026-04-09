@@ -19,8 +19,16 @@ PROTOS=(
   macp/modes/quorum/v1/quorum.proto
 )
 
+SWIFT_PLUGIN="$(command -v protoc-gen-swift)"
+GRPC_PLUGIN="$(command -v protoc-gen-grpc-swift)"
+
 echo "Generating Swift protobuf code..."
+echo "  protoc-gen-swift:      $SWIFT_PLUGIN"
+echo "  protoc-gen-grpc-swift: $GRPC_PLUGIN"
+
 protoc \
+  --plugin=protoc-gen-swift="$SWIFT_PLUGIN" \
+  --plugin=protoc-gen-grpc-swift="$GRPC_PLUGIN" \
   --proto_path="$PROTO_DIR" \
   --swift_out="$OUT_DIR" \
   --swift_opt=Visibility=Public \
