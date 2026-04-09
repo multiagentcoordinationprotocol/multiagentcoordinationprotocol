@@ -54,6 +54,7 @@ generated/
 
 # Build artifacts
 build/
+.build/
 dist/
 target/
 out/
