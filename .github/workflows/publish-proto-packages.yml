@@ -290,7 +290,7 @@ jobs:
       - name: Generate Swift code
         run: |
           brew install swift-protobuf protoc-gen-grpc-swift
-          eval "$(brew shellenv)"
+          export PATH="$(brew --prefix)/bin:$PATH"
           cd packages/proto-swift
           rm -rf proto/macp
           cp -r ../../schemas/proto/macp proto/macp
