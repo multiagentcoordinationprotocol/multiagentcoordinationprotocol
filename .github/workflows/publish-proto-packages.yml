@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - 'proto-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run — build and verify only, skip publishing'
+        required: true
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -11,17 +22,25 @@ permissions:
 
 jobs:
   extract-version:
-    name: Extract Version from Tag
+    name: Extract Version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      dry_run: ${{ steps.version.outputs.dry_run }}
     steps:
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: |
-          TAG="${GITHUB_REF#refs/tags/proto-v}"
-          echo "version=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Publishing version: $TAG"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            DRY_RUN="${{ inputs.dry_run }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/proto-v}"
+            DRY_RUN="false"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION (dry_run: $DRY_RUN)"
 
   # ── npm (@macp/proto) ───────────────────────────────────────────────
   publish-npm:
@@ -45,7 +64,11 @@ jobs:
           jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp
           mv package.json.tmp package.json
 
+      - name: Verify package
+        run: cd packages/proto-npm && npm pack --dry-run
+
       - name: Publish to GitHub Packages
+        if: needs.extract-version.outputs.dry_run != 'true'
         run: cd packages/proto-npm && npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,20 +99,23 @@ jobs:
             macp/modes/task/v1/task.proto macp/modes/handoff/v1/handoff.proto \
             macp/modes/quorum/v1/quorum.proto
 
-      - name: Update version and publish
+      - name: Update version and build
         run: |
           VERSION="${{ needs.extract-version.outputs.version }}"
           cd packages/proto-python
           sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
           python -m build
-          twine upload dist/*
+
+      - name: Publish to PyPI
+        if: needs.extract-version.outputs.dry_run != 'true'
+        run: cd packages/proto-python && twine upload dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
   # ── Rust crate (macp-proto) ─────────────────────────────────────────
   publish-rust:
-    name: Prepare Rust Crate (macp-proto)
+    name: Publish Rust Crate (macp-proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
     steps:
@@ -105,6 +131,12 @@ jobs:
 
       - name: Verify crate builds
         run: cd packages/proto-rust && cargo check
+
+      - name: Publish to crates.io
+        if: needs.extract-version.outputs.dry_run != 'true'
+        run: cd packages/proto-rust && cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   # ── Go module ───────────────────────────────────────────────────────
   publish-go:
@@ -131,6 +163,7 @@ jobs:
           go build ./...
 
       - name: Tag Go module
+        if: needs.extract-version.outputs.dry_run != 'true'
         run: |
           VERSION="${{ needs.extract-version.outputs.version }}"
           git config user.name "github-actions[bot]"
@@ -157,12 +190,16 @@ jobs:
       - name: Generate Java code
         run: buf generate --template buf/buf.gen.java.yaml
 
-      - name: Build and publish
+      - name: Build and verify
         run: |
           cd packages/proto-java
           VERSION="${{ needs.extract-version.outputs.version }}"
           sed -i "s/version = .*/version = \"${VERSION}\"/" build.gradle.kts
-          gradle publish
+          gradle compileJava
+
+      - name: Publish to GitHub Packages
+        if: needs.extract-version.outputs.dry_run != 'true'
+        run: cd packages/proto-java && gradle publish
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -184,12 +221,29 @@ jobs:
       - name: Generate Kotlin code
         run: buf generate --template buf/buf.gen.kotlin.yaml
 
-      - name: Build and publish
+      - name: Install Java dependency to mavenLocal (dry run)
+        if: needs.extract-version.outputs.dry_run == 'true'
+        run: |
+          buf generate --template buf/buf.gen.java.yaml
+          cd packages/proto-java
+          VERSION="${{ needs.extract-version.outputs.version }}"
+          sed -i "s/version = .*/version = \"${VERSION}\"/" build.gradle.kts
+          gradle publishToMavenLocal
+
+      - name: Build and verify
         run: |
           cd packages/proto-kotlin
           VERSION="${{ needs.extract-version.outputs.version }}"
           sed -i "s/version = .*/version = \"${VERSION}\"/" build.gradle.kts
-          gradle publish
+          sed -i "s/io.macp:macp-proto:[0-9.]*\"/io.macp:macp-proto:${VERSION}\"/" build.gradle.kts
+          gradle compileKotlin
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to GitHub Packages
+        if: needs.extract-version.outputs.dry_run != 'true'
+        run: cd packages/proto-kotlin && gradle publish
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -209,11 +263,16 @@ jobs:
       - name: Generate C# code
         run: buf generate --template buf/buf.gen.csharp.yaml
 
-      - name: Build and publish
+      - name: Build and verify
         run: |
           cd packages/proto-csharp
           VERSION="${{ needs.extract-version.outputs.version }}"
           dotnet pack -c Release -p:Version="$VERSION" -o nupkg/
+
+      - name: Publish to GitHub Packages
+        if: needs.extract-version.outputs.dry_run != 'true'
+        run: |
+          cd packages/proto-csharp
           dotnet nuget push nupkg/*.nupkg \
             --source "https://nuget.pkg.github.com/multiagentcoordinationprotocol/index.json" \
             --api-key "${{ secrets.GITHUB_TOKEN }}"
@@ -242,6 +301,7 @@ jobs:
           swift build
 
       - name: Tag Swift package
+        if: needs.extract-version.outputs.dry_run != 'true'
         run: |
           VERSION="${{ needs.extract-version.outputs.version }}"
           git config user.name "github-actions[bot]"
