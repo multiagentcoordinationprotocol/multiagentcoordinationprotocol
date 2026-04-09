@@ -311,6 +311,7 @@ jobs:
       - name: Verify package builds
         run: |
           cd packages/proto-swift
+          rm -f Package.resolved
           swift build
 
       - name: Tag Swift package
