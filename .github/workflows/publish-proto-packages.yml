@@ -296,7 +296,7 @@ jobs:
           cp -r ../../schemas/proto/macp proto/macp
           "$BREW_BIN/protoc" \
             --plugin=protoc-gen-swift="$BREW_BIN/protoc-gen-swift" \
-            --plugin=protoc-gen-grpc-swift="$BREW_BIN/protoc-gen-grpc-swift" \
+            --plugin=protoc-gen-grpc-swift="$BREW_BIN/protoc-gen-grpc-swift-2" \
             --proto_path=proto \
             --swift_out=Sources/MACPProto \
             --swift_opt=Visibility=Public \

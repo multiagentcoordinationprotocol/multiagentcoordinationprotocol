@@ -20,7 +20,11 @@ PROTOS=(
 )
 
 echo "Generating Swift protobuf code..."
+
+# grpc-swift v2.x installs the plugin as protoc-gen-grpc-swift-2
+GRPC_PLUGIN="$(command -v protoc-gen-grpc-swift-2 || command -v protoc-gen-grpc-swift)"
 protoc \
+  --plugin=protoc-gen-grpc-swift="$GRPC_PLUGIN" \
   --proto_path="$PROTO_DIR" \
   --swift_out="$OUT_DIR" \
   --swift_opt=Visibility=Public \
