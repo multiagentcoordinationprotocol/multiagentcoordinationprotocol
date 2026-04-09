@@ -287,18 +287,26 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Swift protobuf plugins
-        run: |
-          brew install swift-protobuf protoc-gen-grpc-swift
-          echo "BREW_PREFIX=$(brew --prefix)" >> "$GITHUB_ENV"
-
       - name: Generate Swift code
         run: |
-          export PATH="${BREW_PREFIX}/bin:$PATH"
+          brew install swift-protobuf protoc-gen-grpc-swift
+          BREW_BIN="$(brew --prefix)/bin"
           cd packages/proto-swift
           rm -rf proto/macp
           cp -r ../../schemas/proto/macp proto/macp
-          bash generate-swift.sh
+          "$BREW_BIN/protoc" \
+            --plugin=protoc-gen-swift="$BREW_BIN/protoc-gen-swift" \
+            --plugin=protoc-gen-grpc-swift="$BREW_BIN/protoc-gen-grpc-swift" \
+            --proto_path=proto \
+            --swift_out=Sources/MACPProto \
+            --swift_opt=Visibility=Public \
+            --grpc-swift_out=Sources/MACPProto \
+            --grpc-swift_opt=Visibility=Public \
+            macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
+            macp/modes/decision/v1/decision.proto macp/modes/proposal/v1/proposal.proto \
+            macp/modes/task/v1/task.proto macp/modes/handoff/v1/handoff.proto \
+            macp/modes/quorum/v1/quorum.proto
+          rm -f Sources/MACPProto/placeholder.swift
 
       - name: Verify package builds
         run: |
