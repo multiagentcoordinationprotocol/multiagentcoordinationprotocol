@@ -287,10 +287,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Swift code
+      - name: Install Swift protobuf plugins
         run: |
           brew install swift-protobuf protoc-gen-grpc-swift
-          export PATH="$(brew --prefix)/bin:$PATH"
+          echo "BREW_PREFIX=$(brew --prefix)" >> "$GITHUB_ENV"
+
+      - name: Generate Swift code
+        run: |
+          export PATH="${BREW_PREFIX}/bin:$PATH"
           cd packages/proto-swift
           rm -rf proto/macp
           cp -r ../../schemas/proto/macp proto/macp
