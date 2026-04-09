@@ -42,9 +42,9 @@ jobs:
           echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION (dry_run: $DRY_RUN)"
 
-  # ── npm (@macp/proto) ───────────────────────────────────────────────
+  # ── npm (@multiagentcoordinationprotocol/proto) ──────────────────────
   publish-npm:
-    name: Publish npm Package (@macp/proto)
+    name: Publish npm Package (@multiagentcoordinationprotocol/proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
     steps:
@@ -53,7 +53,7 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@macp'
+          scope: '@multiagentcoordinationprotocol'
 
       - name: Prepare package
         run: |

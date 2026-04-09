@@ -1,5 +1,5 @@
 {
-  "name": "@macp/proto",
+  "name": "@multiagentcoordinationprotocol/proto",
   "version": "0.1.0",
   "description": "MACP protocol buffer definitions — raw .proto files for the Multi-Agent Coordination Protocol",
   "license": "Apache-2.0",
