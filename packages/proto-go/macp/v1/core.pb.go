@@ -1030,9 +1030,10 @@ func (x *SessionStartPayload) GetRoots() []*Root {
 }
 
 type SessionCancelPayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Reason        string                 `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
-	CancelledBy   string                 `protobuf:"bytes,2,opt,name=cancelled_by,json=cancelledBy,proto3" json:"cancelled_by,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Reason string                 `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
+	// Set by the runtime; MUST match the authenticated sender of the CancelSession RPC.
+	CancelledBy   string `protobuf:"bytes,2,opt,name=cancelled_by,json=cancelledBy,proto3" json:"cancelled_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2254,8 +2255,12 @@ func (x *StreamSessionRequest) GetEnvelope() *Envelope {
 }
 
 type StreamSessionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Envelope      *Envelope              `protobuf:"bytes,1,opt,name=envelope,proto3" json:"envelope,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Response:
+	//
+	//	*StreamSessionResponse_Envelope
+	//	*StreamSessionResponse_Error
+	Response      isStreamSessionResponse_Response `protobuf_oneof:"response"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2290,12 +2295,46 @@ func (*StreamSessionResponse) Descriptor() ([]byte, []int) {
 	return file_macp_v1_core_proto_rawDescGZIP(), []int{37}
 }
 
-func (x *StreamSessionResponse) GetEnvelope() *Envelope {
+func (x *StreamSessionResponse) GetResponse() isStreamSessionResponse_Response {
 	if x != nil {
-		return x.Envelope
+		return x.Response
 	}
 	return nil
 }
+
+func (x *StreamSessionResponse) GetEnvelope() *Envelope {
+	if x != nil {
+		if x, ok := x.Response.(*StreamSessionResponse_Envelope); ok {
+			return x.Envelope
+		}
+	}
+	return nil
+}
+
+func (x *StreamSessionResponse) GetError() *MACPError {
+	if x != nil {
+		if x, ok := x.Response.(*StreamSessionResponse_Error); ok {
+			return x.Error
+		}
+	}
+	return nil
+}
+
+type isStreamSessionResponse_Response interface {
+	isStreamSessionResponse_Response()
+}
+
+type StreamSessionResponse_Envelope struct {
+	Envelope *Envelope `protobuf:"bytes,1,opt,name=envelope,proto3,oneof"`
+}
+
+type StreamSessionResponse_Error struct {
+	Error *MACPError `protobuf:"bytes,2,opt,name=error,proto3,oneof"` // Application-level validation error; stream remains open.
+}
+
+func (*StreamSessionResponse_Envelope) isStreamSessionResponse_Response() {}
+
+func (*StreamSessionResponse_Error) isStreamSessionResponse_Response() {}
 
 type GetSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3162,9 +3201,12 @@ const file_macp_v1_core_proto_rawDesc = "" +
 	"\fSendResponse\x12\x1e\n" +
 	"\x03ack\x18\x01 \x01(\v2\f.macp.v1.AckR\x03ack\"E\n" +
 	"\x14StreamSessionRequest\x12-\n" +
-	"\benvelope\x18\x01 \x01(\v2\x11.macp.v1.EnvelopeR\benvelope\"F\n" +
-	"\x15StreamSessionResponse\x12-\n" +
-	"\benvelope\x18\x01 \x01(\v2\x11.macp.v1.EnvelopeR\benvelope\"J\n" +
+	"\benvelope\x18\x01 \x01(\v2\x11.macp.v1.EnvelopeR\benvelope\"\x80\x01\n" +
+	"\x15StreamSessionResponse\x12/\n" +
+	"\benvelope\x18\x01 \x01(\v2\x11.macp.v1.EnvelopeH\x00R\benvelope\x12*\n" +
+	"\x05error\x18\x02 \x01(\v2\x12.macp.v1.MACPErrorH\x00R\x05errorB\n" +
+	"\n" +
+	"\bresponse\"J\n" +
 	"\x12GetSessionResponse\x124\n" +
 	"\bmetadata\x18\x01 \x01(\v2\x18.macp.v1.SessionMetadataR\bmetadata\"7\n" +
 	"\x15CancelSessionResponse\x12\x1e\n" +
@@ -3299,16 +3341,17 @@ var file_macp_v1_core_proto_goTypes = []any{
 	(SessionState)(0),                 // 58: macp.v1.SessionState
 	(*Envelope)(nil),                  // 59: macp.v1.Envelope
 	(*Ack)(nil),                       // 60: macp.v1.Ack
-	(*RegisterPolicyRequest)(nil),     // 61: macp.v1.RegisterPolicyRequest
-	(*UnregisterPolicyRequest)(nil),   // 62: macp.v1.UnregisterPolicyRequest
-	(*GetPolicyRequest)(nil),          // 63: macp.v1.GetPolicyRequest
-	(*ListPoliciesRequest)(nil),       // 64: macp.v1.ListPoliciesRequest
-	(*WatchPoliciesRequest)(nil),      // 65: macp.v1.WatchPoliciesRequest
-	(*RegisterPolicyResponse)(nil),    // 66: macp.v1.RegisterPolicyResponse
-	(*UnregisterPolicyResponse)(nil),  // 67: macp.v1.UnregisterPolicyResponse
-	(*GetPolicyResponse)(nil),         // 68: macp.v1.GetPolicyResponse
-	(*ListPoliciesResponse)(nil),      // 69: macp.v1.ListPoliciesResponse
-	(*WatchPoliciesResponse)(nil),     // 70: macp.v1.WatchPoliciesResponse
+	(*MACPError)(nil),                 // 61: macp.v1.MACPError
+	(*RegisterPolicyRequest)(nil),     // 62: macp.v1.RegisterPolicyRequest
+	(*UnregisterPolicyRequest)(nil),   // 63: macp.v1.UnregisterPolicyRequest
+	(*GetPolicyRequest)(nil),          // 64: macp.v1.GetPolicyRequest
+	(*ListPoliciesRequest)(nil),       // 65: macp.v1.ListPoliciesRequest
+	(*WatchPoliciesRequest)(nil),      // 66: macp.v1.WatchPoliciesRequest
+	(*RegisterPolicyResponse)(nil),    // 67: macp.v1.RegisterPolicyResponse
+	(*UnregisterPolicyResponse)(nil),  // 68: macp.v1.UnregisterPolicyResponse
+	(*GetPolicyResponse)(nil),         // 69: macp.v1.GetPolicyResponse
+	(*ListPoliciesResponse)(nil),      // 70: macp.v1.ListPoliciesResponse
+	(*WatchPoliciesResponse)(nil),     // 71: macp.v1.WatchPoliciesResponse
 }
 var file_macp_v1_core_proto_depIdxs = []int32{
 	53, // 0: macp.v1.ExperimentalCapabilities.features:type_name -> macp.v1.ExperimentalCapabilities.FeaturesEntry
@@ -3337,59 +3380,60 @@ var file_macp_v1_core_proto_depIdxs = []int32{
 	60, // 23: macp.v1.SendResponse.ack:type_name -> macp.v1.Ack
 	59, // 24: macp.v1.StreamSessionRequest.envelope:type_name -> macp.v1.Envelope
 	59, // 25: macp.v1.StreamSessionResponse.envelope:type_name -> macp.v1.Envelope
-	19, // 26: macp.v1.GetSessionResponse.metadata:type_name -> macp.v1.SessionMetadata
-	60, // 27: macp.v1.CancelSessionResponse.ack:type_name -> macp.v1.Ack
-	24, // 28: macp.v1.GetManifestResponse.manifest:type_name -> macp.v1.AgentManifest
-	32, // 29: macp.v1.WatchModeRegistryResponse.change:type_name -> macp.v1.RegistryChanged
-	33, // 30: macp.v1.WatchRootsResponse.change:type_name -> macp.v1.RootsChanged
-	25, // 31: macp.v1.ListExtModesResponse.modes:type_name -> macp.v1.ModeDescriptor
-	25, // 32: macp.v1.RegisterExtModeRequest.mode_descriptor:type_name -> macp.v1.ModeDescriptor
-	59, // 33: macp.v1.WatchSignalsResponse.envelope:type_name -> macp.v1.Envelope
-	11, // 34: macp.v1.MACPRuntimeService.Initialize:input_type -> macp.v1.InitializeRequest
-	34, // 35: macp.v1.MACPRuntimeService.Send:input_type -> macp.v1.SendRequest
-	36, // 36: macp.v1.MACPRuntimeService.StreamSession:input_type -> macp.v1.StreamSessionRequest
-	20, // 37: macp.v1.MACPRuntimeService.GetSession:input_type -> macp.v1.GetSessionRequest
-	21, // 38: macp.v1.MACPRuntimeService.CancelSession:input_type -> macp.v1.CancelSessionRequest
-	22, // 39: macp.v1.MACPRuntimeService.GetManifest:input_type -> macp.v1.GetManifestRequest
-	26, // 40: macp.v1.MACPRuntimeService.ListModes:input_type -> macp.v1.ListModesRequest
-	30, // 41: macp.v1.MACPRuntimeService.WatchModeRegistry:input_type -> macp.v1.WatchModeRegistryRequest
-	28, // 42: macp.v1.MACPRuntimeService.ListRoots:input_type -> macp.v1.ListRootsRequest
-	31, // 43: macp.v1.MACPRuntimeService.WatchRoots:input_type -> macp.v1.WatchRootsRequest
-	43, // 44: macp.v1.MACPRuntimeService.ListExtModes:input_type -> macp.v1.ListExtModesRequest
-	45, // 45: macp.v1.MACPRuntimeService.RegisterExtMode:input_type -> macp.v1.RegisterExtModeRequest
-	47, // 46: macp.v1.MACPRuntimeService.UnregisterExtMode:input_type -> macp.v1.UnregisterExtModeRequest
-	49, // 47: macp.v1.MACPRuntimeService.PromoteMode:input_type -> macp.v1.PromoteModeRequest
-	51, // 48: macp.v1.MACPRuntimeService.WatchSignals:input_type -> macp.v1.WatchSignalsRequest
-	61, // 49: macp.v1.MACPRuntimeService.RegisterPolicy:input_type -> macp.v1.RegisterPolicyRequest
-	62, // 50: macp.v1.MACPRuntimeService.UnregisterPolicy:input_type -> macp.v1.UnregisterPolicyRequest
-	63, // 51: macp.v1.MACPRuntimeService.GetPolicy:input_type -> macp.v1.GetPolicyRequest
-	64, // 52: macp.v1.MACPRuntimeService.ListPolicies:input_type -> macp.v1.ListPoliciesRequest
-	65, // 53: macp.v1.MACPRuntimeService.WatchPolicies:input_type -> macp.v1.WatchPoliciesRequest
-	12, // 54: macp.v1.MACPRuntimeService.Initialize:output_type -> macp.v1.InitializeResponse
-	35, // 55: macp.v1.MACPRuntimeService.Send:output_type -> macp.v1.SendResponse
-	37, // 56: macp.v1.MACPRuntimeService.StreamSession:output_type -> macp.v1.StreamSessionResponse
-	38, // 57: macp.v1.MACPRuntimeService.GetSession:output_type -> macp.v1.GetSessionResponse
-	39, // 58: macp.v1.MACPRuntimeService.CancelSession:output_type -> macp.v1.CancelSessionResponse
-	40, // 59: macp.v1.MACPRuntimeService.GetManifest:output_type -> macp.v1.GetManifestResponse
-	27, // 60: macp.v1.MACPRuntimeService.ListModes:output_type -> macp.v1.ListModesResponse
-	41, // 61: macp.v1.MACPRuntimeService.WatchModeRegistry:output_type -> macp.v1.WatchModeRegistryResponse
-	29, // 62: macp.v1.MACPRuntimeService.ListRoots:output_type -> macp.v1.ListRootsResponse
-	42, // 63: macp.v1.MACPRuntimeService.WatchRoots:output_type -> macp.v1.WatchRootsResponse
-	44, // 64: macp.v1.MACPRuntimeService.ListExtModes:output_type -> macp.v1.ListExtModesResponse
-	46, // 65: macp.v1.MACPRuntimeService.RegisterExtMode:output_type -> macp.v1.RegisterExtModeResponse
-	48, // 66: macp.v1.MACPRuntimeService.UnregisterExtMode:output_type -> macp.v1.UnregisterExtModeResponse
-	50, // 67: macp.v1.MACPRuntimeService.PromoteMode:output_type -> macp.v1.PromoteModeResponse
-	52, // 68: macp.v1.MACPRuntimeService.WatchSignals:output_type -> macp.v1.WatchSignalsResponse
-	66, // 69: macp.v1.MACPRuntimeService.RegisterPolicy:output_type -> macp.v1.RegisterPolicyResponse
-	67, // 70: macp.v1.MACPRuntimeService.UnregisterPolicy:output_type -> macp.v1.UnregisterPolicyResponse
-	68, // 71: macp.v1.MACPRuntimeService.GetPolicy:output_type -> macp.v1.GetPolicyResponse
-	69, // 72: macp.v1.MACPRuntimeService.ListPolicies:output_type -> macp.v1.ListPoliciesResponse
-	70, // 73: macp.v1.MACPRuntimeService.WatchPolicies:output_type -> macp.v1.WatchPoliciesResponse
-	54, // [54:74] is the sub-list for method output_type
-	34, // [34:54] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	61, // 26: macp.v1.StreamSessionResponse.error:type_name -> macp.v1.MACPError
+	19, // 27: macp.v1.GetSessionResponse.metadata:type_name -> macp.v1.SessionMetadata
+	60, // 28: macp.v1.CancelSessionResponse.ack:type_name -> macp.v1.Ack
+	24, // 29: macp.v1.GetManifestResponse.manifest:type_name -> macp.v1.AgentManifest
+	32, // 30: macp.v1.WatchModeRegistryResponse.change:type_name -> macp.v1.RegistryChanged
+	33, // 31: macp.v1.WatchRootsResponse.change:type_name -> macp.v1.RootsChanged
+	25, // 32: macp.v1.ListExtModesResponse.modes:type_name -> macp.v1.ModeDescriptor
+	25, // 33: macp.v1.RegisterExtModeRequest.mode_descriptor:type_name -> macp.v1.ModeDescriptor
+	59, // 34: macp.v1.WatchSignalsResponse.envelope:type_name -> macp.v1.Envelope
+	11, // 35: macp.v1.MACPRuntimeService.Initialize:input_type -> macp.v1.InitializeRequest
+	34, // 36: macp.v1.MACPRuntimeService.Send:input_type -> macp.v1.SendRequest
+	36, // 37: macp.v1.MACPRuntimeService.StreamSession:input_type -> macp.v1.StreamSessionRequest
+	20, // 38: macp.v1.MACPRuntimeService.GetSession:input_type -> macp.v1.GetSessionRequest
+	21, // 39: macp.v1.MACPRuntimeService.CancelSession:input_type -> macp.v1.CancelSessionRequest
+	22, // 40: macp.v1.MACPRuntimeService.GetManifest:input_type -> macp.v1.GetManifestRequest
+	26, // 41: macp.v1.MACPRuntimeService.ListModes:input_type -> macp.v1.ListModesRequest
+	30, // 42: macp.v1.MACPRuntimeService.WatchModeRegistry:input_type -> macp.v1.WatchModeRegistryRequest
+	28, // 43: macp.v1.MACPRuntimeService.ListRoots:input_type -> macp.v1.ListRootsRequest
+	31, // 44: macp.v1.MACPRuntimeService.WatchRoots:input_type -> macp.v1.WatchRootsRequest
+	43, // 45: macp.v1.MACPRuntimeService.ListExtModes:input_type -> macp.v1.ListExtModesRequest
+	45, // 46: macp.v1.MACPRuntimeService.RegisterExtMode:input_type -> macp.v1.RegisterExtModeRequest
+	47, // 47: macp.v1.MACPRuntimeService.UnregisterExtMode:input_type -> macp.v1.UnregisterExtModeRequest
+	49, // 48: macp.v1.MACPRuntimeService.PromoteMode:input_type -> macp.v1.PromoteModeRequest
+	51, // 49: macp.v1.MACPRuntimeService.WatchSignals:input_type -> macp.v1.WatchSignalsRequest
+	62, // 50: macp.v1.MACPRuntimeService.RegisterPolicy:input_type -> macp.v1.RegisterPolicyRequest
+	63, // 51: macp.v1.MACPRuntimeService.UnregisterPolicy:input_type -> macp.v1.UnregisterPolicyRequest
+	64, // 52: macp.v1.MACPRuntimeService.GetPolicy:input_type -> macp.v1.GetPolicyRequest
+	65, // 53: macp.v1.MACPRuntimeService.ListPolicies:input_type -> macp.v1.ListPoliciesRequest
+	66, // 54: macp.v1.MACPRuntimeService.WatchPolicies:input_type -> macp.v1.WatchPoliciesRequest
+	12, // 55: macp.v1.MACPRuntimeService.Initialize:output_type -> macp.v1.InitializeResponse
+	35, // 56: macp.v1.MACPRuntimeService.Send:output_type -> macp.v1.SendResponse
+	37, // 57: macp.v1.MACPRuntimeService.StreamSession:output_type -> macp.v1.StreamSessionResponse
+	38, // 58: macp.v1.MACPRuntimeService.GetSession:output_type -> macp.v1.GetSessionResponse
+	39, // 59: macp.v1.MACPRuntimeService.CancelSession:output_type -> macp.v1.CancelSessionResponse
+	40, // 60: macp.v1.MACPRuntimeService.GetManifest:output_type -> macp.v1.GetManifestResponse
+	27, // 61: macp.v1.MACPRuntimeService.ListModes:output_type -> macp.v1.ListModesResponse
+	41, // 62: macp.v1.MACPRuntimeService.WatchModeRegistry:output_type -> macp.v1.WatchModeRegistryResponse
+	29, // 63: macp.v1.MACPRuntimeService.ListRoots:output_type -> macp.v1.ListRootsResponse
+	42, // 64: macp.v1.MACPRuntimeService.WatchRoots:output_type -> macp.v1.WatchRootsResponse
+	44, // 65: macp.v1.MACPRuntimeService.ListExtModes:output_type -> macp.v1.ListExtModesResponse
+	46, // 66: macp.v1.MACPRuntimeService.RegisterExtMode:output_type -> macp.v1.RegisterExtModeResponse
+	48, // 67: macp.v1.MACPRuntimeService.UnregisterExtMode:output_type -> macp.v1.UnregisterExtModeResponse
+	50, // 68: macp.v1.MACPRuntimeService.PromoteMode:output_type -> macp.v1.PromoteModeResponse
+	52, // 69: macp.v1.MACPRuntimeService.WatchSignals:output_type -> macp.v1.WatchSignalsResponse
+	67, // 70: macp.v1.MACPRuntimeService.RegisterPolicy:output_type -> macp.v1.RegisterPolicyResponse
+	68, // 71: macp.v1.MACPRuntimeService.UnregisterPolicy:output_type -> macp.v1.UnregisterPolicyResponse
+	69, // 72: macp.v1.MACPRuntimeService.GetPolicy:output_type -> macp.v1.GetPolicyResponse
+	70, // 73: macp.v1.MACPRuntimeService.ListPolicies:output_type -> macp.v1.ListPoliciesResponse
+	71, // 74: macp.v1.MACPRuntimeService.WatchPolicies:output_type -> macp.v1.WatchPoliciesResponse
+	55, // [55:75] is the sub-list for method output_type
+	35, // [35:55] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_macp_v1_core_proto_init() }
@@ -3399,6 +3443,10 @@ func file_macp_v1_core_proto_init() {
 	}
 	file_macp_v1_envelope_proto_init()
 	file_macp_v1_policy_proto_init()
+	file_macp_v1_core_proto_msgTypes[37].OneofWrappers = []any{
+		(*StreamSessionResponse_Envelope)(nil),
+		(*StreamSessionResponse_Error)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

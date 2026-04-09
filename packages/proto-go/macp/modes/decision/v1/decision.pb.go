@@ -220,7 +220,7 @@ func (x *ObjectionPayload) GetSeverity() string {
 type VotePayload struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProposalId    string                 `protobuf:"bytes,1,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
-	Vote          string                 `protobuf:"bytes,2,opt,name=vote,proto3" json:"vote,omitempty"` // approve | reject | abstain
+	Vote          string                 `protobuf:"bytes,2,opt,name=vote,proto3" json:"vote,omitempty"` // APPROVE | REJECT | ABSTAIN
 	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

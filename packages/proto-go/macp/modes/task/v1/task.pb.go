@@ -225,6 +225,7 @@ func (x *TaskRejectPayload) GetReason() string {
 	return ""
 }
 
+// No explicit assignee field; runtime validates authorship via Envelope.sender.
 type TaskUpdatePayload struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
