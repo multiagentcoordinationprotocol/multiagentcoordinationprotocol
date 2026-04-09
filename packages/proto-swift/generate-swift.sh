@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generate Swift protobuf files from .proto sources.
 # Requires: protoc-gen-swift, protoc-gen-grpc-swift
-#   brew install swift-protobuf grpc-swift
+#   brew install swift-protobuf protoc-gen-grpc-swift
 set -euo pipefail
 cd "$(dirname "$0")"
 
