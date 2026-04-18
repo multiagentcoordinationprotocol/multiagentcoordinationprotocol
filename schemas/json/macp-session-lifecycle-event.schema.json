@@ -20,8 +20,17 @@
       "description": "The type of session lifecycle event."
     },
     "session": {
-      "$ref": "macp-session-metadata.schema.json",
-      "description": "The session affected by this lifecycle event."
+      "type": "object",
+      "description": "The session affected by this lifecycle event. See macp-session-metadata.schema.json for the full SessionMetadata definition.",
+      "required": ["session_id", "mode", "state"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "mode": { "type": "string" },
+        "state": {
+          "type": "string",
+          "enum": ["SESSION_STATE_UNSPECIFIED", "SESSION_STATE_OPEN", "SESSION_STATE_RESOLVED", "SESSION_STATE_EXPIRED"]
+        }
+      }
     },
     "observed_at_unix_ms": {
       "type": "integer",
