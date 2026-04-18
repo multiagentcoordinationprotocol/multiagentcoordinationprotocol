@@ -226,7 +226,7 @@ class MACPRuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def WatchSignals(self, request, context):
-        """Ambient signal observation
+        """Ambient Signal observation
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

@@ -68,6 +68,15 @@
     "initiator": {
       "type": "string",
       "description": "The sender of the accepted SessionStart message. Used for cancellation authorization and audit."
+    },
+    "context_id": {
+      "type": "string",
+      "description": "The context_id from SessionStartPayload, if set. Preserved verbatim."
+    },
+    "extension_keys": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Extension keys active on this session (keys only, not values)."
     }
   },
   "$defs": {

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-session-lifecycle-event.schema.json",
+  "title": "MACP Session Lifecycle Event",
+  "description": "JSON Schema for SessionLifecycleEvent emitted by WatchSessions. See RFC-MACP-0001 Section 7.3 and RFC-MACP-0006 Section 3.8.",
+  "type": "object",
+  "required": [
+    "event_type",
+    "session"
+  ],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "EVENT_TYPE_UNSPECIFIED",
+        "EVENT_TYPE_CREATED",
+        "EVENT_TYPE_RESOLVED",
+        "EVENT_TYPE_EXPIRED"
+      ],
+      "description": "The type of session lifecycle event."
+    },
+    "session": {
+      "$ref": "macp-session-metadata.schema.json",
+      "description": "The session affected by this lifecycle event."
+    },
+    "observed_at_unix_ms": {
+      "type": "integer",
+      "description": "Timestamp when the event was observed (milliseconds since Unix epoch)."
+    }
+  }
+}

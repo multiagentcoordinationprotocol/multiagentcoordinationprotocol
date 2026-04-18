@@ -17,6 +17,6 @@
     "configuration_version": "runtime-2026.03.01",
     "policy_version": "org-procurement-2026.02",
     "ttl_ms": 900000,
-    "context": "eyJidWRnZXQiOiAxMDAwMH0="
+    "context_id": "ctx:procurement:ocr-pipeline-2026Q1"
   }
 }

@@ -189,8 +189,9 @@ A valid `SessionStart` message consists of an Envelope with a non-empty `session
 - `ttl_ms` (MUST be greater than zero),
 - `participants` (when required by the Mode),
 - `policy_version` (MUST be present in the payload; MAY be empty, in which case the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
-- `context` when present,
-- `roots` when present.
+- `roots` when present,
+- `context_id` when present (see §7.4.1),
+- `extensions` when present (see §7.4.2).
 
 `configuration_version` is an opaque string that identifies a mode-specific configuration profile. Its format and interpretation are implementation-defined and not part of the MACP interoperability contract. Runtimes MUST store the bound `configuration_version` in session metadata for replay integrity.
 
@@ -229,6 +230,32 @@ By default, only the accepted `SessionStart` sender (session initiator) is autho
 `CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation. `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
 
 `CancelSession` is a Core control-plane message. Mode-specific authorization rules (e.g., who can emit which Mode message type) do NOT apply to `CancelSession`. Only the initiator and policy-delegated roles may cancel a session.
+
+### 7.4 Session Context and Extensions
+
+#### 7.4.1 Context Reference
+
+`SessionStartPayload` MAY carry a `context_id` string field naming the structured context this session operates within (e.g., a content-addressed context identifier, a knowledge-base URI, or any opaque reference).
+
+The runtime MUST preserve `context_id` on `SessionMetadata` for the session's lifetime. The runtime MUST NOT interpret, resolve, or validate the value — it is an opaque reference whose semantics are defined by the context protocol in use (e.g., CTXM).
+
+Observers (including control-planes and UIs) MAY use `context_id` for indexing, linking, and display without parsing extension-specific data.
+
+#### 7.4.2 Extension Blocks
+
+`SessionStartPayload` MAY carry a `map<string, bytes> extensions` field containing protocol-specific extension blocks keyed by a globally unique protocol identifier (e.g., `"ctxm"`, `"aitp"`, deployment-specific names).
+
+**Preservation rule (MUST):** The runtime MUST preserve all extension entries in the session's metadata for the session's lifetime.
+
+**Non-dependence rule (MUST):** Core session lifecycle (creation, mode message routing, terminal transitions, cancellation, TTL expiry, deduplication, policy evaluation) MUST NOT depend on any extension block or on `context_id`. A session with empty `context_id` and empty `extensions` MUST behave identically to one with both populated, from the perspective of core protocol mechanics.
+
+**Forward compatibility (MUST):** Runtimes MUST NOT reject a `SessionStart` because it contains unknown extension keys or an unrecognized `context_id` format.
+
+**Extension provider hooks (MAY):** Runtimes MAY register extension providers that receive lifecycle callbacks (session-start, mode-event, session-terminal) for their declared key. Provider errors MUST NOT cause session-lifecycle failures; they SHOULD be logged and MAY be surfaced as ambient `Signal` envelopes for observability.
+
+**Naming convention (RECOMMENDED):** Extension keys SHOULD use dot-separated reverse-domain notation for public protocols (e.g., `ctxm.v1`, `aitp.v1`) and `x-` prefix for deployment-private extensions (e.g., `x-billing`, `x-tracing`).
+
+> **Migration note:** The former opaque `bytes context` field (field 7) has been removed from `SessionStartPayload`. It is superseded by the structured `context_id` (field 8) and `extensions` (field 9) fields. The `roots` field has been renumbered from field 8 to field 7.
 
 ---
 
@@ -304,6 +331,8 @@ If a `StreamSession` receives an invalid or unauthorized envelope, the runtime M
 - `ListRoots` — root listing
 - `WatchRoots` — root change notifications
 - `WatchSignals` — server-streaming RPC that broadcasts accepted Ambient Signal Envelopes in real time. The stream carries only Signals (messages with empty `session_id` and empty `mode`). Signals are ephemeral; there is no built-in backlog or resume mechanism. Clients that disconnect MAY miss Signals.
+- `ListSessions` — returns metadata for all currently active sessions. Advertised by `sessions.list_sessions`.
+- `WatchSessions` — server-streaming RPC that emits `SessionLifecycleEvent` notifications when sessions are created, resolved, or expired. Advertised by `sessions.watch_sessions`.
 
 The proto file also defines extension mode lifecycle RPCs (`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`); see [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics.
 

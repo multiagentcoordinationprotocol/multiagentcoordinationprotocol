@@ -51,6 +51,19 @@ jobs:
           chmod +x scripts/sync-proto-packages.sh
           ./scripts/sync-proto-packages.sh --check
 
+      - name: Check SDK proto parity (W3a / direct-agent-auth)
+        run: |
+          echo "Checking typescript-sdk + python-sdk proto ranges match the canonical packages..."
+          chmod +x scripts/check-proto-parity.sh
+          # The parity script requires the SDK sibling repos to be present on disk.
+          # In CI this is only meaningful on a checkout that includes them — skip cleanly otherwise.
+          if [ -d ../typescript-sdk ] && [ -d ../python-sdk ]; then
+            ./scripts/check-proto-parity.sh
+          else
+            echo "SKIP: ../typescript-sdk or ../python-sdk not present in this checkout."
+            echo "This check runs in the monorepo-wide CI that checks out all sibling repos."
+          fi
+
   lint-protobuf:
     name: Lint Protocol Buffers
     runs-on: ubuntu-latest

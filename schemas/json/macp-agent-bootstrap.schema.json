@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-agent-bootstrap.schema.json",
+  "title": "MACP Agent Bootstrap Payload",
+  "description": "Canonical schema for the bootstrap payload written to MACP_BOOTSTRAP_FILE before an agent process is spawned. Consumed by the agent at startup to learn its runId, sessionId, runtime address + Bearer token, and — for the initiator agent only — the SessionStart payload and the first kickoff envelope template. See direct-agent-auth architecture (§Invariants).",
+  "type": "object",
+  "required": ["run", "participant", "runtime"],
+  "additionalProperties": true,
+  "properties": {
+    "run": {
+      "type": "object",
+      "required": ["runId", "sessionId"],
+      "additionalProperties": true,
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Control-plane run identifier."
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Pre-allocated session identifier the initiator will bind at SessionStart. Satisfies runtime validation: UUID v4/v7 or base64url 22+ chars.",
+          "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[4|7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[A-Za-z0-9_-]{22,})$"
+        },
+        "traceId": {
+          "type": "string",
+          "description": "Optional OpenTelemetry trace id."
+        }
+      }
+    },
+    "participant": {
+      "type": "object",
+      "required": ["participantId"],
+      "additionalProperties": true,
+      "properties": {
+        "participantId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The agent's sender id. Must match the authenticated identity on the runtime (RFC-MACP-0004 §4)."
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Agent catalog reference (e.g. 'fraud-agent'). May equal participantId."
+        },
+        "displayName": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["address", "bearerToken"],
+      "additionalProperties": true,
+      "properties": {
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "description": "gRPC endpoint of the MACP runtime, e.g. '127.0.0.1:50051' or 'runtime.internal:50051'."
+        },
+        "bearerToken": {
+          "type": "string",
+          "minLength": 1,
+          "description": "This agent's own Bearer token. Must match an identity in the runtime's MACP_AUTH_TOKENS_JSON whose 'sender' equals participant.participantId."
+        },
+        "tls": {
+          "type": "boolean",
+          "description": "If true, use TLS for the gRPC channel. Default true in production per RFC-MACP-0006 §3."
+        },
+        "allowInsecure": {
+          "type": "boolean",
+          "description": "Dev-only escape hatch to permit a plaintext channel. Must be false in production."
+        },
+        "controlPlaneBaseUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "HTTP URL for read-only observability: GET /runs/:id, /runs/:id/events. Not used for envelope emission (agents emit via gRPC)."
+        },
+        "controlPlaneApiKey": {
+          "type": "string",
+          "description": "Optional API key for the control-plane HTTP reads above."
+        }
+      }
+    },
+    "initiator": {
+      "type": "object",
+      "description": "Populated ONLY on the initiator agent's bootstrap. The initiator calls MacpClient.send(SessionStart) with sessionStart, awaits ack, then emits kickoff (when present) as its first mode-scoped envelope.",
+      "required": ["sessionStart"],
+      "additionalProperties": false,
+      "properties": {
+        "sessionStart": {
+          "type": "object",
+          "required": ["intent", "participants", "ttlMs", "modeVersion", "configurationVersion"],
+          "additionalProperties": false,
+          "properties": {
+            "intent": { "type": "string" },
+            "participants": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1,
+              "maxItems": 1000,
+              "uniqueItems": true
+            },
+            "ttlMs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400000
+            },
+            "modeVersion": { "type": "string", "minLength": 1 },
+            "configurationVersion": { "type": "string", "minLength": 1 },
+            "policyVersion": { "type": "string" },
+            "context": {
+              "type": "string",
+              "description": "Opaque bytes/blob (base64 / proto-encoded) to embed in SessionStartPayload.context."
+            },
+            "roots": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["uri"],
+                "additionalProperties": false,
+                "properties": {
+                  "uri": { "type": "string", "format": "uri" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "kickoff": {
+          "type": "object",
+          "description": "Optional first mode-scoped envelope the initiator emits immediately after SessionStart is accepted (e.g., a Proposal for decision mode, a TaskRequest for task mode). May be absent for modes where the initiator opens the session but any participant may speak first.",
+          "required": ["messageType", "payload"],
+          "additionalProperties": false,
+          "properties": {
+            "messageType": { "type": "string", "minLength": 1 },
+            "payload": {
+              "type": "string",
+              "description": "Pre-encoded payload bytes (base64 / proto-encoded) ready to place in Envelope.payload."
+            }
+          }
+        }
+      }
+    },
+    "cancelCallback": {
+      "type": "object",
+      "description": "Local HTTP endpoint the agent exposes so the control-plane's UI-cancel path (direct-agent-auth Option A) can ask the initiator to call CancelSession on the runtime with its own identity (RFC-MACP-0001 §7.2).",
+      "required": ["host", "port", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string", "minLength": 1 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "path": { "type": "string", "minLength": 1, "pattern": "^/" }
+      }
+    },
+    "session": {
+      "type": "object",
+      "description": "Non-authoritative session-context hints. Used by agent frameworks for display/setup only.",
+      "additionalProperties": true,
+      "properties": {
+        "participants": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "metadata": { "type": "object" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "description": "Scenario metadata surfaced to the agent for framework setup (scenarioRef, modeName, tags, requester). Free-form; opaque to the runtime.",
+      "additionalProperties": true
+    },
+    "agent": {
+      "type": "object",
+      "description": "Framework-specific bootstrap data (manifest, framework name, framework config).",
+      "additionalProperties": true,
+      "properties": {
+        "manifest": { "type": "object" },
+        "framework": { "type": "string" },
+        "frameworkConfig": { "type": "object" }
+      }
+    }
+  }
+}

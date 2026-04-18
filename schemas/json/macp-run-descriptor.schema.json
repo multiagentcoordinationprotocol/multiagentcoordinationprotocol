@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-run-descriptor.schema.json",
+  "title": "MACP Run Descriptor",
+  "description": "Scenario-agnostic execution descriptor posted by a scenario-producing tier (e.g., examples-service) to a control plane's `POST /runs` endpoint. The control plane does not decode scenario semantics (RFC-MACP-0004 §3, direct-agent-auth architecture). It returns {runId, sessionId, ...} and observes the session the initiator agent opens on the runtime.",
+  "type": "object",
+  "required": ["runtime", "session"],
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["live", "sandbox"],
+      "description": "Execution mode. 'replay' is exposed as a separate endpoint."
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Runtime provider kind (e.g., 'rust'). Selects the control-plane's runtime provider."
+        },
+        "version": {
+          "type": "string",
+          "description": "Optional runtime version pin."
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["modeName", "modeVersion", "configurationVersion", "ttlMs", "participants"],
+      "additionalProperties": false,
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "Optional caller-provided session id. Must satisfy runtime validation: UUID v4/v7 or base64url 22+ chars. If omitted, the control plane allocates a UUID v4 and echoes it in the response.",
+          "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[4|7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[A-Za-z0-9_-]{22,})$"
+        },
+        "modeName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical mode identifier (e.g. 'macp.mode.decision.v1'). Opaque to the control plane; bound at SessionStart by the initiator agent."
+        },
+        "modeVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Semantic mode version bound at SessionStart."
+        },
+        "configurationVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Configuration version bound at SessionStart."
+        },
+        "policyVersion": {
+          "type": "string",
+          "description": "Policy identifier bound at SessionStart (RFC-MACP-0012 §6.1). Opaque to the control plane. Empty → runtime resolves to 'policy.default'."
+        },
+        "ttlMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400000,
+          "description": "Session TTL in milliseconds. Runtime accepts 1..86_400_000 (runtime/src/session.rs)."
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Participant sender id. Plain string; the 'agent://' prefix is a convention, not a protocol requirement (RFC-MACP-0001 §6)."
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true,
+          "description": "Declared participants. Used for audit/projection only; no roles, no per-participant semantics."
+        },
+        "context": {
+          "type": "string",
+          "description": "Optional opaque context blob. Control plane persists it as metadata but does NOT decode it. Initiator agent may embed this verbatim in its SessionStart payload."
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Free-form transport-layer metadata (environment label, source tag, cancelCallback coordinates, cancellationDelegated flag). Opaque to the runtime.",
+          "properties": {
+            "cancelCallback": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "HTTP endpoint the control plane calls when the UI triggers cancel (direct-agent-auth Option A — initiator agent forwards CancelSession).",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Callback URL on the initiator agent."
+                },
+                "bearer": {
+                  "type": "string",
+                  "description": "Optional shared-secret Bearer token for the callback."
+                }
+              },
+              "required": ["url"]
+            },
+            "cancellationDelegated": {
+              "type": "boolean",
+              "description": "Option B: when true and the session's policy grants commitment authority to the control-plane identity, the control plane calls CancelSession directly on the runtime instead of the callback (RFC-MACP-0001 §7.2)."
+            }
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "description": "Optional idempotency key; control plane returns the existing run on 409."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "UI-facing tags. Scenario-free; no runtime semantics."
+        },
+        "requester": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actorId": { "type": "string" },
+            "actorType": {
+              "type": "string",
+              "enum": ["user", "service", "system"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

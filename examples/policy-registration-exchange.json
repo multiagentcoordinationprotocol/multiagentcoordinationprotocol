@@ -10,7 +10,7 @@
         "description": "Supermajority voting with 2/3 threshold and quorum of 3 participants",
         "schema_version": 1,
         "rules": {
-          "$comment": "Shown as decoded JSON for readability. In proto wire format, this is JSON-encoded bytes (base64 in JSON serialization).",
+          "$comment": "Shown as decoded JSON for readability. In proto wire format, this is a JSON string field.",
           "voting": {
             "algorithm": "supermajority",
             "threshold": 0.67,

@@ -17,7 +17,7 @@ message PolicyDescriptor {
   // JSON-encoded governance rules per the target mode's rule schema.
   // The structure of this JSON is defined by the mode-specific rule JSON Schema
   // (e.g., schemas/json/policy/decision-rules.schema.json for Decision Mode).
-  bytes rules = 4;
+  string rules = 4;
 
   // Version of the rule schema used (currently 1).
   uint32 schema_version = 5;

@@ -28,6 +28,8 @@ message RuntimeInfo {
 
 message SessionsCapability {
   bool stream = 1;
+  bool list_sessions = 2;
+  bool watch_sessions = 3;
 }
 
 message CancellationCapability {
@@ -103,8 +105,19 @@ message SessionStartPayload {
   string configuration_version = 4;
   string policy_version = 5;
   int64 ttl_ms = 6;
-  bytes context = 7;
-  repeated Root roots = 8;
+  repeated Root roots = 7;
+
+  // Globally-unique context reference (e.g. "ctx:sha256:<hex>", a URI, or any
+  // opaque string) naming the structured context this session operates within.
+  // The runtime preserves it on SessionMetadata but MUST NOT interpret it;
+  // semantics are defined by the context protocol (CTXM, etc.).
+  string context_id = 8;
+
+  // Generic extension blocks keyed by protocol identifier.
+  // Each value is protocol-specific bytes (typically JSON or sub-proto).
+  // The runtime MUST preserve all entries but MUST NOT depend on them
+  // for core session lifecycle (RFC-MACP-0001 §7.X).
+  map<string, bytes> extensions = 9;
 }
 
 message SessionCancelPayload {
@@ -150,6 +163,12 @@ message SessionMetadata {
   // The sender of the accepted SessionStart message.
   // Used for cancellation authorization and audit.
   string initiator = 11;
+
+  // The context_id from SessionStartPayload, if set. Preserved verbatim.
+  string context_id = 12;
+
+  // Extension keys active on this session (keys only, not values).
+  repeated string extension_keys = 13;
 }
 
 message GetSessionRequest {
@@ -307,6 +326,36 @@ message WatchSignalsResponse {
   Envelope envelope = 1;
 }
 
+// Session lifecycle observation (RFC-MACP-0001 §7.3).
+// Observers subscribe once and receive a notification each time a session
+// is created, resolved, or expired. The first response carries all currently
+// active sessions (initial sync); subsequent responses carry individual
+// lifecycle transitions.
+
+message ListSessionsRequest {}
+
+message ListSessionsResponse {
+  repeated SessionMetadata sessions = 1;
+}
+
+message WatchSessionsRequest {}
+
+message SessionLifecycleEvent {
+  enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_CREATED = 1;
+    EVENT_TYPE_RESOLVED = 2;
+    EVENT_TYPE_EXPIRED = 3;
+  }
+  EventType event_type = 1;
+  SessionMetadata session = 2;
+  int64 observed_at_unix_ms = 3;
+}
+
+message WatchSessionsResponse {
+  SessionLifecycleEvent event = 1;
+}
+
 service MACPRuntimeService {
   rpc Initialize(InitializeRequest) returns (InitializeResponse);
   rpc Send(SendRequest) returns (SendResponse);
@@ -325,6 +374,9 @@ service MACPRuntimeService {
   rpc PromoteMode(PromoteModeRequest) returns (PromoteModeResponse);
   // Ambient Signal observation
   rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
+  // Session lifecycle observation (RFC-MACP-0001 §7.3)
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
   // Governance policy lifecycle (RFC-MACP-0012)
   rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);
   rpc UnregisterPolicy(UnregisterPolicyRequest) returns (UnregisterPolicyResponse);

@@ -52,6 +52,9 @@ service MACPRuntimeService {
   rpc PromoteMode(PromoteModeRequest) returns (PromoteModeResponse);
   // Ambient Signal observation
   rpc WatchSignals(WatchSignalsRequest) returns (stream WatchSignalsResponse);
+  // Session lifecycle observation (RFC-MACP-0001 §7.3)
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
   // Governance policy lifecycle (RFC-MACP-0012)
   rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);
   rpc UnregisterPolicy(UnregisterPolicyRequest) returns (UnregisterPolicyResponse);
@@ -114,11 +117,26 @@ A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelo
 
 ### 3.5 `GetSession`
 
-`GetSession` returns a `SessionMetadata` snapshot for the given session. The response includes the session's identity, state, timing, and bound version fields (`mode_version`, `configuration_version`, `policy_version`), as well as the current participant list and per-participant activity summaries (`ParticipantActivity`). The `ParticipantActivity` entries provide `participant_id`, `last_message_at_unix_ms`, and `message_count` for each participant that has sent at least one accepted message.
+`GetSession` returns a `SessionMetadata` snapshot for the given session. The response includes the session's identity, state, timing, and bound version fields (`mode_version`, `configuration_version`, `policy_version`), as well as the current participant list, per-participant activity summaries (`ParticipantActivity`), `context_id` (if set at session creation), and `extension_keys` (the keys of any extension blocks bound at session creation). The `ParticipantActivity` entries provide `participant_id`, `last_message_at_unix_ms`, and `message_count` for each participant that has sent at least one accepted message.
 
 ### 3.6 Extension Mode Lifecycle RPCs
 
 `ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, and `PromoteMode` manage the lifecycle of non-standards-track (extension) coordination modes. These RPCs are implementation-defined surfaces for registering, discovering, and promoting experimental modes. See [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics and the relationship between extension and standards-track modes.
+
+### 3.8 Session Lifecycle Observation RPCs
+
+`ListSessions` and `WatchSessions` provide programmatic session lifecycle observation.
+
+```protobuf
+rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
+```
+
+`ListSessions` returns `SessionMetadata` for all currently known sessions (active and terminal). A runtime MUST advertise `sessions.list_sessions = true` before `ListSessions` can be assumed interoperable.
+
+`WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, or EXPIRED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
+
+Session lifecycle events are ephemeral — they are not persisted and are not available for replay. Clients that disconnect MAY miss events. Control-planes and UIs SHOULD use `ListSessions` for initial sync and `WatchSessions` for incremental updates.
 
 ### 3.7 Policy Lifecycle RPCs
 

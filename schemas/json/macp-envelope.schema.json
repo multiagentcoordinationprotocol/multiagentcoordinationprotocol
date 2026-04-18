@@ -282,9 +282,6 @@
           "minimum": 1,
           "description": "Session TTL in milliseconds."
         },
-        "context": {
-          "$ref": "#/$defs/Base64Bytes"
-        },
         "roots": {
           "type": "array",
           "items": {
@@ -293,6 +290,17 @@
         },
         "policy_version": {
           "type": "string"
+        },
+        "context_id": {
+          "type": "string",
+          "description": "Globally-unique context reference (e.g. ctx:sha256:<hex>, a URI, or any opaque string). The runtime preserves it but MUST NOT interpret it."
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Base64Bytes"
+          },
+          "description": "Generic extension blocks keyed by protocol identifier. Values are base64-encoded protocol-specific bytes."
         }
       }
     },
