@@ -21,7 +21,7 @@
     },
     "rules": {
       "type": "object",
-      "description": "Mode-specific governance rules. In protobuf, this is bytes containing JSON."
+      "description": "Mode-specific governance rules. In protobuf, this is a JSON string field."
     },
     "description": {
       "type": "string",
