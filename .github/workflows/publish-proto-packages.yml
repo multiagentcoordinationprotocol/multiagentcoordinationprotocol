@@ -134,7 +134,7 @@ jobs:
 
       - name: Publish to crates.io
         if: needs.extract-version.outputs.dry_run != 'true'
-        run: cd packages/proto-rust && cargo publish
+        run: cd packages/proto-rust && cargo publish --allow-dirty
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
