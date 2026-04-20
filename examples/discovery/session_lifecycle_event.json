@@ -1,0 +1,16 @@
+{
+  "$comment": "Example SessionLifecycleEvent emitted by WatchSessions when a Decision Mode session is resolved. See RFC-MACP-0001 Section 7.3 and RFC-MACP-0006 Section 3.8.",
+  "event_type": "EVENT_TYPE_RESOLVED",
+  "session": {
+    "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+    "mode": "macp.mode.decision.v1",
+    "state": "SESSION_STATE_RESOLVED",
+    "started_at_unix_ms": 1772625600000,
+    "expires_at_unix_ms": 1772625615000,
+    "mode_version": "1.0.0",
+    "configuration_version": "runtime-2026.03.02",
+    "policy_version": "banking-policy-2026.03",
+    "initiator": "agent://checkout.orchestrator"
+  },
+  "observed_at_unix_ms": 1772625611500
+}

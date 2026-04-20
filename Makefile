@@ -1,5 +1,6 @@
 .PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync \
+	check-python-stubs check-go-stubs
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -28,8 +29,10 @@ help:
 	@echo "  make proto-gen-all         Generate all languages into their packages"
 	@echo ""
 	@echo "Proto Sync (raw-proto packages):"
-	@echo "  make sync-protos           Copy canonical protos → proto-npm, proto-rust, proto-swift"
-	@echo "  make check-proto-sync      Verify packages match canonical (CI guard)"
+	@echo "  make sync-protos           Copy canonical protos → proto-npm, proto-rust"
+	@echo "  make check-proto-sync      Verify raw-proto packages match canonical (CI guard)"
+	@echo "  make check-python-stubs    Verify committed Python _pb2_grpc.py stubs are current"
+	@echo "  make check-go-stubs        Verify committed Go .pb.go stubs are current"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean                 Remove generated files"
@@ -37,7 +40,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate proto-lint proto-compile check-proto-sync check-python-stubs check-go-stubs
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -72,6 +75,16 @@ sync-protos:
 check-proto-sync:
 	@echo "Checking proto package sync..."
 	@./scripts/sync-proto-packages.sh --check
+
+# Check that committed Python gRPC stubs match a fresh generation (CI guard)
+check-python-stubs:
+	@echo "Checking Python _pb2_grpc.py stubs..."
+	@./scripts/check-python-stubs.sh
+
+# Check that committed Go protobuf stubs match a fresh generation (CI guard)
+check-go-stubs:
+	@echo "Checking Go .pb.go stubs..."
+	@./scripts/check-go-stubs.sh
 
 # Compile protobuf to validate syntax
 proto-compile:

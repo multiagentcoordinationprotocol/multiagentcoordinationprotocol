@@ -1,0 +1,33 @@
+{
+  "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+  "mode": "macp.mode.decision.v1",
+  "state": "SESSION_STATE_OPEN",
+  "started_at_unix_ms": 1772625600000,
+  "expires_at_unix_ms": 1772625615000,
+  "mode_version": "1.0.0",
+  "configuration_version": "runtime-2026.03.02",
+  "policy_version": "banking-policy-2026.03",
+  "participants": [
+    "agent://checkout.orchestrator",
+    "agent://fraud",
+    "agent://growth",
+    "agent://compliance"
+  ],
+  "participant_activity": [
+    {
+      "participant_id": "agent://checkout.orchestrator",
+      "last_message_at_unix_ms": 1772625601200,
+      "message_count": 2
+    },
+    {
+      "participant_id": "agent://fraud",
+      "last_message_at_unix_ms": 1772625602100,
+      "message_count": 1
+    }
+  ],
+  "initiator": "agent://checkout.orchestrator",
+  "context_id": "ctx:txn:TXN-48000-SaoPaulo",
+  "extension_keys": [
+    "ctxm.v1"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "mode": "live",
+  "runtime": {
+    "kind": "rust",
+    "version": "0.4.0"
+  },
+  "session": {
+    "sessionId": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+    "modeName": "macp.mode.decision.v1",
+    "modeVersion": "1.0.0",
+    "configurationVersion": "runtime-2026.03.02",
+    "policyVersion": "banking-policy-2026.03",
+    "ttlMs": 15000,
+    "participants": [
+      { "id": "agent://checkout.orchestrator" },
+      { "id": "agent://fraud" },
+      { "id": "agent://growth" },
+      { "id": "agent://compliance" }
+    ],
+    "context": "ctx:txn:TXN-48000-SaoPaulo",
+    "metadata": {
+      "environment": "prod",
+      "source": "checkout-service"
+    }
+  },
+  "execution": {
+    "idempotencyKey": "run:checkout-48000:2026-03-02T12:00:00Z",
+    "tags": ["checkout", "fraud-review"],
+    "requester": {
+      "actorId": "svc://checkout",
+      "actorType": "service"
+    }
+  }
+}

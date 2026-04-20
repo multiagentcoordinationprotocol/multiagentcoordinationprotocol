@@ -2,9 +2,9 @@
 
 # Sync canonical proto files from schemas/proto/ to raw-proto packages.
 #
-# Packages that ship raw .proto files (proto-npm, proto-rust, proto-swift)
-# must stay byte-for-byte identical to the canonical schemas.  This script
-# copies the canonical protos into each package directory.
+# Packages that ship raw .proto files (proto-npm, proto-rust) must stay
+# byte-for-byte identical to the canonical schemas.  This script copies
+# the canonical protos into each package directory.
 #
 # Usage:
 #   ./scripts/sync-proto-packages.sh          # copy canonical → packages
@@ -20,7 +20,6 @@ CANONICAL="${PROJECT_ROOT}/schemas/proto"
 RAW_PACKAGES=(
   "packages/proto-npm/proto"
   "packages/proto-rust/proto"
-  "packages/proto-swift/proto"
 )
 
 CHECK_MODE=false

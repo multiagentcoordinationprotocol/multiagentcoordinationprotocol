@@ -28,7 +28,7 @@ The authoritative per-message request/ack surface. Use `SendResponse.ack` for st
 
 An optional interactive envelope stream, advertised by `sessions.stream = true`. The stream carries canonical MACP Envelopes only — implementations MUST NOT invent ad-hoc pseudo-envelopes for acks or errors. Once bound to a `session_id`, all subsequent session-scoped envelopes on that stream MUST use the same `session_id`.
 
-`StreamSession` is **not** a replacement for unary `Send` acknowledgements. Clients that need per-message negative acknowledgements SHOULD use `Send`. The base protocol does not define a passive attach/no-op envelope for observing an existing session, and session-scoped `Signal` envelopes are invalid as an attach mechanism. If you need zero-mutation observation, begin streaming before the activity of interest or use a deployment-specific extension outside the base protocol.
+`StreamSession` is **not** a replacement for unary `Send` acknowledgements. Clients that need per-message negative acknowledgements SHOULD use `Send`. Session-scoped `Signal` envelopes are invalid as an attach mechanism. For zero-mutation observation of an existing session, use the passive session subscription form defined in [RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md#32-streamsession): send a `StreamSessionRequest` with only `subscribe_session_id` (and optional `after_sequence`) set, and the runtime replays accepted session history and then switches seamlessly to live broadcast on the same stream. A single request MUST NOT set both `envelope` and `subscribe_session_id`; the caller MUST be an authenticated declared participant or an observer identity admitted by deployment policy.
 
 ### `WatchModeRegistry` / `WatchRoots` (Server Streaming)
 

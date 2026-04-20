@@ -34,6 +34,8 @@ const (
 	MACPRuntimeService_UnregisterExtMode_FullMethodName = "/macp.v1.MACPRuntimeService/UnregisterExtMode"
 	MACPRuntimeService_PromoteMode_FullMethodName       = "/macp.v1.MACPRuntimeService/PromoteMode"
 	MACPRuntimeService_WatchSignals_FullMethodName      = "/macp.v1.MACPRuntimeService/WatchSignals"
+	MACPRuntimeService_ListSessions_FullMethodName      = "/macp.v1.MACPRuntimeService/ListSessions"
+	MACPRuntimeService_WatchSessions_FullMethodName     = "/macp.v1.MACPRuntimeService/WatchSessions"
 	MACPRuntimeService_RegisterPolicy_FullMethodName    = "/macp.v1.MACPRuntimeService/RegisterPolicy"
 	MACPRuntimeService_UnregisterPolicy_FullMethodName  = "/macp.v1.MACPRuntimeService/UnregisterPolicy"
 	MACPRuntimeService_GetPolicy_FullMethodName         = "/macp.v1.MACPRuntimeService/GetPolicy"
@@ -62,6 +64,9 @@ type MACPRuntimeServiceClient interface {
 	PromoteMode(ctx context.Context, in *PromoteModeRequest, opts ...grpc.CallOption) (*PromoteModeResponse, error)
 	// Ambient Signal observation
 	WatchSignals(ctx context.Context, in *WatchSignalsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchSignalsResponse], error)
+	// Session lifecycle observation (RFC-MACP-0001 §7.3)
+	ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error)
+	WatchSessions(ctx context.Context, in *WatchSessionsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchSessionsResponse], error)
 	// Governance policy lifecycle (RFC-MACP-0012)
 	RegisterPolicy(ctx context.Context, in *RegisterPolicyRequest, opts ...grpc.CallOption) (*RegisterPolicyResponse, error)
 	UnregisterPolicy(ctx context.Context, in *UnregisterPolicyRequest, opts ...grpc.CallOption) (*UnregisterPolicyResponse, error)
@@ -258,6 +263,35 @@ func (c *mACPRuntimeServiceClient) WatchSignals(ctx context.Context, in *WatchSi
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type MACPRuntimeService_WatchSignalsClient = grpc.ServerStreamingClient[WatchSignalsResponse]
 
+func (c *mACPRuntimeServiceClient) ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSessionsResponse)
+	err := c.cc.Invoke(ctx, MACPRuntimeService_ListSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mACPRuntimeServiceClient) WatchSessions(ctx context.Context, in *WatchSessionsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchSessionsResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &MACPRuntimeService_ServiceDesc.Streams[4], MACPRuntimeService_WatchSessions_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[WatchSessionsRequest, WatchSessionsResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MACPRuntimeService_WatchSessionsClient = grpc.ServerStreamingClient[WatchSessionsResponse]
+
 func (c *mACPRuntimeServiceClient) RegisterPolicy(ctx context.Context, in *RegisterPolicyRequest, opts ...grpc.CallOption) (*RegisterPolicyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RegisterPolicyResponse)
@@ -300,7 +334,7 @@ func (c *mACPRuntimeServiceClient) ListPolicies(ctx context.Context, in *ListPol
 
 func (c *mACPRuntimeServiceClient) WatchPolicies(ctx context.Context, in *WatchPoliciesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchPoliciesResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &MACPRuntimeService_ServiceDesc.Streams[4], MACPRuntimeService_WatchPolicies_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &MACPRuntimeService_ServiceDesc.Streams[5], MACPRuntimeService_WatchPolicies_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -338,6 +372,9 @@ type MACPRuntimeServiceServer interface {
 	PromoteMode(context.Context, *PromoteModeRequest) (*PromoteModeResponse, error)
 	// Ambient Signal observation
 	WatchSignals(*WatchSignalsRequest, grpc.ServerStreamingServer[WatchSignalsResponse]) error
+	// Session lifecycle observation (RFC-MACP-0001 §7.3)
+	ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error)
+	WatchSessions(*WatchSessionsRequest, grpc.ServerStreamingServer[WatchSessionsResponse]) error
 	// Governance policy lifecycle (RFC-MACP-0012)
 	RegisterPolicy(context.Context, *RegisterPolicyRequest) (*RegisterPolicyResponse, error)
 	UnregisterPolicy(context.Context, *UnregisterPolicyRequest) (*UnregisterPolicyResponse, error)
@@ -398,6 +435,12 @@ func (UnimplementedMACPRuntimeServiceServer) PromoteMode(context.Context, *Promo
 }
 func (UnimplementedMACPRuntimeServiceServer) WatchSignals(*WatchSignalsRequest, grpc.ServerStreamingServer[WatchSignalsResponse]) error {
 	return status.Error(codes.Unimplemented, "method WatchSignals not implemented")
+}
+func (UnimplementedMACPRuntimeServiceServer) ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSessions not implemented")
+}
+func (UnimplementedMACPRuntimeServiceServer) WatchSessions(*WatchSessionsRequest, grpc.ServerStreamingServer[WatchSessionsResponse]) error {
+	return status.Error(codes.Unimplemented, "method WatchSessions not implemented")
 }
 func (UnimplementedMACPRuntimeServiceServer) RegisterPolicy(context.Context, *RegisterPolicyRequest) (*RegisterPolicyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterPolicy not implemented")
@@ -673,6 +716,35 @@ func _MACPRuntimeService_WatchSignals_Handler(srv interface{}, stream grpc.Serve
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type MACPRuntimeService_WatchSignalsServer = grpc.ServerStreamingServer[WatchSignalsResponse]
 
+func _MACPRuntimeService_ListSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MACPRuntimeServiceServer).ListSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MACPRuntimeService_ListSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MACPRuntimeServiceServer).ListSessions(ctx, req.(*ListSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MACPRuntimeService_WatchSessions_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchSessionsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MACPRuntimeServiceServer).WatchSessions(m, &grpc.GenericServerStream[WatchSessionsRequest, WatchSessionsResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MACPRuntimeService_WatchSessionsServer = grpc.ServerStreamingServer[WatchSessionsResponse]
+
 func _MACPRuntimeService_RegisterPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RegisterPolicyRequest)
 	if err := dec(in); err != nil {
@@ -808,6 +880,10 @@ var MACPRuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MACPRuntimeService_PromoteMode_Handler,
 		},
 		{
+			MethodName: "ListSessions",
+			Handler:    _MACPRuntimeService_ListSessions_Handler,
+		},
+		{
 			MethodName: "RegisterPolicy",
 			Handler:    _MACPRuntimeService_RegisterPolicy_Handler,
 		},
@@ -844,6 +920,11 @@ var MACPRuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "WatchSignals",
 			Handler:       _MACPRuntimeService_WatchSignals_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchSessions",
+			Handler:       _MACPRuntimeService_WatchSessions_Handler,
 			ServerStreams: true,
 		},
 		{
