@@ -1,0 +1,47 @@
+{
+  "$comment": "Bootstrap payload written to MACP_BOOTSTRAP_FILE before spawning the initiator agent of a Decision Mode run. See macp-agent-bootstrap.schema.json.",
+  "run": {
+    "runId": "run:checkout-48000:2026-03-02T12:00:00Z",
+    "sessionId": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+    "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+  },
+  "participant": {
+    "participantId": "agent://checkout.orchestrator",
+    "agentId": "checkout-orchestrator",
+    "displayName": "Checkout Orchestrator",
+    "role": "initiator"
+  },
+  "runtime": {
+    "address": "runtime.internal:50051",
+    "bearerToken": "macp-dev-token-REDACTED",
+    "tls": true,
+    "allowInsecure": false,
+    "controlPlaneBaseUrl": "https://control-plane.internal",
+    "controlPlaneApiKey": "cp-key-REDACTED"
+  },
+  "initiator": {
+    "sessionStart": {
+      "intent": "Evaluate high-value transfer",
+      "participants": [
+        "agent://checkout.orchestrator",
+        "agent://fraud",
+        "agent://growth",
+        "agent://compliance"
+      ],
+      "ttlMs": 15000,
+      "modeVersion": "1.0.0",
+      "configurationVersion": "runtime-2026.03.02",
+      "policyVersion": "banking-policy-2026.03",
+      "context": "Y3R4OnR4bjpUWE4tNDgwMDAtU2FvUGF1bG8="
+    },
+    "kickoff": {
+      "messageType": "Proposal",
+      "payload": "CgVwcm9wMRIWUmVxdWlyZSBzdGVwLXVwIHZlcmlmeQ=="
+    }
+  },
+  "cancelCallback": {
+    "host": "checkout-orchestrator.internal",
+    "port": 8080,
+    "path": "/macp/cancel"
+  }
+}

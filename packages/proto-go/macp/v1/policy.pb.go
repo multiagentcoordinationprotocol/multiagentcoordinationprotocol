@@ -34,14 +34,12 @@ type PolicyDescriptor struct {
 	// JSON-encoded governance rules per the target mode's rule schema.
 	// The structure of this JSON is defined by the mode-specific rule JSON Schema
 	// (e.g., schemas/json/policy/decision-rules.schema.json for Decision Mode).
-	Rules []byte `protobuf:"bytes,4,opt,name=rules,proto3" json:"rules,omitempty"`
+	Rules string `protobuf:"bytes,4,opt,name=rules,proto3" json:"rules,omitempty"`
 	// Version of the rule schema used (currently 1).
-	SchemaVersion uint32 `protobuf:"varint,5,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	// ISO 8601 timestamp of when this policy was registered.
-	// Set by the runtime; ignored in RegisterPolicyRequest.
-	RegisteredAt  string `protobuf:"bytes,6,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	SchemaVersion      uint32 `protobuf:"varint,5,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	RegisteredAtUnixMs int64  `protobuf:"varint,6,opt,name=registered_at_unix_ms,json=registeredAtUnixMs,proto3" json:"registered_at_unix_ms,omitempty"` // Unix epoch milliseconds; set by the runtime, ignored in RegisterPolicyRequest.
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *PolicyDescriptor) Reset() {
@@ -95,11 +93,11 @@ func (x *PolicyDescriptor) GetDescription() string {
 	return ""
 }
 
-func (x *PolicyDescriptor) GetRules() []byte {
+func (x *PolicyDescriptor) GetRules() string {
 	if x != nil {
 		return x.Rules
 	}
-	return nil
+	return ""
 }
 
 func (x *PolicyDescriptor) GetSchemaVersion() uint32 {
@@ -109,11 +107,11 @@ func (x *PolicyDescriptor) GetSchemaVersion() uint32 {
 	return 0
 }
 
-func (x *PolicyDescriptor) GetRegisteredAt() string {
+func (x *PolicyDescriptor) GetRegisteredAtUnixMs() int64 {
 	if x != nil {
-		return x.RegisteredAt
+		return x.RegisteredAtUnixMs
 	}
-	return ""
+	return 0
 }
 
 // Policy registry capability advertised during Initialize.
@@ -586,7 +584,7 @@ func (*WatchPoliciesRequest) Descriptor() ([]byte, []int) {
 type WatchPoliciesResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Descriptors      []*PolicyDescriptor    `protobuf:"bytes,1,rep,name=descriptors,proto3" json:"descriptors,omitempty"`
-	ObservedAtUnixMs uint64                 `protobuf:"varint,2,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
+	ObservedAtUnixMs int64                  `protobuf:"varint,2,opt,name=observed_at_unix_ms,json=observedAtUnixMs,proto3" json:"observed_at_unix_ms,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -628,7 +626,7 @@ func (x *WatchPoliciesResponse) GetDescriptors() []*PolicyDescriptor {
 	return nil
 }
 
-func (x *WatchPoliciesResponse) GetObservedAtUnixMs() uint64 {
+func (x *WatchPoliciesResponse) GetObservedAtUnixMs() int64 {
 	if x != nil {
 		return x.ObservedAtUnixMs
 	}
@@ -639,14 +637,14 @@ var File_macp_v1_policy_proto protoreflect.FileDescriptor
 
 const file_macp_v1_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x14macp/v1/policy.proto\x12\amacp.v1\"\xc7\x01\n" +
+	"\x14macp/v1/policy.proto\x12\amacp.v1\"\xd5\x01\n" +
 	"\x10PolicyDescriptor\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\x12\n" +
 	"\x04mode\x18\x02 \x01(\tR\x04mode\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05rules\x18\x04 \x01(\fR\x05rules\x12%\n" +
-	"\x0eschema_version\x18\x05 \x01(\rR\rschemaVersion\x12#\n" +
-	"\rregistered_at\x18\x06 \x01(\tR\fregisteredAt\"\x8b\x01\n" +
+	"\x05rules\x18\x04 \x01(\tR\x05rules\x12%\n" +
+	"\x0eschema_version\x18\x05 \x01(\rR\rschemaVersion\x121\n" +
+	"\x15registered_at_unix_ms\x18\x06 \x01(\x03R\x12registeredAtUnixMs\"\x8b\x01\n" +
 	"\x18PolicyRegistryCapability\x12'\n" +
 	"\x0fregister_policy\x18\x01 \x01(\bR\x0eregisterPolicy\x12#\n" +
 	"\rlist_policies\x18\x02 \x01(\bR\flistPolicies\x12!\n" +
@@ -672,7 +670,7 @@ const file_macp_v1_policy_proto_rawDesc = "" +
 	"\x14WatchPoliciesRequest\"\x83\x01\n" +
 	"\x15WatchPoliciesResponse\x12;\n" +
 	"\vdescriptors\x18\x01 \x03(\v2\x19.macp.v1.PolicyDescriptorR\vdescriptors\x12-\n" +
-	"\x13observed_at_unix_ms\x18\x02 \x01(\x04R\x10observedAtUnixMsB\x9f\x01\n" +
+	"\x13observed_at_unix_ms\x18\x02 \x01(\x03R\x10observedAtUnixMsB\x9f\x01\n" +
 	"\vcom.macp.v1B\vPolicyProtoP\x01ZFgithub.com/multiagentcoordinationprotocol/macp-proto-go/macp/v1;macpv1\xa2\x02\x03MXX\xaa\x02\aMacp.V1\xca\x02\aMacp\\V1\xe2\x02\x13Macp\\V1\\GPBMetadata\xea\x02\bMacp::V1b\x06proto3"
 
 var (

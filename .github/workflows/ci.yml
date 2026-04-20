@@ -51,6 +51,33 @@ jobs:
           chmod +x scripts/sync-proto-packages.sh
           ./scripts/sync-proto-packages.sh --check
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install grpcio-tools for stub drift check
+        run: pip install grpcio-tools
+
+      - name: Check Python _pb2_grpc.py stubs for drift
+        run: |
+          echo "Checking committed Python gRPC stubs match canonical protos..."
+          chmod +x scripts/check-python-stubs.sh
+          ./scripts/check-python-stubs.sh
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Go protobuf stubs for drift
+        run: |
+          echo "Checking committed Go protobuf stubs match canonical protos..."
+          chmod +x scripts/check-go-stubs.sh
+          ./scripts/check-go-stubs.sh
+
       - name: Check SDK proto parity (W3a / direct-agent-auth)
         run: |
           echo "Checking typescript-sdk + python-sdk proto ranges match the canonical packages..."

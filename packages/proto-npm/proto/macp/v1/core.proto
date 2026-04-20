@@ -253,6 +253,16 @@ message SendResponse {
 // Standard per-message negative acknowledgements remain the responsibility of Send.
 message StreamSessionRequest {
   Envelope envelope = 1;
+
+  // Passive session subscription (RFC-MACP-0006 §3.2). When set without an
+  // envelope, binds the stream to the session's broadcast: the runtime first
+  // replays accepted session history from after_sequence onwards, then
+  // switches seamlessly to live broadcast. The caller MUST be an
+  // authenticated declared participant of the session or an observer
+  // identity admitted by deployment policy (RFC-MACP-0004 §4). A single
+  // request MUST NOT set both envelope and subscribe_session_id.
+  string subscribe_session_id = 2;
+  uint64 after_sequence = 3;  // 0 = replay from session start
 }
 
 message StreamSessionResponse {

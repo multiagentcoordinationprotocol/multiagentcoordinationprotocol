@@ -110,6 +110,16 @@ class MACPRuntimeServiceStub(object):
                 request_serializer=macp_dot_v1_dot_core__pb2.WatchSignalsRequest.SerializeToString,
                 response_deserializer=macp_dot_v1_dot_core__pb2.WatchSignalsResponse.FromString,
                 _registered_method=True)
+        self.ListSessions = channel.unary_unary(
+                '/macp.v1.MACPRuntimeService/ListSessions',
+                request_serializer=macp_dot_v1_dot_core__pb2.ListSessionsRequest.SerializeToString,
+                response_deserializer=macp_dot_v1_dot_core__pb2.ListSessionsResponse.FromString,
+                _registered_method=True)
+        self.WatchSessions = channel.unary_stream(
+                '/macp.v1.MACPRuntimeService/WatchSessions',
+                request_serializer=macp_dot_v1_dot_core__pb2.WatchSessionsRequest.SerializeToString,
+                response_deserializer=macp_dot_v1_dot_core__pb2.WatchSessionsResponse.FromString,
+                _registered_method=True)
         self.RegisterPolicy = channel.unary_unary(
                 '/macp.v1.MACPRuntimeService/RegisterPolicy',
                 request_serializer=macp_dot_v1_dot_policy__pb2.RegisterPolicyRequest.SerializeToString,
@@ -232,6 +242,19 @@ class MACPRuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListSessions(self, request, context):
+        """Session lifecycle observation (RFC-MACP-0001 §7.3)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def WatchSessions(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def RegisterPolicy(self, request, context):
         """Governance policy lifecycle (RFC-MACP-0012)
         """
@@ -340,6 +363,16 @@ def add_MACPRuntimeServiceServicer_to_server(servicer, server):
                     servicer.WatchSignals,
                     request_deserializer=macp_dot_v1_dot_core__pb2.WatchSignalsRequest.FromString,
                     response_serializer=macp_dot_v1_dot_core__pb2.WatchSignalsResponse.SerializeToString,
+            ),
+            'ListSessions': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListSessions,
+                    request_deserializer=macp_dot_v1_dot_core__pb2.ListSessionsRequest.FromString,
+                    response_serializer=macp_dot_v1_dot_core__pb2.ListSessionsResponse.SerializeToString,
+            ),
+            'WatchSessions': grpc.unary_stream_rpc_method_handler(
+                    servicer.WatchSessions,
+                    request_deserializer=macp_dot_v1_dot_core__pb2.WatchSessionsRequest.FromString,
+                    response_serializer=macp_dot_v1_dot_core__pb2.WatchSessionsResponse.SerializeToString,
             ),
             'RegisterPolicy': grpc.unary_unary_rpc_method_handler(
                     servicer.RegisterPolicy,
@@ -772,6 +805,60 @@ class MACPRuntimeService(object):
             '/macp.v1.MACPRuntimeService/WatchSignals',
             macp_dot_v1_dot_core__pb2.WatchSignalsRequest.SerializeToString,
             macp_dot_v1_dot_core__pb2.WatchSignalsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListSessions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/macp.v1.MACPRuntimeService/ListSessions',
+            macp_dot_v1_dot_core__pb2.ListSessionsRequest.SerializeToString,
+            macp_dot_v1_dot_core__pb2.ListSessionsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def WatchSessions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/macp.v1.MACPRuntimeService/WatchSessions',
+            macp_dot_v1_dot_core__pb2.WatchSessionsRequest.SerializeToString,
+            macp_dot_v1_dot_core__pb2.WatchSessionsResponse.FromString,
             options,
             channel_credentials,
             insecure,

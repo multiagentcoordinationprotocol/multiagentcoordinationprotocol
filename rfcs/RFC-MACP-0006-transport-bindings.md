@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
+
+> **Changelog — 1.1.0-draft:** passive session subscription is promoted from the former Appendix A.1 to core `StreamSession` semantics in §3.2. `subscribe_session_id` and `after_sequence` are normative on every runtime that advertises `sessions.stream = true`; they are not an optional capability.
 
 ## 1. Introduction
 
@@ -85,7 +87,25 @@ A runtime that advertises `sessions.stream = true` MUST implement `StreamSession
 
 A runtime MAY echo back accepted client-submitted envelopes on the stream as part of the authoritative accepted sequence.
 
-The base protocol does **not** define a passive attach or no-op envelope for observing an existing session without sending a new session-scoped coordination message. Session-scoped `Signal` envelopes are invalid in the base protocol and MUST NOT be used as a stream-attach mechanism. Clients that need zero-mutation observation SHOULD either begin streaming before the session activity of interest or rely on a deployment-specific extension outside the base protocol.
+Session-scoped `Signal` envelopes are invalid in the base protocol and MUST NOT be used as a stream-attach mechanism. Clients that need zero-mutation observation of an existing session MUST use the passive session subscription semantics defined below.
+
+#### Passive Session Subscription
+
+`StreamSessionRequest` carries two session-binding shapes:
+
+- `envelope` — a session-scoped coordination envelope. Standard `StreamSession` behavior as specified above.
+- `subscribe_session_id` (with optional `after_sequence`) — a passive-subscribe frame that binds the stream to an existing session's broadcast without emitting a coordination message.
+
+A single `StreamSessionRequest` MUST NOT set both `envelope` and `subscribe_session_id`; a runtime MUST reject such a request as an invalid argument.
+
+On a request with `subscribe_session_id` set, a runtime that advertises `sessions.stream = true` MUST:
+
+1. Authorize the caller. The caller MUST be an authenticated declared participant of the session, or an observer identity admitted by deployment policy (RFC-MACP-0004 §4). Unauthorized callers MUST be rejected.
+2. Replay accepted session envelopes in strict acceptance order starting from `after_sequence + 1`. When `after_sequence = 0`, replay begins at the session's first accepted envelope.
+3. Switch seamlessly to live broadcast on the same stream after replay drains, preserving within-session acceptance order.
+4. Never replay rejected envelopes (RFC-MACP-0001 §7.2); only accepted-history envelopes are delivered.
+
+A stream opened with a passive-subscribe frame is conventionally read-only. Implementations MAY refuse subsequent envelope frames on such a stream; clients that intend to coordinate on the session SHOULD open a separate `StreamSession` or use unary `Send`.
 
 When a transport-level or stream-fatal error occurs, the runtime SHOULD use native gRPC stream termination semantics.
 
