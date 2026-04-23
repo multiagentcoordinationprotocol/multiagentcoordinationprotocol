@@ -7,7 +7,7 @@ This document defines what MACP SDKs must implement to be considered conformant,
 Every official MACP SDK MUST provide:
 
 ### Transport Layer
-- **MacpClient** — gRPC client implementing all RPCs in `MACPRuntimeService` (currently 20)
+- **MacpClient** — gRPC client implementing all RPCs in `MACPRuntimeService` (currently 22)
 - **MacpStream** — bidirectional streaming wrapper for `StreamSession`
 - **Authentication** — dev agent (`x-macp-agent-id`) and bearer token modes
 

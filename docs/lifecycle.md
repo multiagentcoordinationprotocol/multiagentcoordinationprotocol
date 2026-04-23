@@ -69,3 +69,5 @@ Sessions may carry optional context and extension metadata (see [RFC-MACP-0001 Â
 - **`extensions`** â€” a map of protocol-keyed byte blocks for protocol-specific metadata (e.g., CTXM, AITP). The runtime preserves all entries but does not depend on them for core lifecycle.
 
 Both are optional. A session with empty `context_id` and empty `extensions` behaves identically to one with both populated.
+
+`context_id` and `extensions` are bound at `SessionStart` acceptance and are immutable for the session's lifetime. There is no post-start mutation RPC; to change them, a new session must be started.

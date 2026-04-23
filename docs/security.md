@@ -258,6 +258,7 @@ Monitor for:
 | `DUPLICATE_MESSAGE` | 409 | `message_id` already accepted within the session | Possible replay attack |
 | `SESSION_NOT_FOUND` | 404 | Session doesn't exist | May leak session existence |
 | `SESSION_NOT_OPEN` | 409 | Session is RESOLVED/EXPIRED | Normal termination |
+| `SESSION_ALREADY_EXISTS` | 409 | Session already has an accepted SessionStart for this session_id | Possible replay or collision |
 | `INVALID_ENVELOPE` | 400 | Envelope validation failed or payload structural contract not met | Possible attack |
 | `UNSUPPORTED_PROTOCOL_VERSION` | 400 | No mutually supported protocol version | Version mismatch |
 | `MODE_NOT_SUPPORTED` | 400 | Referenced mode or mode version not supported | Mode mismatch |

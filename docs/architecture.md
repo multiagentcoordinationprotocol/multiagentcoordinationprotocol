@@ -2,7 +2,7 @@
 
 > **Status:** Non-normative (explanatory). In case of conflict, [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) is authoritative.
 
-**Protocol Revision:** 2026-03-02
+**Protocol Revision:** 2026-04-20
 **Normative transport:** gRPC over HTTP/2
 **Canonical wire format:** Protocol Buffers
 **Required JSON mapping:** Yes
@@ -396,7 +396,7 @@ Therefore, sessions MUST bind:
 
 as immutable session metadata. These values MUST NOT change within an OPEN session.
 
-`SessionMetadata` also carries mutable runtime-derived fields — the current participant list and per-participant activity summaries (`ParticipantActivity`) — that reflect evolving session state rather than bound-at-start configuration.
+`SessionMetadata` also carries mutable runtime-derived fields — the current participant list and per-participant activity summaries (`ParticipantActivity`) — that reflect evolving session state rather than bound-at-start configuration. Session lifecycle RPCs (`ListSessions`, `WatchSessions`) return these mutable fields; replay integrity depends only on the immutable version fields.
 
 If policies evolve over time, they evolve between sessions, not within one.
 
