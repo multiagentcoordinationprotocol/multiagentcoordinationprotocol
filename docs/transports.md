@@ -42,6 +42,10 @@ An optional server-streaming RPC that broadcasts Ambient Signal Envelopes to all
 
 Returns a `SessionMetadata` snapshot for a given session, including the session's identity, state, timing, bound version fields, the current participant list, and per-participant activity summaries (`ParticipantActivity` with `participant_id`, `last_message_at_unix_ms`, `message_count`).
 
+### `ListSessions` / `WatchSessions` (Session Observation)
+
+Programmatic session lifecycle observation. `ListSessions` returns `SessionMetadata` for all known sessions (advertised by `sessions.list_sessions`); `WatchSessions` is a server-streaming RPC emitting `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED) in real time (advertised by `sessions.watch_sessions`). Control-planes and UIs typically call `ListSessions` at startup for a snapshot, then subscribe to `WatchSessions` for incremental updates. Events are ephemeral and not replayed. See [docs/lifecycle.md](lifecycle.md#session-observation).
+
 ## HTTP
 
 Best for:
