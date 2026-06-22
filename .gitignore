@@ -39,12 +39,19 @@ Temporary Items
 *.sublime-project
 *.sublime-workspace
 
-# Compiled protobuf files (if generated)
+# Generated protobuf stubs are NOT committed. CI (the "Generate and Validate
+# Code" job) regenerates and compiles them for every language, and the release
+# workflow regenerates and publishes them to each registry. Only the canonical
+# .proto source and hand-written package scaffolding live in the repo.
 *.pb.go
 *_pb2.py
 *_pb2.pyi
+*_pb2_grpc.py
 *.pb.cc
 *.pb.h
+packages/proto-java/src/main/java/
+packages/proto-kotlin/src/main/kotlin/
+packages/proto-csharp/*.cs
 
 # Generated code from protobuf
 generated/
