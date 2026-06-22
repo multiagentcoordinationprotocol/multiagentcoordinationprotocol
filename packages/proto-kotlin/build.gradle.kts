@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.macp"
-version = "0.1.0"
+version = "0.1.3"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    api("io.macp:macp-proto:0.1.0")
+    api("io.macp:macp-proto:0.1.3")
     api("com.google.protobuf:protobuf-kotlin:4.34.1")
     api("io.grpc:grpc-kotlin-stub:1.4.3")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
