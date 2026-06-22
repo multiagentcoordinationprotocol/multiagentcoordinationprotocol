@@ -6,7 +6,7 @@ import warnings
 from macp.v1 import core_pb2 as macp_dot_v1_dot_core__pb2
 from macp.v1 import policy_pb2 as macp_dot_v1_dot_policy__pb2
 
-GRPC_GENERATED_VERSION = '1.78.0'
+GRPC_GENERATED_VERSION = '1.81.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -26,7 +26,7 @@ if _version_not_supported:
     )
 
 
-class MACPRuntimeServiceStub(object):
+class MACPRuntimeServiceStub:
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -59,6 +59,16 @@ class MACPRuntimeServiceStub(object):
                 '/macp.v1.MACPRuntimeService/CancelSession',
                 request_serializer=macp_dot_v1_dot_core__pb2.CancelSessionRequest.SerializeToString,
                 response_deserializer=macp_dot_v1_dot_core__pb2.CancelSessionResponse.FromString,
+                _registered_method=True)
+        self.SuspendSession = channel.unary_unary(
+                '/macp.v1.MACPRuntimeService/SuspendSession',
+                request_serializer=macp_dot_v1_dot_core__pb2.SuspendSessionRequest.SerializeToString,
+                response_deserializer=macp_dot_v1_dot_core__pb2.SuspendSessionResponse.FromString,
+                _registered_method=True)
+        self.ResumeSession = channel.unary_unary(
+                '/macp.v1.MACPRuntimeService/ResumeSession',
+                request_serializer=macp_dot_v1_dot_core__pb2.ResumeSessionRequest.SerializeToString,
+                response_deserializer=macp_dot_v1_dot_core__pb2.ResumeSessionResponse.FromString,
                 _registered_method=True)
         self.GetManifest = channel.unary_unary(
                 '/macp.v1.MACPRuntimeService/GetManifest',
@@ -147,7 +157,7 @@ class MACPRuntimeServiceStub(object):
                 _registered_method=True)
 
 
-class MACPRuntimeServiceServicer(object):
+class MACPRuntimeServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
     def Initialize(self, request, context):
@@ -175,6 +185,19 @@ class MACPRuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def CancelSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SuspendSession(self, request, context):
+        """Session suspension / resume (RFC-MACP-0001 §7.5)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResumeSession(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -314,6 +337,16 @@ def add_MACPRuntimeServiceServicer_to_server(servicer, server):
                     request_deserializer=macp_dot_v1_dot_core__pb2.CancelSessionRequest.FromString,
                     response_serializer=macp_dot_v1_dot_core__pb2.CancelSessionResponse.SerializeToString,
             ),
+            'SuspendSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.SuspendSession,
+                    request_deserializer=macp_dot_v1_dot_core__pb2.SuspendSessionRequest.FromString,
+                    response_serializer=macp_dot_v1_dot_core__pb2.SuspendSessionResponse.SerializeToString,
+            ),
+            'ResumeSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResumeSession,
+                    request_deserializer=macp_dot_v1_dot_core__pb2.ResumeSessionRequest.FromString,
+                    response_serializer=macp_dot_v1_dot_core__pb2.ResumeSessionResponse.SerializeToString,
+            ),
             'GetManifest': grpc.unary_unary_rpc_method_handler(
                     servicer.GetManifest,
                     request_deserializer=macp_dot_v1_dot_core__pb2.GetManifestRequest.FromString,
@@ -407,7 +440,7 @@ def add_MACPRuntimeServiceServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class MACPRuntimeService(object):
+class MACPRuntimeService:
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -535,6 +568,60 @@ class MACPRuntimeService(object):
             '/macp.v1.MACPRuntimeService/CancelSession',
             macp_dot_v1_dot_core__pb2.CancelSessionRequest.SerializeToString,
             macp_dot_v1_dot_core__pb2.CancelSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SuspendSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/macp.v1.MACPRuntimeService/SuspendSession',
+            macp_dot_v1_dot_core__pb2.SuspendSessionRequest.SerializeToString,
+            macp_dot_v1_dot_core__pb2.SuspendSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResumeSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/macp.v1.MACPRuntimeService/ResumeSession',
+            macp_dot_v1_dot_core__pb2.ResumeSessionRequest.SerializeToString,
+            macp_dot_v1_dot_core__pb2.ResumeSessionResponse.FromString,
             options,
             channel_credentials,
             insecure,
