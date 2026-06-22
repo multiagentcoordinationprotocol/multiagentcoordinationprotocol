@@ -39,11 +39,13 @@ Core guarantees determinism for:
 - session lifecycle transitions,
 - within-session acceptance order,
 - idempotent handling of duplicate `message_id` values,
-- the terminal lifecycle state (RESOLVED or EXPIRED) when the accepted history is identical.
+- the terminal lifecycle state (RESOLVED, EXPIRED, or CANCELLED) when the accepted history is identical.
 
 Core does not guarantee semantic determinism unless the Mode claims it.
 
-`timestamp_unix_ms` is informational for ordering and display purposes and MUST NOT be used for message acceptance decisions. However, `timestamp_unix_ms` on the `SessionStart` envelope is normative for TTL computation: the session's absolute expiration deadline is computed as `SessionStart_envelope.timestamp_unix_ms + SessionStartPayload.ttl_ms`. During replay, the runtime MUST use this pre-computed deadline from the original session, not wall-clock time. If the TTL has elapsed before a terminal condition is accepted, the session transitions to EXPIRED.
+`timestamp_unix_ms` is informational for ordering and display purposes and MUST NOT be used for message acceptance decisions. However, `timestamp_unix_ms` on the `SessionStart` envelope is normative for TTL computation: the session's initial absolute expiration deadline is computed as `SessionStart_envelope.timestamp_unix_ms + SessionStartPayload.ttl_ms`. During replay, the runtime MUST derive the deadline from the original session timeline, not wall-clock time. If the TTL has elapsed before a terminal condition is accepted, the session transitions to EXPIRED.
+
+**TTL under suspension (RFC-MACP-0001 §7.5).** Suspension banks the remaining TTL rather than letting the deadline keep running, so the deadline depends on the suspend/resume timeline. This is deterministic precisely because suspend and resume are accepted, recorded events on the session's append-only history: each `SessionSuspend`/`SessionResume` envelope carries the `timestamp_unix_ms` Core uses for accounting. On suspend at time `t_s`, the runtime banks `banked = deadline − t_s`; on resume at time `t_r`, it sets `deadline = t_r + banked` (recorded in `SessionResumePayload.banked_ms`). A `SUSPENDED` session MUST NOT expire on its pre-suspension deadline. To bound indefinite pauses, the runtime MUST enforce a fixed `MAX_SUSPEND_MS` cap: if cumulative suspended duration exceeds the cap, the session transitions `SUSPENDED → EXPIRED`. Because every input to this computation (`MAX_SUSPEND_MS` and the suspend/resume event timestamps) is on the replayed timeline, replay reconstructs the identical adjusted deadline and the identical terminal state — the determinism guarantee above holds for suspended-then-resumed sessions.
 
 ## 3. Version Binding
 

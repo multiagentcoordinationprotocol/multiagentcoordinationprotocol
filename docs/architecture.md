@@ -36,7 +36,7 @@ An identifiable computational entity that emits and receives MACP Envelopes.
 An ambient, non-binding message carrying informational updates. In the base protocol, Signals carry an empty `session_id` and an empty `mode`; if they need to correlate with a session, that reference belongs inside the payload. Signals MUST NOT create sessions, mutate session state, or produce binding outcomes.
 
 **Coordination Session**  
-A bounded coordination context created only by `SessionStart`, governed by a declared Mode and a monotonic lifecycle, and terminating explicitly as **RESOLVED** or **EXPIRED**.
+A bounded coordination context created only by `SessionStart`, governed by a declared Mode and a monotonic lifecycle, pausable to **SUSPENDED**, and terminating explicitly as **RESOLVED**, **EXPIRED**, or **CANCELLED**.
 
 **MACP Runtime**  
 The logical system responsible for enforcing structural invariants: validation, ordering, deduplication, session lifecycle transitions, isolation, and persistence.
@@ -228,8 +228,9 @@ A session is created only by a valid `SessionStart` message. There is no implici
 Once created, a session is governed by a monotonic lifecycle:
 
 - It starts OPEN.
-- It terminates as RESOLVED (Mode-defined terminal condition) or EXPIRED (TTL/cancellation/policy).
-- It can never return to OPEN.
+- It may be paused to SUSPENDED (non-terminal) and resumed to OPEN.
+- It terminates as RESOLVED (Mode-defined terminal condition), EXPIRED (TTL/policy), or CANCELLED (CancelSession).
+- Once terminal, it can never return to OPEN.
 
 ### 6.1 Session-scoped communication rule
 
@@ -251,13 +252,18 @@ stateDiagram-v2
 
   NON_EXISTENT --> OPEN: accept SessionStart
 
+  OPEN --> SUSPENDED: SuspendSession (TTL banked)
+  SUSPENDED --> OPEN: ResumeSession (TTL restored)
   OPEN --> RESOLVED: accept first terminal message
   OPEN --> EXPIRED: TTL elapsed
-  OPEN --> EXPIRED: CancelSession
   OPEN --> EXPIRED: runtime policy
+  SUSPENDED --> EXPIRED: banked TTL / MAX_SUSPEND_MS
+  OPEN --> CANCELLED: CancelSession
+  SUSPENDED --> CANCELLED: CancelSession
 
   RESOLVED --> [*]
   EXPIRED --> [*]
+  CANCELLED --> [*]
 ```
 
 ### 7.1 Acceptance rules in OPEN
@@ -518,7 +524,7 @@ A system that can never force a session to terminate cannot guarantee coherence 
 
 Cancellation is where many systems degrade into ambiguity. MACP treats cancellation as structural.
 
-A compliant runtime MUST support deterministic cancellation that transitions a session from OPEN to EXPIRED without mutating history. By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority through policy.
+A compliant runtime MUST support deterministic cancellation that transitions a session to the terminal CANCELLED state (distinct from EXPIRED) without mutating history. By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority through policy.
 
 A runtime SHOULD emit a session-scoped cancellation event (`SessionCancel` Envelope) into the append-only log so that replay preserves the cause of termination.
 

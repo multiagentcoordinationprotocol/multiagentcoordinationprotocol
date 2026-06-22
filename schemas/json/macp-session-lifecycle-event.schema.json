@@ -15,7 +15,10 @@
         "EVENT_TYPE_UNSPECIFIED",
         "EVENT_TYPE_CREATED",
         "EVENT_TYPE_RESOLVED",
-        "EVENT_TYPE_EXPIRED"
+        "EVENT_TYPE_EXPIRED",
+        "EVENT_TYPE_SUSPENDED",
+        "EVENT_TYPE_RESUMED",
+        "EVENT_TYPE_CANCELLED"
       ],
       "description": "The type of session lifecycle event."
     },
@@ -28,7 +31,7 @@
         "mode": { "type": "string" },
         "state": {
           "type": "string",
-          "enum": ["SESSION_STATE_UNSPECIFIED", "SESSION_STATE_OPEN", "SESSION_STATE_RESOLVED", "SESSION_STATE_EXPIRED"]
+          "enum": ["SESSION_STATE_UNSPECIFIED", "SESSION_STATE_OPEN", "SESSION_STATE_RESOLVED", "SESSION_STATE_EXPIRED", "SESSION_STATE_SUSPENDED", "SESSION_STATE_CANCELLED"]
         }
       }
     },

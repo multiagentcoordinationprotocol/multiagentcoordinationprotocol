@@ -59,4 +59,8 @@ Because accepted session history is append-only, failed owners can recover by re
 
 ## Cancellation
 
-Cancellation transitions a session from OPEN to EXPIRED without rewriting history. By default, only the session initiator is authorized to cancel. Deployments may extend this through policy. Late-arriving messages are rejected because the lifecycle state is no longer OPEN.
+Cancellation transitions a session to the terminal **CANCELLED** state — distinct from EXPIRED (TTL / runtime policy) — without rewriting history. By default, only the session initiator is authorized to cancel. Deployments may extend this through policy. Late-arriving messages are rejected because the lifecycle state is no longer OPEN.
+
+## Suspension and Resume
+
+An OPEN session may be paused to **SUSPENDED** via `SuspendSession` and later returned to OPEN via `ResumeSession` (same authority model as cancellation; see [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md)). A suspended session rejects Mode messages and banks its TTL — the remaining time is recorded on suspend and restored on resume — so a held session does not silently expire. A `MAX_SUSPEND_MS` cap bounds indefinite pauses. Suspend and resume are recorded as accepted-history annotations, keeping the suspension timeline deterministic under replay.

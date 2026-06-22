@@ -199,13 +199,27 @@ A Mode MAY also bind additional immutable authority roles through the accepted `
 
 ### 7.2 Session States
 
-Core defines three states:
+Core defines five states:
 
 - `OPEN`
-- `RESOLVED`
-- `EXPIRED`
+- `SUSPENDED` — non-terminal pause of an `OPEN` session (see §7.5)
+- `RESOLVED` — terminal
+- `EXPIRED` — terminal
+- `CANCELLED` — terminal
 
-Sessions MUST transition monotonically. No transition from RESOLVED or EXPIRED back to OPEN is permitted.
+`RESOLVED`, `EXPIRED`, and `CANCELLED` are terminal. Sessions MUST transition monotonically with respect to termination: once a session is terminal, no further transition is permitted (in particular, no transition back to `OPEN` or `SUSPENDED`).
+
+`SUSPENDED` is a non-terminal pause of an `OPEN` session. The complete set of permitted transitions is:
+
+- `OPEN → SUSPENDED` and `SUSPENDED → OPEN` — suspend / resume (§7.5),
+- `OPEN → RESOLVED` — the first Mode-defined terminal condition is accepted (§7.3),
+- `OPEN → EXPIRED` — TTL elapses or deterministic runtime policy requires expiration (§7.3),
+- `SUSPENDED → EXPIRED` — the suspended session's banked TTL elapses or `MAX_SUSPEND_MS` is exceeded (§7.5),
+- `OPEN → CANCELLED` and `SUSPENDED → CANCELLED` — a `CancelSession` request is accepted (§7.3).
+
+A commitment (the Mode terminal condition) MUST be emitted only from `OPEN`. Therefore `SUSPENDED → RESOLVED` is NOT permitted: a session MUST be resumed to `OPEN` before it can resolve. No transition out of a terminal state is permitted.
+
+> **Breaking change (v1.0.0-draft):** Two states were added to the lifecycle — `SUSPENDED` (§7.5) and `CANCELLED` — and cancellation now terminates a session as `CANCELLED` rather than `EXPIRED`. This is a wire- and behavior-breaking change to the session state machine; runtimes and observers MUST handle the new `SessionState`/`SessionLifecycleEvent` values. No backward-compatibility shim is provided.
 
 ### 7.3 Termination
 
@@ -219,17 +233,24 @@ A session transitions from OPEN to RESOLVED when the first Mode-defined terminal
 
 A session transitions from OPEN to EXPIRED when:
 
-- TTL elapses,
-- cancellation is accepted,
-- or deterministic runtime policy requires expiration.
+- TTL elapses (including a suspended session's banked TTL, §7.5), or
+- deterministic runtime policy requires expiration.
+
+A session transitions to CANCELLED (from OPEN or SUSPENDED) when a `CancelSession` request is accepted. `CANCELLED` is a distinct terminal state from `EXPIRED`, so observers can tell an explicit cancellation apart from TTL/policy expiry.
 
 Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
 By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. The runtime MUST record the initiator in `SessionMetadata.initiator` at session creation time for authorization checks. Deployments MAY extend cancellation authority to additional roles through policy. `CancelSession` MUST be subject to the same authentication requirements as any session-scoped operation.
 
-`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation. `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
+`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation. `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
 
 `CancelSession` is a Core control-plane message. Mode-specific authorization rules (e.g., who can emit which Mode message type) do NOT apply to `CancelSession`. Only the initiator and policy-delegated roles may cancel a session.
+
+#### 7.3.1 Commitment Supersession
+
+`CommitmentPayload` MAY carry a `supersedes` field (`CommitmentRef { session_id, commitment_hash }`) indicating that this commitment revises an earlier one. Because a `RESOLVED` session accepts no further session-scoped messages (step 5 above), a superseding commitment cannot live in the same session as the commitment it supersedes: it is emitted in a **new** session whose `supersedes` reference points back at the earlier commitment. Supersession is therefore inherently **cross-session**.
+
+The runtime's structural obligations are limited to: (a) if `supersedes` is present, its fields MUST be well-formed (non-empty `session_id` and `commitment_hash`); and (b) the superseding party MUST be authorized in the new session under the normal authority rules. The runtime MUST NOT, as a Core obligation, resolve the reference, verify that the referenced commitment exists, or decide whether the supersession is *permitted* — those are cross-session concerns. Chain resolution ("the current commitment for this matter"), supersession policy, and fork handling (whether two live successors to one commitment are allowed) are consumer governance built above Core, which MAY maintain a cross-session commitment index for the purpose. A consumer that does not use supersession is unaffected; the field is simply absent.
 
 ### 7.4 Session Context and Extensions
 
@@ -256,6 +277,21 @@ Observers (including control-planes and UIs) MAY use `context_id` for indexing, 
 **Naming convention (RECOMMENDED):** Extension keys SHOULD use dot-separated reverse-domain notation for public protocols (e.g., `ctxm.v1`, `aitp.v1`) and `x-` prefix for deployment-private extensions (e.g., `x-billing`, `x-tracing`).
 
 > **Migration note:** The former opaque `bytes context` field (field 7) has been removed from `SessionStartPayload`. It is superseded by the structured `context_id` (field 8) and `extensions` (field 9) fields. The `roots` field has been renumbered from field 8 to field 7.
+
+### 7.5 Suspension and Resume
+
+An `OPEN` session MAY be paused into the `SUSPENDED` state and later resumed to `OPEN`. Suspension is the Core mechanism behind human-in-the-loop and operational holds: a session that is paused for review MUST replay identically for every consumer.
+
+**Control-plane RPCs.** `SuspendSession` and `ResumeSession` are Core control-plane RPCs, symmetric with `CancelSession`:
+
+- `SuspendSession` is accepted only when the session is `OPEN`; it transitions the session to `SUSPENDED`.
+- `ResumeSession` is accepted only when the session is `SUSPENDED`; it transitions the session back to `OPEN`.
+
+Like `CancelSession`, they are restricted to the session initiator and policy-delegated roles, are subject to the same authentication requirements, and are NOT governed by Mode-specific authorization rules. Upon accepting a `SuspendSession` request the runtime MUST append a `SessionSuspend` envelope (with `SessionSuspendPayload`); upon accepting a `ResumeSession` request it MUST append a `SessionResume` envelope (with `SessionResumePayload`). These envelopes MUST NOT be submitted via the `Send` RPC — the runtime is the sole emitter — and they enter the accepted history so the suspension timeline is part of the replayed record.
+
+**Acceptance while suspended.** A `SUSPENDED` session is not `OPEN`; therefore any session-scoped Mode message (Proposal, Vote, Commitment, …) referencing it MUST be rejected with a non-OPEN session error, exactly as for terminal sessions (§7.3). Only `ResumeSession` (and `CancelSession`) may be accepted against a `SUSPENDED` session.
+
+**Pausable TTL.** The session's absolute deadline is banked across suspension rather than continuing to run. On suspend, the runtime records the remaining time `banked = deadline − suspend_time`; on resume, it sets `deadline = resume_time + banked` (the resume's `banked_ms` records this value for replay). A `SUSPENDED` session MUST NOT expire on its pre-suspension deadline. To bound indefinite pauses, a runtime MUST enforce a `MAX_SUSPEND_MS` cap: if the cumulative suspended duration exceeds the cap, the session transitions `SUSPENDED → EXPIRED`. TTL accounting under suspension is normatively deterministic — see RFC-MACP-0003 §2.
 
 ---
 
@@ -470,7 +506,7 @@ MACP supports extensibility in three primary ways:
 Extensions MUST preserve Core invariants:
 
 - explicit session boundaries,
-- monotonic lifecycle,
+- monotonic lifecycle — terminal states (`RESOLVED`, `EXPIRED`, `CANCELLED`) are final; the non-terminal `OPEN`↔`SUSPENDED` pause (§7.5) does not violate this,
 - append-only accepted history,
 - session isolation,
 - replay-preserving acceptance order.
