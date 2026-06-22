@@ -28,6 +28,15 @@ enum SessionState {
   SESSION_STATE_OPEN = 1;
   SESSION_STATE_RESOLVED = 2;
   SESSION_STATE_EXPIRED = 3;
+  // Session paused by an accepted SuspendSession RPC (RFC-MACP-0001 §7.5).
+  // Non-terminal: TTL is banked while suspended and restored on ResumeSession.
+  // Only OPEN<->SUSPENDED and SUSPENDED->EXPIRED transitions are permitted; a
+  // commitment may only be emitted from OPEN, so SUSPENDED->RESOLVED is not.
+  SESSION_STATE_SUSPENDED = 4;
+  // Terminal state for a session ended by an accepted CancelSession RPC
+  // (RFC-MACP-0001 §7.3). Distinct from EXPIRED (TTL / deterministic runtime
+  // policy) so consumers can tell explicit cancellation from expiry.
+  SESSION_STATE_CANCELLED = 5;
 }
 
 message Ack {

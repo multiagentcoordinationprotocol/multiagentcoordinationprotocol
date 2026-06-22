@@ -126,6 +126,35 @@ message SessionCancelPayload {
   string cancelled_by = 2;
 }
 
+// Appended to accepted history by the runtime when a SuspendSession RPC is
+// accepted (RFC-MACP-0001 §7.5). Clients MUST NOT submit this via the Send RPC;
+// the runtime is the sole emitter.
+message SessionSuspendPayload {
+  string reason = 1;
+  // Set by the runtime; MUST match the authenticated sender of SuspendSession.
+  string suspended_by = 2;
+}
+
+// Appended to accepted history by the runtime when a ResumeSession RPC is
+// accepted (RFC-MACP-0001 §7.5). Clients MUST NOT submit this via the Send RPC.
+message SessionResumePayload {
+  string reason = 1;
+  // Set by the runtime; MUST match the authenticated sender of ResumeSession.
+  string resumed_by = 2;
+  // Milliseconds of TTL banked during the suspension and restored to the
+  // session's absolute deadline on resume (RFC-MACP-0003 §2).
+  int64 banked_ms = 3;
+}
+
+// Reference to a specific accepted commitment, used for cross-session
+// supersession (RFC-MACP-0001 §7.3).
+message CommitmentRef {
+  string session_id = 1;
+  // Content hash of the superseded CommitmentPayload (an implementation-defined
+  // digest over its canonical encoding).
+  string commitment_hash = 2;
+}
+
 message CommitmentPayload {
   string commitment_id = 1;
   // Action identifier describing the outcome (e.g., "decision.approved",
@@ -141,6 +170,13 @@ message CommitmentPayload {
   // false for definitive negative outcomes (e.g., rejection, failure).
   // Modes that allow negative commitments MUST set this field explicitly.
   bool outcome_positive = 8;
+  // Cross-session supersession (RFC-MACP-0001 §7.3): when present, this
+  // commitment supersedes a prior commitment identified by {session_id,
+  // commitment_hash}. The superseding commitment lives in a NEW session (a
+  // RESOLVED session accepts no further messages). The kernel validates only
+  // structural well-formedness and this-session authority; chain resolution and
+  // whether supersession is permitted are consumer governance.
+  CommitmentRef supersedes = 9;
 }
 
 message ParticipantActivity {
@@ -178,6 +214,27 @@ message GetSessionRequest {
 message CancelSessionRequest {
   string session_id = 1;
   string reason = 2;
+}
+
+// Session suspension / resume (RFC-MACP-0001 §7.5). Symmetric with
+// CancelSession: a Core control-plane RPC restricted to the initiator and
+// policy-delegated roles.
+message SuspendSessionRequest {
+  string session_id = 1;
+  string reason = 2;
+}
+
+message SuspendSessionResponse {
+  Ack ack = 1;
+}
+
+message ResumeSessionRequest {
+  string session_id = 1;
+  string reason = 2;
+}
+
+message ResumeSessionResponse {
+  Ack ack = 1;
 }
 
 // Empty agent_id requests the manifest of the serving runtime/agent.
@@ -356,6 +413,9 @@ message SessionLifecycleEvent {
     EVENT_TYPE_CREATED = 1;
     EVENT_TYPE_RESOLVED = 2;
     EVENT_TYPE_EXPIRED = 3;
+    EVENT_TYPE_SUSPENDED = 4;
+    EVENT_TYPE_RESUMED = 5;
+    EVENT_TYPE_CANCELLED = 6;
   }
   EventType event_type = 1;
   SessionMetadata session = 2;
@@ -372,6 +432,9 @@ service MACPRuntimeService {
   rpc StreamSession(stream StreamSessionRequest) returns (stream StreamSessionResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
   rpc CancelSession(CancelSessionRequest) returns (CancelSessionResponse);
+  // Session suspension / resume (RFC-MACP-0001 §7.5)
+  rpc SuspendSession(SuspendSessionRequest) returns (SuspendSessionResponse);
+  rpc ResumeSession(ResumeSessionRequest) returns (ResumeSessionResponse);
   rpc GetManifest(GetManifestRequest) returns (GetManifestResponse);
   rpc ListModes(ListModesRequest) returns (ListModesResponse);
   rpc WatchModeRegistry(WatchModeRegistryRequest) returns (stream WatchModeRegistryResponse);

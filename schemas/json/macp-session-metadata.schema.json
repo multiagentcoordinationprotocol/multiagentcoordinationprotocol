@@ -30,7 +30,9 @@
         "SESSION_STATE_UNSPECIFIED",
         "SESSION_STATE_OPEN",
         "SESSION_STATE_RESOLVED",
-        "SESSION_STATE_EXPIRED"
+        "SESSION_STATE_EXPIRED",
+        "SESSION_STATE_SUSPENDED",
+        "SESSION_STATE_CANCELLED"
       ],
       "description": "Current session lifecycle state."
     },

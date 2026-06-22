@@ -8,18 +8,26 @@ The MACP session lifecycle is a monotonic state machine. This is what turns coor
 ## Session states
 
 - **OPEN** — session is active and accepting messages
+- **SUSPENDED** — non-terminal pause of an OPEN session (TTL is banked); resumes to OPEN
 - **RESOLVED** — session terminated via first accepted Mode-defined terminal message
-- **EXPIRED** — session terminated due to TTL, cancellation, or deterministic runtime policy
+- **EXPIRED** — session terminated due to TTL or deterministic runtime policy
+- **CANCELLED** — session terminated by an accepted `CancelSession` (distinct from EXPIRED)
 
-No transition from RESOLVED or EXPIRED back to OPEN is permitted.
+`RESOLVED`, `EXPIRED`, and `CANCELLED` are terminal; no transition out of a terminal state is permitted. `SUSPENDED` is a non-terminal pause: only `OPEN`↔`SUSPENDED` and `SUSPENDED`→`EXPIRED` are allowed, and a commitment can only be emitted from `OPEN` (so a suspended session must be resumed before it can resolve). See [RFC-MACP-0001 §7.2/§7.5](../rfcs/RFC-MACP-0001-core.md).
 
 ```mermaid
 stateDiagram-v2
   [*] --> OPEN: SessionStart accepted
+  OPEN --> SUSPENDED: SuspendSession (TTL banked)
+  SUSPENDED --> OPEN: ResumeSession (TTL restored)
   OPEN --> RESOLVED: first accepted terminal message
-  OPEN --> EXPIRED: TTL / CancelSession / deterministic runtime policy
+  OPEN --> EXPIRED: TTL / deterministic runtime policy
+  SUSPENDED --> EXPIRED: banked TTL / MAX_SUSPEND_MS exceeded
+  OPEN --> CANCELLED: CancelSession accepted
+  SUSPENDED --> CANCELLED: CancelSession accepted
   RESOLVED --> [*]
   EXPIRED --> [*]
+  CANCELLED --> [*]
 ```
 
 ## Admission rules for session-scoped messages
@@ -46,7 +54,15 @@ All validation, authentication, authorization, deduplication, session-state chec
 
 ## Cancellation Authority
 
-The default cancellation authority is the session initiator. Deployments may extend this through policy, but cancellation always requires authentication and authorization.
+The default cancellation authority is the session initiator. Deployments may extend this through policy, but cancellation always requires authentication and authorization. An accepted `CancelSession` transitions the session to the terminal **CANCELLED** state (distinct from EXPIRED) and appends a `SessionCancel` annotation to the accepted history.
+
+## Suspension and Resume
+
+An OPEN session can be paused and later resumed via the `SuspendSession` and `ResumeSession` control-plane RPCs (same authority model as `CancelSession`; see [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md)). While **SUSPENDED**, the session rejects Mode messages (it is not OPEN) and its TTL is *banked* rather than running: suspend records the remaining time, resume restores it (`SessionResumePayload.banked_ms`). A fixed `MAX_SUSPEND_MS` cap bounds indefinite pauses — exceeding it expires the session. Because suspend/resume are recorded events on the append-only history, a suspended-then-resumed session replays to the identical terminal state ([RFC-MACP-0003 §2](../rfcs/RFC-MACP-0003-determinism.md)).
+
+## Commitment Supersession
+
+A `CommitmentPayload` may carry a `supersedes` reference (`{session_id, commitment_hash}`) marking it as a revision of an earlier commitment. Since a RESOLVED session accepts no further messages, a superseding commitment lives in a **new** session pointing back at the prior one — supersession is inherently cross-session. The runtime only checks structural well-formedness and this-session authority; chain resolution and supersession policy are consumer governance ([RFC-MACP-0001 §7.3.1](../rfcs/RFC-MACP-0001-core.md)).
 
 ## Terminal races
 
@@ -57,7 +73,7 @@ If multiple terminal messages are sent concurrently, the first one accepted into
 Two RPCs provide programmatic session lifecycle observation:
 
 - **`ListSessions`** — returns `SessionMetadata` for all known sessions. Use for initial sync. Advertised by `sessions.list_sessions`.
-- **`WatchSessions`** — server-streaming RPC that emits `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED) in real time. Advertised by `sessions.watch_sessions`.
+- **`WatchSessions`** — server-streaming RPC that emits `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, CANCELLED) in real time. Advertised by `sessions.watch_sessions`.
 
 Control-planes and UIs typically call `ListSessions` on startup for a snapshot, then subscribe to `WatchSessions` for incremental updates. Events are ephemeral and not replayed.
 
