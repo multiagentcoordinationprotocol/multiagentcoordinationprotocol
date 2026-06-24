@@ -2,6 +2,7 @@
   "mode": "macp.mode.decision.v1",
   "initiator": "agent://orchestrator",
   "participants": [
+    "agent://orchestrator",
     "agent://a",
     "agent://b"
   ],

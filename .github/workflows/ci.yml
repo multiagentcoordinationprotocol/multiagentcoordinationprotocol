@@ -34,6 +34,11 @@ jobs:
           chmod +x scripts/validate-json.sh
           ./scripts/validate-json.sh
 
+      - name: Lint conformance fixtures (internal consistency)
+        run: |
+          echo "Linting canonical conformance fixtures..."
+          python3 schemas/conformance/lint_fixtures.py
+
       - name: Install protoc
         run: |
           sudo apt-get update
