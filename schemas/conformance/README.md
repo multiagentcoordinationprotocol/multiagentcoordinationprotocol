@@ -45,6 +45,7 @@ Each fixture is a JSON object with:
 | `messages[].sender` | Both | Sender identity. For `accept` messages must be a participant; `reject` messages may come from outsiders. |
 | `messages[].expect` | Both | `"accept"` or `"reject"` — whether the runtime accepts the message |
 | `messages[].payload_type` | Both | `"{mode_short}.{MessageType}"` format for payload encoding |
+| `policy` | Runtime | Optional inline `PolicyDescriptor` (`policy_id`, `mode`, `schema_version`, `rules`) the harness registers before `SessionStart`, so a bound (non-`none`) voting algorithm is reachable. `policy_version` must match its `policy_id`. Absent ⇒ default policy. |
 | `messages[].expected_error_code` | Runtime | For `reject` messages, the error code the runtime should return (recommended) |
 | `expected_final_state` | Both | Terminal state: `Open`, `Resolved`, `Suspended`, or `Cancelled`. `Resolved` ⇒ a commitment was emitted. |
 | `expected_resolution` | Both | Commitment field assertions (`action`, `mode_version`, `configuration_version`, `outcome_positive`) when `Resolved` |

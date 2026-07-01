@@ -30,7 +30,7 @@ A policy descriptor has five required fields:
 | `mode` | string | Target mode identifier or `*` for mode-agnostic |
 | `description` | string | Human-readable description |
 | `rules` | object | Mode-specific governance rules (see Rule Schemas) |
-| `schema_version` | uint32 | Version of the rule schema used (currently `1`) |
+| `schema_version` | uint32 | Version of the rule schema used (`1` or `2`; version `2` adds Decision Mode decline-gating, additive) |
 
 Canonical proto: [`schemas/proto/macp/v1/policy.proto`](../schemas/proto/macp/v1/policy.proto)
 JSON Schema: [`schemas/json/macp-policy-descriptor.schema.json`](../schemas/json/macp-policy-descriptor.schema.json)

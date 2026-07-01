@@ -20,6 +20,9 @@ from pathlib import Path
 REQUIRED_TOP_LEVEL = ("mode", "initiator", "participants", "messages", "expected_final_state")
 VALID_EXPECT = {"accept", "reject"}
 VALID_FINAL_STATE = {"Open", "Resolved", "Suspended", "Cancelled"}
+# Schema versions a conformant runtime is expected to accept for an inline policy
+# (RFC-MACP-0012 §3). Additive: 1 is legacy, 2 adds Decision decline-gating.
+VALID_POLICY_SCHEMA_VERSIONS = {1, 2}
 
 
 def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
@@ -46,6 +49,35 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
     final_state = data["expected_final_state"]
     if final_state not in VALID_FINAL_STATE:
         errors.append(f"expected_final_state {final_state!r} not in {sorted(VALID_FINAL_STATE)}")
+
+    # Optional inline policy: a fixture MAY carry a policy descriptor the harness
+    # registers before SessionStart so a bound (non-'none') voting algorithm is
+    # reachable. Validated only when present; fixtures without it stay valid.
+    policy = data.get("policy")
+    if policy is not None:
+        if not isinstance(policy, dict):
+            errors.append("'policy' must be an object")
+        else:
+            for key in ("policy_id", "mode", "schema_version", "rules"):
+                if key not in policy:
+                    errors.append(f"policy missing required key '{key}'")
+            sv = policy.get("schema_version")
+            if sv is not None and sv not in VALID_POLICY_SCHEMA_VERSIONS:
+                errors.append(
+                    f"policy.schema_version {sv!r} not in {sorted(VALID_POLICY_SCHEMA_VERSIONS)}"
+                )
+            if isinstance(policy.get("rules"), dict) is False and "rules" in policy:
+                errors.append("policy.rules must be an object")
+            if policy.get("mode") not in (None, "*", data["mode"]):
+                errors.append(
+                    f"policy.mode {policy.get('mode')!r} matches neither '*' nor fixture mode {data['mode']!r}"
+                )
+            # An inline policy should be the one the session binds.
+            pid = policy.get("policy_id")
+            if pid is not None and data.get("policy_version") not in (None, pid):
+                errors.append(
+                    f"policy_version {data.get('policy_version')!r} does not match inline policy_id {pid!r}"
+                )
 
     for i, msg in enumerate(data["messages"]):
         for key in ("sender", "message_type", "payload_type", "expect"):
