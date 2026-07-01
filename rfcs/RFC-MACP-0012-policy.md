@@ -59,7 +59,9 @@ A policy descriptor is a structured document with the following required fields:
 | `mode` | string | Target mode identifier (e.g., `macp.mode.decision.v1`) or `*` for mode-agnostic |
 | `description` | string | Human-readable description of the policy's governance rules |
 | `rules` | object | Mode-specific governance rules (see Section 4) |
-| `schema_version` | uint32 | Version of the rule schema used (currently `1`) |
+| `schema_version` | uint32 | Version of the rule schema used (`1` or `2`) |
+
+Schema version `2` adds the Decision Mode decline-gating parameters (`commitment.allow_decline_over_approval`, `objection_handling.critical_objection_action`; see §4.1). The bump is **additive**: the new fields are optional and default to legacy behavior, so `schema_version: 1` policies remain valid and a runtime MUST accept every schema version it supports (`{1, 2}`). Declaring `schema_version: 2` signals only that the descriptor MAY use the new fields.
 
 The canonical wire format is defined in `schemas/proto/macp/v1/policy.proto`. The `rules` field is JSON-encoded bytes to allow mode-specific schemas without requiring proto changes per mode.
 
@@ -76,9 +78,9 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 | Rule Group | Parameters | Description |
 |------------|-----------|-------------|
 | `voting` | `algorithm`, `threshold`, `quorum`, `weights` | Voting algorithm and quorum requirements |
-| `objection_handling` | `critical_severity_vetoes`, `veto_threshold` | How critical-severity objections affect commitment eligibility |
+| `objection_handling` | `critical_severity_vetoes`, `veto_threshold`, `critical_objection_action` | How critical-severity objections affect commitment eligibility |
 | `evaluation` | `minimum_confidence`, `required_before_voting` | Evaluation constraints |
-| `commitment` | `authority`, `designated_roles`, `require_vote_quorum` | Who can commit and under what conditions |
+| `commitment` | `authority`, `designated_roles`, `require_vote_quorum`, `allow_decline_over_approval` | Who can commit and under what conditions |
 
 **Voting algorithms:**
 
@@ -93,6 +95,13 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 
 - `type: "count"` — minimum number of votes that must be cast
 - `type: "percentage"` — minimum percentage of declared participants that must vote
+
+**Negative-outcome parameters:**
+
+- `commitment.allow_decline_over_approval` (bool, default `false`) — permit a negative commitment (`outcome_positive: false`) even when the vote **Passed**. With the default `false`, a passed vote authorizes only a positive commitment.
+- `objection_handling.critical_objection_action` (enum `deny` | `finalize_decline` | `hold`, default `deny`) — action taken when a critical objection would block commitment: `deny` (reject the commitment; legacy behavior), `finalize_decline` (finalize the session as a negative outcome), or `hold` (leave the session open).
+
+The **decline guard** for a vote-authorized negative commitment (≥1 explicit `Vote` with `vote == "REJECT"`; optional `commitment.require_vote_quorum`) is defined with the Decision Mode terminal semantics — see [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) §6.2. Both parameters are additive with conservative defaults that preserve pre-existing behavior; policies that use them declare `schema_version: 2`.
 
 ### 4.2 Quorum Mode Rules
 

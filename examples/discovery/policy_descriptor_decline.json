@@ -1,0 +1,21 @@
+{
+  "policy_id": "policy.platform.majority-decline",
+  "mode": "macp.mode.decision.v1",
+  "description": "Majority voting that permits a vote-gated negative (decline) outcome and finalizes a decline on critical objection (schema_version 2).",
+  "schema_version": 2,
+  "rules": {
+    "voting": {
+      "algorithm": "majority"
+    },
+    "objection_handling": {
+      "critical_severity_vetoes": true,
+      "veto_threshold": 1,
+      "critical_objection_action": "finalize_decline"
+    },
+    "commitment": {
+      "authority": "initiator_only",
+      "require_vote_quorum": true,
+      "allow_decline_over_approval": false
+    }
+  }
+}

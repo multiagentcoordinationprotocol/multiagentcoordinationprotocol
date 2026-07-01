@@ -17,7 +17,7 @@
     "schema_version": {
       "type": "integer",
       "minimum": 1,
-      "description": "Version of the rule schema used (currently 1)."
+      "description": "Version of the rule schema used (1 or 2). Version 2 adds the Decision Mode decline-gating parameters; the bump is additive and version 1 policies remain valid."
     },
     "rules": {
       "type": "object",

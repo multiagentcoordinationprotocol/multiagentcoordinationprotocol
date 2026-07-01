@@ -99,6 +99,20 @@ Decision Mode allows both positive and negative committed outcomes. `CommitmentP
 
 Decision sessions MAY be governed by declarative policies that constrain voting algorithms, quorum requirements, objection handling, and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/decision-rules.schema.json` for the Decision Mode rule schema.
 
+### 6.2 Negative committed outcomes (vote-gated decline)
+
+When a Decision session binds a governance policy with a real voting algorithm (`voting.algorithm != "none"`), the eligibility of a positive versus negative `Commitment` is gated by the computed voting result:
+
+- **Passed** — a positive commitment (`outcome_positive: true`) is allowed; a negative commitment is denied **unless** `commitment.allow_decline_over_approval` is `true`.
+- **Failed** — a positive commitment is denied; a negative commitment is allowed **iff** the decline guard (below) is satisfied.
+- **NoVotes** — a negative commitment is denied; there is no explicit reject to authorize a decline.
+
+**Decline guard (normative):** a vote-authorized negative commitment MUST be backed by at least one explicit `Vote` with `vote == "REJECT"` (`reject_count > 0`), and, when `commitment.require_vote_quorum` is `true`, the voting quorum MUST be met. The guard applies across all three voting results.
+
+**Face-value exception:** when `voting.algorithm == "none"` (or no policy is bound), the commitment is initiator-driven and `outcome_positive` is taken at face value with no decline guard.
+
+Both governing knobs — `commitment.allow_decline_over_approval` (bool, default `false`) and `objection_handling.critical_objection_action` (enum `deny` | `finalize_decline` | `hold`, default `deny`) — are policy-controlled with conservative defaults that preserve pre-existing behavior. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) §4.1 for their semantics.
+
 ## 7. Determinism class
 
 Decision Mode claims **semantic-deterministic** determinism.

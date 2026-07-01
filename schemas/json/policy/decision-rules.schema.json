@@ -63,6 +63,12 @@
           "minimum": 1,
           "default": 1,
           "description": "Number of blocking objections required to veto commitment."
+        },
+        "critical_objection_action": {
+          "type": "string",
+          "enum": ["deny", "finalize_decline", "hold"],
+          "default": "deny",
+          "description": "Action when a critical objection would block commitment: deny (reject), finalize_decline (resolve as a negative outcome), or hold (leave the session open)."
         }
       }
     },
@@ -103,6 +109,11 @@
           "type": "boolean",
           "default": false,
           "description": "If true, commitment is only allowed after vote quorum is met."
+        },
+        "allow_decline_over_approval": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, a negative commitment (outcome_positive=false) is allowed even when the vote passed."
         }
       }
     }
