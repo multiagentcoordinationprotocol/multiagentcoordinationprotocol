@@ -40,7 +40,7 @@
       "payload": {
         "commitment_id": "c0",
         "outcome_positive": false,
-        "action": "decision.selected",
+        "action": "decision.rejected",
         "authority_scope": "test",
         "reason": "premature decline with no explicit reject cast yet",
         "mode_version": "1.0.0",
@@ -79,7 +79,7 @@
       "payload": {
         "commitment_id": "c1",
         "outcome_positive": false,
-        "action": "decision.selected",
+        "action": "decision.rejected",
         "authority_scope": "test",
         "reason": "reject-majority under bound policy",
         "mode_version": "1.0.0",
@@ -92,7 +92,7 @@
   "expected_final_state": "Resolved",
   "expect_resolution_present": true,
   "expected_resolution": {
-    "action": "decision.selected",
+    "action": "decision.rejected",
     "mode_version": "1.0.0",
     "configuration_version": "cfg-1",
     "outcome_positive": false
