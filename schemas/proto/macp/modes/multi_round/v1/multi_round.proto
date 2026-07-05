@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package macp.modes.multi_round.v1;
+
+// Contribution submitted by a participant during a round of the
+// ext.multi_round.v1 iterative-convergence mode.
+//
+// A participant MAY contribute more than once; a contribution whose value
+// differs from the sender's previous contribution advances the round.
+// Convergence semantics (e.g. all_equal) are evaluated by the runtime's
+// mode implementation over the latest contribution per participant.
+//
+// `value` is an opaque string by design: contributions are compared for
+// equality only, never interpreted. Structured or binary contributions can
+// be added as new fields in a later revision without breaking this one.
+message ContributePayload {
+  string value = 1;
+}
+
+// Multi-Round Mode reuses macp.v1.CommitmentPayload for terminal results.
+// The resolution summary and per-round internal state are runtime-internal
+// representations, not wire payloads, and are deliberately not specified
+// here.
