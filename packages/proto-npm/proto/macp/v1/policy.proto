@@ -19,7 +19,7 @@ message PolicyDescriptor {
   // (e.g., schemas/json/policy/decision-rules.schema.json for Decision Mode).
   string rules = 4;
 
-  // Version of the rule schema used (currently 1).
+  // Version of the rule schema used (RFC-MACP-0012 defines versions 1 and 2).
   uint32 schema_version = 5;
 
   int64 registered_at_unix_ms = 6; // Unix epoch milliseconds; set by the runtime, ignored in RegisterPolicyRequest.

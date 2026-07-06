@@ -107,7 +107,7 @@ The determinism classes defined by RFC-MACP-0002 are normative for descriptors a
 
 - **semantic-deterministic**: Replay reproduces identical lifecycle transitions AND the same semantic outcome — the terminal action, committed values, and resolution are identical given the same accepted envelope sequence.
 
-- **context-frozen**: Same guarantees as semantic-deterministic, but ONLY when the external context bound at `SessionStart` (via `context` and `roots`) is replayed exactly. If bound context differs from the original session, replay outcomes are undefined.
+- **context-frozen**: Same guarantees as semantic-deterministic, but ONLY when the external context bound at `SessionStart` (via `context_id`, `extensions`, and `roots`) is replayed exactly. If bound context differs from the original session, replay outcomes are undefined.
 
 - **non-deterministic**: Replay reproduces identical lifecycle transitions and accept/reject decisions, but semantic outcomes may differ due to runtime state or external side effects. Runtimes SHOULD NOT attempt semantic replay for non-deterministic modes.
 

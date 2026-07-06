@@ -45,7 +45,7 @@ A Handoff Mode Session MUST bind:
 - `configuration_version` - transfer profile,
 - `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - deadline for the transfer,
-- `context` and `roots` - any frozen handoff context or trust boundary needed for replay.
+- `context_id`, `extensions`, and `roots` - any frozen handoff context reference, attached data, or trust boundary needed for replay.
 
 ## 4. Message types
 

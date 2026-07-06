@@ -154,7 +154,7 @@ rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
 
 `ListSessions` returns `SessionMetadata` for all currently known sessions (active and terminal). A runtime MUST advertise `sessions.list_sessions = true` before `ListSessions` can be assumed interoperable.
 
-`WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, or EXPIRED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
+`WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, or CANCELLED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
 
 Session lifecycle events are ephemeral — they are not persisted and are not available for replay. Clients that disconnect MAY miss events. Control-planes and UIs SHOULD use `ListSessions` for initial sync and `WatchSessions` for incremental updates.
 
