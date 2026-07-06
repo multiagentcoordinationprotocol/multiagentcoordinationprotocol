@@ -113,6 +113,8 @@ Canonical schema: `schemas/json/policy/quorum-rules.schema.json`
 | `abstention` | `counts_toward_quorum`, `interpretation` | How abstentions affect quorum calculation |
 | `commitment` | `authority` | Who can emit the terminal `Commitment` |
 
+`threshold` is the **approval bar** — the number (or percentage/weighted sum) of approvals required for a positive outcome — and it is the **only gate** defined in schema_version ≤ 2. There is no separate *participation quorum* (a minimum number of ballots cast regardless of direction); implementations MUST NOT reinterpret `threshold` as one. If a participation quorum is desired, it requires a distinct rule field in a future schema version. The `percentage` threshold type is an **integer percentage (0–100)** of eligible participants.
+
 ### 4.3 Proposal Mode Rules
 
 Canonical schema: `schemas/json/policy/proposal-rules.schema.json`

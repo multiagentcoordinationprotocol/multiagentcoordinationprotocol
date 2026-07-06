@@ -7,7 +7,7 @@
   "properties": {
     "threshold": {
       "type": "object",
-      "description": "Override the required_approvals from ApprovalRequest. Type 'n_of_m' uses a raw count, 'percentage' uses a fraction (0-1) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
+      "description": "Override the required_approvals from ApprovalRequest (RFC-MACP-0012 Section 4.2). This is the approval bar and the ONLY gate in schema_version <= 2 — there is no separate participation quorum. Type 'n_of_m' uses a raw approval count, 'percentage' uses an integer percentage (0-100) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
       "properties": {
         "type": {
           "type": "string",
@@ -17,9 +17,20 @@
         "value": {
           "type": "integer",
           "minimum": 0,
-          "description": "Threshold value: count for n_of_m, fraction (0-1) for percentage, weighted sum for weighted."
+          "description": "Threshold value: approval count for n_of_m, integer percentage 0-100 for percentage, weighted sum for weighted."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "percentage" } },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": { "value": { "maximum": 100 } }
+          }
+        }
+      ]
     },
     "abstention": {
       "type": "object",
