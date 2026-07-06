@@ -179,6 +179,9 @@ At `SessionStart`:
 4. If the policy is not found, the runtime MUST reject the `SessionStart` with error code `UNKNOWN_POLICY_VERSION`.
 5. If the policy's `mode` field is not `*` and does not match the session's mode, the runtime MUST reject with `INVALID_POLICY_DEFINITION`.
 6. The resolved `PolicyDescriptor` (including the full `rules` object) is stored on the session for the session's lifetime.
+7. The session's persisted metadata MUST record the **resolved** policy identifier — `policy.default` when the payload was empty — not the raw payload value. Replay equality (Section 8) and any observer surface (`GetSession`, lifecycle events) refer to the resolved identifier.
+
+**Commitment echo.** `CommitmentPayload.policy_version` binds the commitment to the session's governance policy. An **empty** `policy_version` in the commitment matches the session's bound policy (whatever it resolved to) — a client that started with an empty `policy_version` is not required to echo a value it never sent. A **non-empty** `policy_version` MUST equal the session's resolved policy identifier exactly; otherwise the runtime MUST reject the commitment as invalid. Runtimes MUST NOT require clients to echo `policy.default` literally.
 
 ### 6.2 Commitment Evaluation
 
