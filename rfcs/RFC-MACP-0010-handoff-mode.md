@@ -68,6 +68,53 @@ Implementations MUST enforce the following:
 4. Once an offer has been accepted, no competing accept for that same `handoff_id` is valid.
 5. A Session MAY contain multiple sequential handoff offers to different targets. At most one offer may be outstanding (unaccepted and undeclined) at any time. A new `HandoffOffer` MUST NOT be issued while a prior offer is still pending. Once an offer is accepted, no further offers may be issued for the Session. Only one final `Commitment` may resolve the Session.
 
+### 5.1 Implicit acceptance (synthetic accept)
+
+A bound governance policy MAY declare `acceptance.implicit_accept_timeout_ms`
+(RFC-MACP-0012 §4.5). When it is non-zero, an outstanding offer that the
+target has neither accepted nor declined within the timeout is accepted
+implicitly, under the following contract:
+
+1. **Timing source.** The timeout is measured on the **session timeline**
+   from the runtime's recorded acceptance time of the `HandoffOffer` (the
+   offer log entry's acceptance timestamp) — never from client-supplied
+   envelope timestamps, which are forgeable. Time during which the session
+   is `SUSPENDED` does **not** count toward the timeout: the deadline is
+   reached when the *unsuspended* elapsed session time since offer
+   acceptance meets or exceeds the timeout. Every input to this computation
+   (the offer's recorded acceptance time and the suspend/resume events) is
+   on the recorded timeline.
+
+2. **The synthetic accept enters history.** When the runtime first observes
+   the deadline elapsed, it MUST append a synthetic `HandoffAccept` envelope
+   to the session's accepted history — before evaluating any subsequent
+   message against the offer's acceptance state, and in particular **before
+   any `Commitment` evaluation** that depends on the offer being accepted. A
+   runtime SHOULD observe the deadline eagerly (a timer or sweep, like TTL
+   expiry); it MUST observe it lazily at the latest when processing the next
+   session-scoped message. Because the synthetic accept is an accepted
+   history entry, replay simply replays it: the timer itself is outside the
+   replay boundary, its recorded product is inside — the same construction
+   as runtime-emitted `SessionSuspend`/`SessionResume`/`SessionCancel`
+   envelopes (RFC-MACP-0001 §7.5).
+
+3. **Envelope convention.** The synthetic accept is runtime-emitted; clients
+   MUST NOT submit it via `Send`. Its Envelope `sender` is the offer's
+   `target_participant` (acceptance occurs on the target's behalf, keeping
+   validation rule 3 coherent), `HandoffAcceptPayload.implicit` MUST be
+   `true`, and `accepted_by` MUST be the target. The Envelope
+   `timestamp_unix_ms` SHOULD be the computed deadline (offer acceptance
+   time + timeout + suspended time within the window), not the observation
+   time. The `message_id` MUST be deterministic per offer (RECOMMENDED:
+   `implicit-accept:<handoff_id>`), making emission idempotent under
+   at-least-once processing. A client-submitted `HandoffAccept` carrying
+   `implicit: true` MUST be rejected.
+
+4. **Races resolve by history order.** An explicit `HandoffAccept` or
+   `HandoffDecline` accepted into history before the synthetic accept
+   settles the offer, and the synthetic accept is then never emitted. Once
+   the synthetic accept is in history, a later decline is invalid (rule 4).
+
 ## 6. Terminal semantics
 
 Handoff Mode resolves only when an authorized `Commitment` is accepted.

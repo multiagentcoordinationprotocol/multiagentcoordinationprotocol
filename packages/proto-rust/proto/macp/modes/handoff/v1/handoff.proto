@@ -19,6 +19,10 @@ message HandoffAcceptPayload {
   string handoff_id = 1;
   string accepted_by = 2;
   string reason = 3;
+  // True on the runtime-emitted synthetic accept produced by
+  // acceptance.implicit_accept_timeout_ms (RFC-MACP-0010 §5.1). Clients
+  // MUST NOT submit an accept with implicit = true; runtimes MUST reject it.
+  bool implicit = 4;
 }
 
 message HandoffDeclinePayload {

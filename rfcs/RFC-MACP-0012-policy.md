@@ -145,7 +145,7 @@ Canonical schema: `schemas/json/policy/handoff-rules.schema.json`
 | `acceptance` | `implicit_accept_timeout_ms` | Auto-accept after timeout (0 = no implicit accept) |
 | `commitment` | `authority` | Who can emit the terminal `Commitment` |
 
-**Determinism note:** `implicit_accept_timeout_ms` is **not** evaluated by the policy evaluator at commitment time. It is a declarative parameter consumed by the mode's timer/TTL mechanism, which emits a synthetic accept event into the session history before any commitment evaluation occurs. The policy evaluator only sees the resulting accepted message history, preserving the determinism requirement of Section 6.3.
+**Determinism note:** `implicit_accept_timeout_ms` is **not** evaluated by the policy evaluator at commitment time. It is a declarative parameter consumed by the runtime's synthetic-accept mechanism, whose full normative contract — timing source (the offer's recorded acceptance time on the session timeline, excluding suspended time), lazy-at-the-latest emission into accepted history before commitment evaluation, runtime-emitted envelope convention (`sender` = target, `HandoffAcceptPayload.implicit = true`, deterministic `message_id`), and race resolution by history order — is defined in RFC-MACP-0010 §5.1. The policy evaluator only sees the resulting accepted message history, preserving the determinism requirement of Section 6.3: the timer is outside the replay boundary, its recorded product is inside.
 
 ### 4.6 Extension Mode Rules
 
