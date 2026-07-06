@@ -9,6 +9,24 @@ These JSON fixtures define message sequences for each coordination mode. They ar
 - **Runtime** — validates session state machine transitions and commitment logic
 - **SDKs** — validates projection state tracking (transcript, phase, commitment fields)
 
+## Single canonical source
+
+This directory is the **only** canonical fixture location. `macp-runtime`
+vendors byte-identical copies under `tests/conformance/` for hermetic local
+runs, and its CI oracle job (a) byte-compares the vendored copies against this
+directory and (b) re-runs its conformance suite directly against these files —
+so the spec and the runtime cannot drift silently. Fixture changes land HERE
+first, then sync downstream.
+
+`schema.json` is the JSON Schema (draft 2020-12) for the fixture format —
+payload-type names are fully-qualified proto names
+(`macp.modes.decision.v1.ProposalPayload`, `macp.v1.CommitmentPayload`).
+Reject messages should carry `expected_error_code` (asserted by the runtime
+harness). `lint_fixtures.py` checks internal consistency; note that initiator
+participant-list membership is mode-specific (only handoff's delegated model
+requires it — RFC-0010 §2; quorum's coordinator is explicitly OUTSIDE the
+voter pool per RFC-0011 §2).
+
 ## Fixture Format
 
 Each fixture is a JSON object with:
