@@ -408,10 +408,21 @@ message WatchSignalsResponse {
 // active sessions (initial sync); subsequent responses carry individual
 // lifecycle transitions.
 
-message ListSessionsRequest {}
+message ListSessionsRequest {
+  // Maximum sessions to return. 0 = server-chosen default. Servers MAY cap
+  // the effective size; clients MUST NOT assume the response is complete
+  // unless next_page_token is empty.
+  int32 page_size = 1;
+  // Opaque continuation token from a previous ListSessionsResponse. Empty =
+  // first page. Tokens are short-lived and implementation-defined; a stale
+  // token yields INVALID_ARGUMENT.
+  string page_token = 2;
+}
 
 message ListSessionsResponse {
   repeated SessionMetadata sessions = 1;
+  // Non-empty when more results exist; pass back verbatim as page_token.
+  string next_page_token = 2;
 }
 
 message WatchSessionsRequest {}
