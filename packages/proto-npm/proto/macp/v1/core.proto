@@ -118,6 +118,15 @@ message SessionStartPayload {
   // The runtime MUST preserve all entries but MUST NOT depend on them
   // for core session lifecycle (RFC-MACP-0001 §7.X).
   map<string, bytes> extensions = 9;
+
+  // Maximum cumulative suspended duration in milliseconds before a
+  // SUSPENDED session transitions to EXPIRED (RFC-MACP-0001 §7.5).
+  // Bound at session start like ttl_ms: 0 (or absent) means "use the
+  // runtime's configured default". The runtime MUST record the resolved
+  // cap on the session so replay uses the bound value, never live runtime
+  // configuration — the cap is a deterministic replay input
+  // (RFC-MACP-0003 §2).
+  int64 max_suspend_ms = 10;
 }
 
 message SessionCancelPayload {
