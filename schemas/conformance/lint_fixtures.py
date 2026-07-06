@@ -19,7 +19,7 @@ from pathlib import Path
 
 REQUIRED_TOP_LEVEL = ("mode", "initiator", "participants", "messages", "expected_final_state")
 VALID_EXPECT = {"accept", "reject"}
-VALID_FINAL_STATE = {"Open", "Resolved", "Suspended", "Cancelled"}
+VALID_FINAL_STATE = {"Open", "Resolved", "Expired", "Suspended", "Cancelled"}
 # Schema versions a conformant runtime is expected to accept for an inline policy
 # (RFC-MACP-0012 §3). Additive: 1 is legacy, 2 adds Decision decline-gating.
 VALID_POLICY_SCHEMA_VERSIONS = {1, 2}
@@ -43,8 +43,15 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
 
     participants = set(data["participants"])
     initiator = data["initiator"]
-    if initiator not in participants:
-        errors.append(f"initiator {initiator!r} is not in participants")
+    # Initiator membership is mode-specific. Only the delegated model
+    # (handoff) intrinsically binds the initiator into the participant set
+    # (RFC-MACP-0010 §2 — the owner IS a transfer party). Everywhere else the
+    # initiator's authority is role-based, not membership-based (RFC-0007 §2;
+    # RFC-0011 §2 explicitly separates the coordinator from the voter pool;
+    # RFC-0009 authorizes TaskRequest by role) — an external coordinator
+    # outside the participant list is a legitimate, RFC-faithful shape.
+    if data["mode"] == "macp.mode.handoff.v1" and initiator not in participants:
+        errors.append(f"initiator {initiator!r} is not in participants (delegated model requires it)")
 
     final_state = data["expected_final_state"]
     if final_state not in VALID_FINAL_STATE:
@@ -86,9 +93,24 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
         expect = msg.get("expect")
         if expect not in VALID_EXPECT:
             errors.append(f"messages[{i}].expect {expect!r} not in {sorted(VALID_EXPECT)}")
-        # An ACCEPTED message must come from a participant; a REJECTED message
-        # may legitimately come from an outsider (that is often why it rejects).
-        if expect == "accept" and msg.get("sender") not in participants:
+        # An ACCEPTED message must come from a participant — except the
+        # initiator's role-based messages (SessionStart / Commitment /
+        # CancelSession), which do not require participant-list membership
+        # (see the initiator note above). A REJECTED message may legitimately
+        # come from an outsider (that is often why it rejects).
+        initiator_role_messages = {"SessionStart", "Commitment", "CancelSession"}
+        # Mode-specific messages that are likewise issued by the initiator
+        # ROLE: the quorum coordinator poses the question (RFC-0011 §2), the
+        # task requester issues the request (RFC-0009 §4).
+        initiator_role_messages |= {
+            "macp.mode.quorum.v1": {"ApprovalRequest"},
+            "macp.mode.task.v1": {"TaskRequest"},
+        }.get(data["mode"], set())
+        sender_ok = msg.get("sender") in participants or (
+            msg.get("sender") == initiator
+            and msg.get("message_type") in initiator_role_messages
+        )
+        if expect == "accept" and not sender_ok:
             errors.append(
                 f"messages[{i}] accepted message from non-participant {msg.get('sender')!r}"
             )
@@ -102,7 +124,8 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
 
 def main() -> int:
     fixtures_dir = Path(__file__).parent
-    fixtures = sorted(fixtures_dir.glob("*.json"))
+    # schema.json is the fixture JSON Schema, not a fixture itself.
+    fixtures = sorted(f for f in fixtures_dir.glob("*.json") if f.name != "schema.json")
     if not fixtures:
         print(f"No fixtures found in {fixtures_dir}", file=sys.stderr)
         return 1
