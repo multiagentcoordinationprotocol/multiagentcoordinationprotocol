@@ -44,7 +44,7 @@ A Task Mode Session MUST bind:
 - `configuration_version` - execution profile,
 - `policy_version` — governance or authorization profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - task deadline,
-- `context` - optional task context and constraints.
+- `context_id` - optional task context reference (task constraints and other attached data go in `extensions`).
 
 Base Task Mode v1 assumes exactly one task request per Session.
 

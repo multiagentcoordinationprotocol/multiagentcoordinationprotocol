@@ -44,7 +44,7 @@ A Quorum Mode Session MUST bind:
 - `configuration_version` - approval threshold profile,
 - `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - approval deadline,
-- `context` - optional approval context.
+- `context_id` - optional approval context reference (arbitrary attached data goes in `extensions`).
 
 Base Quorum Mode v1 assumes exactly one approval request per Session.
 

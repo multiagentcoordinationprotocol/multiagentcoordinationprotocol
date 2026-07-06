@@ -43,7 +43,7 @@ A Proposal Mode Session MUST bind:
 - `configuration_version` — rule profile for negotiation parameters,
 - `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - explicit negotiation deadline,
-- `context` - optional negotiation context.
+- `context_id` - optional negotiation context reference (arbitrary attached data goes in `extensions`).
 
 Unless policy states otherwise, the session initiator is the default `Commitment` authority.
 

@@ -50,7 +50,7 @@ A Decision Mode Session MUST bind the following fields explicitly in `SessionSta
 - `configuration_version` - voting or evaluation profile,
 - `policy_version` — governance profile (MAY be empty; when empty, the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
 - `ttl_ms` - explicit decision deadline,
-- `context` - optional bound decision context.
+- `context_id` - optional bound decision context reference (arbitrary attached data goes in `extensions`).
 
 ## 4. Message types
 
