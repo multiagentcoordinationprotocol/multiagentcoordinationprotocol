@@ -189,6 +189,7 @@ A valid `SessionStart` message consists of an Envelope with a non-empty `session
 - `ttl_ms` (MUST be greater than zero),
 - `participants` (when required by the Mode),
 - `policy_version` (MUST be present in the payload; MAY be empty, in which case the runtime resolves to `policy.default` per RFC-MACP-0012 Section 5),
+- `max_suspend_ms` when present (0 or absent means the runtime's configured default; the runtime MUST record the *resolved* cap on the session — see §7.5 and RFC-MACP-0003 §2),
 - `roots` when present,
 - `context_id` when present (see §7.4.1),
 - `extensions` when present (see §7.4.2).
@@ -291,7 +292,7 @@ Like `CancelSession`, they are restricted to the session initiator and policy-de
 
 **Acceptance while suspended.** A `SUSPENDED` session is not `OPEN`; therefore any session-scoped Mode message (Proposal, Vote, Commitment, …) referencing it MUST be rejected with a non-OPEN session error, exactly as for terminal sessions (§7.3). Only `ResumeSession` (and `CancelSession`) may be accepted against a `SUSPENDED` session.
 
-**Pausable TTL.** The session's absolute deadline is banked across suspension rather than continuing to run. On suspend, the runtime records the remaining time `banked = deadline − suspend_time`; on resume, it sets `deadline = resume_time + banked` (the resume's `banked_ms` records this value for replay). A `SUSPENDED` session MUST NOT expire on its pre-suspension deadline. To bound indefinite pauses, a runtime MUST enforce a `MAX_SUSPEND_MS` cap: if the cumulative suspended duration exceeds the cap, the session transitions `SUSPENDED → EXPIRED`. TTL accounting under suspension is normatively deterministic — see RFC-MACP-0003 §2.
+**Pausable TTL.** The session's absolute deadline is banked across suspension rather than continuing to run. On suspend, the runtime records the remaining time `banked = deadline − suspend_time`; on resume, it sets `deadline = resume_time + banked` (the resume's `banked_ms` records this value for replay). A `SUSPENDED` session MUST NOT expire on its pre-suspension deadline. To bound indefinite pauses, a runtime MUST enforce a maximum-suspension cap: if the cumulative suspended duration exceeds the cap, the session transitions `SUSPENDED → EXPIRED`. The cap is **session-bound**: it is resolved at `SessionStart` from `SessionStartPayload.max_suspend_ms` (0 or absent selects the runtime's configured default) and the resolved value MUST be recorded on the session, exactly like `ttl_ms`. Replay MUST use the recorded cap, never live runtime configuration — otherwise two runtimes (or one runtime reconfigured) would produce different terminal states on identical history. TTL accounting under suspension is normatively deterministic — see RFC-MACP-0003 §2.
 
 ---
 
