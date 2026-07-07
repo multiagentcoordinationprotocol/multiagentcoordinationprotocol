@@ -19,8 +19,13 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  "grpcio>=1.74.0",
-  "protobuf>=5.27.0",
+  # Floors MUST match what the pinned grpcio-tools generator emits (see
+  # publish-proto-packages.yml): gencode from grpcio-tools 1.82 requires
+  # protobuf>=7.35 / grpcio>=1.82 at runtime. Bump these together with the
+  # generator pin (issue #53 shipped wheels whose declared floors were below
+  # what the code could import against).
+  "grpcio>=1.82.0",
+  "protobuf>=7.35.0",
 ]
 
 [tool.setuptools]
