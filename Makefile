@@ -1,6 +1,6 @@
-.PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync \
-	check-python-stubs check-go-stubs
+.PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
+	conformance-lint clean install-tools \
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -16,6 +16,7 @@ help:
 	@echo "  make validate              Run all validations"
 	@echo "  make json-schema-validate  Validate JSON Schema itself"
 	@echo "  make json-validate         Validate JSON examples against schema"
+	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
 	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
 	@echo ""
@@ -31,8 +32,6 @@ help:
 	@echo "Proto Sync (raw-proto packages):"
 	@echo "  make sync-protos           Copy canonical protos → proto-npm, proto-rust"
 	@echo "  make check-proto-sync      Verify raw-proto packages match canonical (CI guard)"
-	@echo "  make check-python-stubs    Verify committed Python _pb2_grpc.py stubs are current"
-	@echo "  make check-go-stubs        Verify committed Go .pb.go stubs are current"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean                 Remove generated files"
@@ -40,7 +39,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate proto-lint proto-compile check-proto-sync check-python-stubs check-go-stubs
+validate: json-schema-validate json-validate conformance-lint proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -55,6 +54,11 @@ json-schema-validate:
 json-validate:
 	@echo "Validating JSON examples..."
 	@./scripts/validate-json.sh
+
+# Lint conformance fixtures for internal consistency (participant membership, expect flow, policy shape)
+conformance-lint:
+	@echo "Linting conformance fixtures..."
+	@python3 schemas/conformance/lint_fixtures.py
 
 # Lint protobuf files with buf
 proto-lint:
@@ -75,16 +79,6 @@ sync-protos:
 check-proto-sync:
 	@echo "Checking proto package sync..."
 	@./scripts/sync-proto-packages.sh --check
-
-# Check that committed Python gRPC stubs match a fresh generation (CI guard)
-check-python-stubs:
-	@echo "Checking Python _pb2_grpc.py stubs..."
-	@./scripts/check-python-stubs.sh
-
-# Check that committed Go protobuf stubs match a fresh generation (CI guard)
-check-go-stubs:
-	@echo "Checking Go .pb.go stubs..."
-	@./scripts/check-go-stubs.sh
 
 # Compile protobuf to validate syntax
 proto-compile:

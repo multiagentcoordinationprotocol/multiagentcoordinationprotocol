@@ -72,7 +72,7 @@ If multiple terminal messages are sent concurrently, the first one accepted into
 
 Two RPCs provide programmatic session lifecycle observation:
 
-- **`ListSessions`** — returns `SessionMetadata` for all known sessions. Use for initial sync. Advertised by `sessions.list_sessions`.
+- **`ListSessions`** — returns a page of `SessionMetadata` (bounded by `page_size`; continue with `page_token` until `next_page_token` is empty). Use for initial sync. Advertised by `sessions.list_sessions`.
 - **`WatchSessions`** — server-streaming RPC that emits `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, CANCELLED) in real time. Advertised by `sessions.watch_sessions`.
 
 Control-planes and UIs typically call `ListSessions` on startup for a snapshot, then subscribe to `WatchSessions` for incremental updates. Events are ephemeral and not replayed.

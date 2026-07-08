@@ -54,3 +54,7 @@ Across the transcripts, the examples demonstrate:
 - policy resolution, governance evaluation, and deterministic commitment decisions (RFC-MACP-0012).
 
 The important property is not the specific business scenario in each example. It is that every bound coordination event exists as a bounded transcript with a start, a lifecycle, and a terminal message.
+
+## Related: conformance fixtures
+
+The examples above are illustrative. For **machine-checked** message sequences with per-message accept/reject expectations — consumed by SDK projection harnesses and the runtime conformance suite — see the canonical fixture pack in [`schemas/conformance/`](../schemas/conformance/README.md). Fixtures exist for every standards-track mode plus the `ext.multi_round.v1` extension mode, and CI validates each fixture against the fixture-format schema and lints it for internal consistency.

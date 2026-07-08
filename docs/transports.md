@@ -44,7 +44,7 @@ Returns a `SessionMetadata` snapshot for a given session, including the session'
 
 ### `ListSessions` / `WatchSessions` (Session Observation)
 
-Programmatic session lifecycle observation. `ListSessions` returns `SessionMetadata` for all known sessions (advertised by `sessions.list_sessions`); `WatchSessions` is a server-streaming RPC emitting `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED) in real time (advertised by `sessions.watch_sessions`). Control-planes and UIs typically call `ListSessions` at startup for a snapshot, then subscribe to `WatchSessions` for incremental updates. Events are ephemeral and not replayed. See [docs/lifecycle.md](lifecycle.md#session-observation).
+Programmatic session lifecycle observation. `ListSessions` returns a page of `SessionMetadata` (bounded by `page_size`, continued via `page_token` / `next_page_token`; advertised by `sessions.list_sessions`); `WatchSessions` is a server-streaming RPC emitting `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, CANCELLED) in real time (advertised by `sessions.watch_sessions`). Control-planes and UIs typically page through `ListSessions` at startup for a snapshot, then subscribe to `WatchSessions` for incremental updates. Events are ephemeral and not replayed. See [docs/lifecycle.md](lifecycle.md#session-observation).
 
 ## HTTP
 

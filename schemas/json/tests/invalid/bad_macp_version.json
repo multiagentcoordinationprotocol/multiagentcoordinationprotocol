@@ -1,0 +1,14 @@
+{
+  "_invalid_because": "macp_version MUST be a semantic version string (e.g. '1.0.0'); a 'v' prefix is not part of the canonical mapping.",
+  "macp_version": "v1",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "Commitment",
+  "message_id": "msg-invalid-005",
+  "session_id": "sess-abc123",
+  "sender": "agent://lead",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "commitment_id": "commit-001",
+    "action": "decision.approved"
+  }
+}

@@ -7,7 +7,7 @@ This document defines what MACP SDKs must implement to be considered conformant,
 Every official MACP SDK MUST provide:
 
 ### Transport Layer
-- **MacpClient** — gRPC client implementing all RPCs in `MACPRuntimeService` (currently 22)
+- **MacpClient** — gRPC client implementing all RPCs in `MACPRuntimeService` (currently 24, including `SuspendSession`/`ResumeSession`)
 - **MacpStream** — bidirectional streaming wrapper for `StreamSession`
 - **Authentication** — dev agent (`x-macp-agent-id`) and bearer token modes
 
@@ -63,9 +63,9 @@ Optional features that enhance the SDK but are not required for conformance:
 - **CI enforcement**: `proto-sync` job in each SDK's CI verifies no drift against BSR
 
 ### Conformance Fixture Sync
-- **Source of truth**: `schemas/conformance/` in this RFC repo (copied from Runtime, which is authoritative)
+- **Source of truth**: `schemas/conformance/` in this RFC repo is the only canonical fixture location. Fixture changes land here first, then sync downstream; the runtime vendors byte-identical copies under `tests/conformance/` and its CI byte-compares them against this directory (see `schemas/conformance/README.md`).
 - **Local sync**: `make sync-fixtures` in each SDK
-- **CI enforcement**: `fixture-sync` job verifies fixtures match canonical source
+- **CI enforcement**: `fixture-sync` job verifies fixtures match canonical source; this repo's CI validates every fixture against `schemas/conformance/schema.json` and lints internal consistency (`make conformance-lint`)
 
 ### Adding a New RPC or Mode
 1. Define in RFC repo's proto files

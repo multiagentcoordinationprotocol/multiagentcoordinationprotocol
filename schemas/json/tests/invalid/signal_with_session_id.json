@@ -1,0 +1,13 @@
+{
+  "_invalid_because": "Signals are ambient-plane messages: mode and session_id MUST be empty (RFC-MACP-0001 §6). This Signal carries a mode and a session_id.",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "Signal",
+  "message_id": "msg-invalid-001",
+  "session_id": "sess-abc123",
+  "sender": "agent://observer",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "signal_type": "telemetry.heartbeat"
+  }
+}

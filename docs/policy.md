@@ -35,7 +35,7 @@ A policy descriptor has five required fields:
 Canonical proto: [`schemas/proto/macp/v1/policy.proto`](../schemas/proto/macp/v1/policy.proto)
 JSON Schema: [`schemas/json/macp-policy-descriptor.schema.json`](../schemas/json/macp-policy-descriptor.schema.json)
 
-In the Protobuf wire format, `rules` is `bytes` containing JSON-encoded text. In JSON examples, `rules` is shown as a decoded JSON object for readability.
+In the Protobuf wire format, `rules` is a `string` containing JSON-encoded text. In JSON examples, `rules` is shown as a decoded JSON object for readability.
 
 ## Rule Schemas by Mode
 

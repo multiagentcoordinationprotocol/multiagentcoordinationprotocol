@@ -535,7 +535,7 @@ sequenceDiagram
   participant A as Agent
 
   I->>K: CancelSession(session_id)
-  Note over K: Session transitions OPEN -> EXPIRED<br/>History remains append-only
+  Note over K: Session transitions OPEN -> CANCELLED<br/>History remains append-only
 
   K-->>A: Optional CancelNotice(session_id)
 
