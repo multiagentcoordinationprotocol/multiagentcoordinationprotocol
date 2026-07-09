@@ -88,7 +88,7 @@ jobs:
         # grpcio-tools is PINNED: the generator version determines the gencode's
         # real protobuf/grpcio runtime floors, which must equal the floors
         # declared in packages/proto-python/pyproject.toml. Bump both together.
-        run: pip install build twine grpcio-tools==1.82.0
+        run: pip install build twine grpcio-tools==1.82.1
 
       - name: Generate Python protobuf code
         run: |
