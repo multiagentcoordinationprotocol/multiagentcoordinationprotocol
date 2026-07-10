@@ -1,0 +1,17 @@
+{
+  "_invalid_because": "Session-scoped messages MUST carry a non-empty mode and session_id (RFC-MACP-0001 §6). This SessionStart has both empty.",
+  "macp_version": "1.0.0",
+  "mode": "",
+  "message_type": "SessionStart",
+  "message_id": "msg-invalid-002",
+  "session_id": "",
+  "sender": "agent://initiator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "intent": "decide deployment",
+    "participants": ["agent://initiator", "agent://peer"],
+    "ttl_ms": 60000,
+    "mode_version": "1.0.0",
+    "configuration_version": "config.default"
+  }
+}

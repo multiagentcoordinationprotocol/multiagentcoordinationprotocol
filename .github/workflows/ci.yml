@@ -165,7 +165,7 @@ jobs:
 
       - name: Generate Python and verify
         run: |
-          pip install grpcio-tools==1.82.0  # pinned: keep in sync with publish workflow + proto-python floors
+          pip install grpcio-tools==1.82.1  # pinned: keep in sync with publish workflow + proto-python floors
           python -m grpc_tools.protoc \
             -Ischemas/proto \
             --python_out=packages/proto-python/src \

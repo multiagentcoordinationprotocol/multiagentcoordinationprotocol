@@ -24,7 +24,9 @@ dependencies = [
   # protobuf>=7.35 / grpcio>=1.82 at runtime. Bump these together with the
   # generator pin (issue #53 shipped wheels whose declared floors were below
   # what the code could import against).
-  "grpcio>=1.82.0",
+  # grpcio 1.82.0 was yanked from PyPI; 1.82.1 is the fixed re-release and
+  # the floor its gencode enforces.
+  "grpcio>=1.82.1",
   "protobuf>=7.35.0",
 ]
 

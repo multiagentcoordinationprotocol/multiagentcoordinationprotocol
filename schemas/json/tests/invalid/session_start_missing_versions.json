@@ -1,0 +1,14 @@
+{
+  "_invalid_because": "SessionStart payloads MUST bind ttl_ms, mode_version, and configuration_version for replay integrity (RFC-MACP-0001 §7, RFC-MACP-0003). This payload omits all three.",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.quorum.v1",
+  "message_type": "SessionStart",
+  "message_id": "msg-invalid-006",
+  "session_id": "sess-def456",
+  "sender": "agent://coordinator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "intent": "approve release",
+    "participants": ["agent://a", "agent://b", "agent://c"]
+  }
+}

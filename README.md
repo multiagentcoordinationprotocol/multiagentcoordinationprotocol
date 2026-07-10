@@ -70,6 +70,7 @@ MACP/
       task.proto
       handoff.proto
       quorum.proto
+      multi_round.proto
     proto/                    # canonical versioned schemas
       macp/v1/
         envelope.proto
@@ -85,14 +86,21 @@ MACP/
         handoff.proto
       macp/modes/quorum/v1/
         quorum.proto
+      macp/modes/multi_round/v1/
+        multi_round.proto     # ext.multi_round.v1 extension mode
     json/
       macp-envelope.schema.json
       macp-agent-manifest.schema.json
       macp-mode-descriptor.schema.json
       macp-session-metadata.schema.json
+      macp-session-lifecycle-event.schema.json
+      macp-run-descriptor.schema.json
+      macp-agent-bootstrap.schema.json
       macp-ack.schema.json
       macp-error.schema.json
       macp-policy-descriptor.schema.json
+      tests/
+        invalid/          # negative envelope fixtures (MUST fail validation)
       policy/
         decision-rules.schema.json
         quorum-rules.schema.json
@@ -101,7 +109,10 @@ MACP/
         handoff-rules.schema.json
     conformance/
       README.md
+      schema.json         # fixture-format JSON Schema
+      lint_fixtures.py    # internal-consistency linter (CI)
       decision_happy_path.json
+      decision_negative_outcome.json
       decision_reject_paths.json
       proposal_happy_path.json
       proposal_reject_paths.json
@@ -173,6 +184,8 @@ MACP runtimes and clients negotiate protocol compatibility and optional features
 The base capability model supports:
 
 - `sessions.stream` - bidirectional session streams
+- `sessions.list_sessions` - paginated session metadata listing
+- `sessions.watch_sessions` - streaming session lifecycle events
 - `cancellation.cancelSession` - explicit session cancellation
 - `progress.progress` - non-binding progress updates
 - `manifest.getManifest` - runtime/agent manifest discovery
@@ -242,7 +255,7 @@ See `CONTRIBUTING.md` for the release workflow.
 make validate
 ```
 
-Validation checks JSON schemas/examples and compiles all versioned Protobuf definitions if local tooling is available.
+`make validate` meta-validates all JSON Schemas, validates every example and conformance fixture against its schema, asserts the negative envelope fixtures are rejected, lints conformance fixtures for internal consistency, lints and compiles all versioned Protobuf definitions, and verifies the raw-proto packages match the canonical schemas. Run `make help` for individual targets; `make install-tools` installs `ajv-cli`, `protoc`, and `buf`.
 
 ## License
 

@@ -21,6 +21,10 @@ first, then sync downstream.
 `schema.json` is the JSON Schema (draft 2020-12) for the fixture format —
 payload-type names are fully-qualified proto names
 (`macp.modes.decision.v1.ProposalPayload`, `macp.v1.CommitmentPayload`).
+Every fixture in this directory is validated against `schema.json` in CI
+(`scripts/validate-json.sh`). Keys starting with `_` (e.g. `_comment`) are
+non-normative annotations allowed at the fixture and message level; harnesses
+MUST ignore them.
 Reject messages should carry `expected_error_code` (asserted by the runtime
 harness). `lint_fixtures.py` checks internal consistency; note that initiator
 participant-list membership is mode-specific (only handoff's delegated model

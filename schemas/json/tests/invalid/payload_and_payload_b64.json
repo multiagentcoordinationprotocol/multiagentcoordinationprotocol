@@ -1,0 +1,15 @@
+{
+  "_invalid_because": "An envelope carries EITHER a decoded 'payload' OR opaque 'payload_b64' bytes, never both (RFC-MACP-0001 §10). This envelope carries both.",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.task.v1",
+  "message_type": "Progress",
+  "message_id": "msg-invalid-003",
+  "session_id": "sess-abc123",
+  "sender": "agent://worker",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "progress": 1,
+    "total": 3
+  },
+  "payload_b64": "eyJwcm9ncmVzcyI6IDF9"
+}

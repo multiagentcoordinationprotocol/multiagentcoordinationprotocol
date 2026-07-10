@@ -192,7 +192,7 @@ if (userProfile.riskScore > 50) {
 }
 ```
 
-**Better:** Include necessary context in SessionStart `context` field (base64-encoded)
+**Better:** Bind necessary context at SessionStart — reference it via `context_id` (an opaque identifier the runtime preserves but never interprets) or carry protocol-specific bytes in `extensions`
 
 ### Randomness
 
@@ -250,7 +250,7 @@ For financial transactions, database writes, etc.:
 2. **Verify versions**: macp_version, mode, mode_version, configuration_version match
 3. **Replay messages**: Feed messages to MACP runtime in same order
 4. **Compare state transitions**: OPEN → RESOLVED/EXPIRED must match
-5. **Compare terminal message**: Commitment/SessionEnd must match (if deterministic Mode)
+5. **Compare terminal message**: the terminal `Commitment` (or mode-defined terminal message) must match (if deterministic Mode)
 
 ### Cryptographic Verification (Optional)
 

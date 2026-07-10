@@ -18,6 +18,9 @@ AGENT_BOOTSTRAP_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-bootstrap.schema
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
 TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*.json"
+CONFORMANCE_DIR="${PROJECT_ROOT}/schemas/conformance"
+CONFORMANCE_SCHEMA="${CONFORMANCE_DIR}/schema.json"
+INVALID_ENVELOPE_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid"
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -212,6 +215,54 @@ print(count)
         echo ""
     fi
 done
+
+# Validate conformance fixtures against the fixture-format schema.
+# lint_fixtures.py checks internal consistency; this checks structural shape.
+if [ -f "${CONFORMANCE_SCHEMA}" ]; then
+    echo "-- Conformance fixtures (${CONFORMANCE_DIR}/*.json) --"
+    echo "Schema: ${CONFORMANCE_SCHEMA}"
+    echo ""
+
+    for fixture_file in "${CONFORMANCE_DIR}"/*.json; do
+        if [ -f "$fixture_file" ] && [ "$(basename "$fixture_file")" != "schema.json" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating: conformance/$(basename "$fixture_file")"
+
+            if ajv validate -s "${CONFORMANCE_SCHEMA}" -d "${fixture_file}" --spec=draft2020 --strict=false; then
+                VALIDATED=$((VALIDATED + 1))
+                echo "  [OK] Valid"
+            else
+                echo "  [X] Invalid"
+                exit 1
+            fi
+            echo ""
+        fi
+    done
+fi
+
+# Negative tests: envelopes that MUST be rejected by the envelope schema.
+# If one of these validates, a schema change has loosened a constraint.
+if [ -d "${INVALID_ENVELOPE_DIR}" ]; then
+    echo "-- Negative envelope tests (${INVALID_ENVELOPE_DIR}/*.json) --"
+    echo "  Each fixture MUST FAIL envelope-schema validation."
+    echo ""
+
+    for invalid_file in "${INVALID_ENVELOPE_DIR}"/*.json; do
+        if [ -f "$invalid_file" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating (expect reject): tests/invalid/$(basename "$invalid_file")"
+
+            if ajv validate -s "${ENVELOPE_SCHEMA}" -d "${invalid_file}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+                echo "  [X] Fixture unexpectedly PASSED validation — the envelope schema no longer rejects this case"
+                exit 1
+            else
+                VALIDATED=$((VALIDATED + 1))
+                echo "  [OK] Correctly rejected"
+            fi
+            echo ""
+        fi
+    done
+fi
 
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON example files found"

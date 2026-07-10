@@ -1,0 +1,10 @@
+{
+  "_invalid_because": "Every envelope MUST carry exactly one of 'payload' or 'payload_b64' (RFC-MACP-0001 §10). This envelope carries neither.",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "Commitment",
+  "message_id": "msg-invalid-004",
+  "session_id": "sess-abc123",
+  "sender": "agent://lead",
+  "timestamp": "2026-07-07T00:00:00Z"
+}
