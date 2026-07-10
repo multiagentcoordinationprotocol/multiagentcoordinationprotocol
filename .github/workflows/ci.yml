@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install buf
-        uses: bufbuild/buf-setup-action@v1
+        uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -96,7 +96,7 @@ jobs:
 
       - name: Push to BSR
         if: github.ref == 'refs/heads/main'
-        uses: bufbuild/buf-push-action@v1
+        uses: bufbuild/buf-push-action@a654ff18effe4641ebea4a4ce242c49800728459 # v1
         with:
           input: schemas/proto
           buf_token: ${{ secrets.BUF_TOKEN }}
@@ -110,7 +110,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install buf
-        uses: bufbuild/buf-setup-action@v1
+        uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
