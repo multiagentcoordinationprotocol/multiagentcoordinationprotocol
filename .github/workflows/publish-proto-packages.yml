@@ -151,7 +151,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
       - uses: actions/setup-go@v6
         with:
           go-version: '1.23'
@@ -183,7 +183,7 @@ jobs:
     needs: [extract-version]
     steps:
       - uses: actions/checkout@v7
-      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -214,7 +214,7 @@ jobs:
     needs: [extract-version, publish-java]
     steps:
       - uses: actions/checkout@v7
-      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -258,7 +258,7 @@ jobs:
     needs: [extract-version]
     steps:
       - uses: actions/checkout@v7
-      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
