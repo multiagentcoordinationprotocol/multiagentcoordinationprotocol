@@ -2,21 +2,26 @@
 
 > How to add a new MACP-compliant agent to a deployment. One page, five steps.
 
-Under the **direct-agent-auth** architecture (see `ui-console/plans/direct-agent-auth.md`):
+Under the **direct-agent-auth** architecture:
 
-- Every agent authenticates to the runtime **directly** via Bearer token.
+- Every agent authenticates to the runtime **directly** via a Bearer credential — either a static token or a short-lived JWT (see Step 2).
 - The control-plane **never** emits envelopes on behalf of agents — it is a scenario-agnostic observer.
 - The initiator agent of a session calls `Send(SessionStart)` itself; non-initiator participants open their own `StreamSession` to receive events and emit their own envelopes.
 
-This page shows how to onboard agent **N** in a static-token deployment (i.e., before Phase 6 JWT federation lands). Once Phase 6 ships, step 2 changes to "issue a JWT via the auth service"; the rest stays the same.
+This satisfies RFC-MACP-0004 §4 (sender MUST be derived from authenticated identity) and RFC-MACP-0001 §5.3 (no MACP bypass). The reference deployment (`macp-playground`) documents its own side of this — bootstrap files, JWT minting, policy registration — in [`docs/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-playground/blob/main/docs/direct-agent-auth.md); the SDKs document the agent-side patterns (initiator/non-initiator code, the `expected_sender` guardrail, `session.cancel()`) in [`macp-sdk-python/docs/guides/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-python/blob/main/docs/guides/direct-agent-auth.md) and [`macp-sdk-typescript/docs/guides/authentication.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript/blob/main/docs/guides/authentication.md).
+
+This page shows two ways to get a Bearer credential to your agent — pick whichever matches your scenario-producing tier:
+
+- **Static bearer tokens** (Steps 2A/3A) — works with any runtime deployment, no extra services required.
+- **On-demand JWT minting** (Steps 2B/3B) — how the reference `macp-playground` deployment does it today; nothing to register per agent.
 
 ---
 
 ## Prerequisites
 
 - A running MACP runtime with its gRPC endpoint reachable from your agent process (e.g., `runtime.internal:50051`).
-- Admin access to the runtime's environment (`MACP_AUTH_TOKENS_JSON`).
-- Admin access to the scenario-producing tier (e.g., examples-service `EXAMPLES_SERVICE_AGENT_TOKENS_JSON`).
+- **Static bearer path:** admin access to the runtime's environment (`MACP_AUTH_TOKENS_JSON` / `MACP_AUTH_TOKENS_FILE`).
+- **JWT path:** admin access to the runtime's JWT resolver config (`MACP_AUTH_ISSUER`, `MACP_AUTH_AUDIENCE`, `MACP_AUTH_JWKS_URL`) and, if using `macp-playground`, to its `MACP_AUTH_SERVICE_URL` setting — see that repo's [deployment checklist](https://github.com/multiagentcoordinationprotocol/macp-playground/blob/main/docs/direct-agent-auth.md#deployment-checklist).
 - Either `macp-sdk-python >= 0.2.0` (PyPI) or `macp-sdk-typescript >= 0.2.0` (npm) available to your agent runtime.
 
 ---
@@ -36,11 +41,15 @@ The `agent://…` prefix is a convention used by some integration tests, not a p
 **Rules:**
 - Must be non-empty.
 - Must be unique across all agents that can talk to the same runtime identity registry.
-- Must match the `sender` field in the runtime's identity entry for this agent (step 2).
+- Must match the `sender` the runtime resolves for this agent's credential (step 2).
 
 ---
 
-## Step 2 — Generate a Bearer token and register the identity on the runtime
+## Step 2 — Configure the runtime's auth resolver
+
+This is a one-time deployment setting, not a per-agent step — the runtime can run either or both resolvers at once (JWT-shaped tokens route to the JWT resolver, opaque tokens to the static one).
+
+### Option A — Static bearer tokens
 
 Generate a strong random token:
 
@@ -48,7 +57,7 @@ Generate a strong random token:
 openssl rand -hex 32
 ```
 
-Add an entry to the runtime's `MACP_AUTH_TOKENS_JSON`. The runtime loads this map once at boot (`runtime/src/security.rs:109-157`):
+Add an entry to the runtime's `MACP_AUTH_TOKENS_JSON`. The runtime loads this map once at boot (`crates/macp-auth/src/security.rs`, `AuthConfig::from_env`):
 
 ```json
 {
@@ -76,40 +85,62 @@ Add an entry to the runtime's `MACP_AUTH_TOKENS_JSON`. The runtime loads this ma
 | `max_open_sessions: N` | You want per-agent concurrency caps. |
 | `can_manage_mode_registry: true` | The agent manages registered modes/policies (rare; usually false). |
 
-Redeploy the runtime (or wait for hot-reload, if your deployment supports it).
+Redeploy the runtime (or wait for hot-reload, if your deployment supports it). Continue to **Step 3, Option A**.
 
----
+### Option B — JWT verification (the `macp-playground` reference deployment)
 
-## Step 3 — Register the token on the scenario-producing tier
+Point the runtime at a JWKS source instead of a static map — no per-agent entry needed here, the runtime derives `sender` from each JWT's `sub` claim:
 
-In `examples-service/.env` (or equivalent), add an entry to `EXAMPLES_SERVICE_AGENT_TOKENS_JSON`:
-
-```json
-{
-  "risk-agent":    "<existing token>",
-  "fraud-agent":   "<existing token>",
-  "my-new-agent":  "<your-new-token>"
-}
+```bash
+export MACP_AUTH_ISSUER=<issuer>
+export MACP_AUTH_AUDIENCE=<audience>       # default: macp-runtime
+export MACP_AUTH_JWKS_URL=<auth-service>/.well-known/jwks.json
 ```
 
-The examples-service injects `runtime.bearerToken` into each agent's bootstrap at spawn time by looking up the sender in this map.
-
-If you are running in a different scenario-producing tier, inject the equivalent env var using that tier's conventions. The only requirement is that the agent's bootstrap ends up with the correct Bearer token in `runtime.bearerToken`.
+The default algorithm allowlist is RS256/ES256; HS256 requires an explicit `MACP_AUTH_JWT_ALGS=HS256` opt-in. Continue to **Step 3, Option B**.
 
 ---
 
-## Step 4 — Register the agent in the scenario catalog
+## Step 3 — Get the Bearer credential to your agent process
 
-In `examples-service/src/example-agents/example-agent-catalog.service.ts`, add an entry:
+### Option A — Static bearer (your own scenario-producing tier)
+
+Inject the token you generated in Step 2A into your agent's bootstrap however your own tier does configuration — an env var, a secrets manager entry, whatever fits. The only requirement is that the agent's bootstrap ends up with the correct Bearer token in its runtime-auth field (e.g. `runtime.bearerToken`).
+
+### Option B — `macp-playground` (automatic, nothing to register)
+
+The playground mints a short-lived RS256 JWT per agent spawn — `AuthTokenMinterService` calls `POST /tokens` on the auth-service configured via `MACP_AUTH_SERVICE_URL`, scoped from the agent's role (`can_start_sessions`, `allowed_modes`) with optional per-sender overrides via `MACP_AUTH_SCOPES_JSON`, and bakes the result into the agent's bootstrap file. There is no static token map to maintain and no per-agent entry to add. See the "AUTH-2" section of [`docs/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-playground/blob/main/docs/direct-agent-auth.md#auth-2--on-demand-jwt-minting) for the minting flow, caching, and TTL constraints.
+
+---
+
+## Step 4 — Register the agent in the scenario catalog (`macp-playground` only)
+
+Skip this step if you're wiring an agent into your own scenario-producing tier — it's specific to the `macp-playground` reference implementation, which needs two files:
+
+1. Add an entry to `src/example-agents/example-agent-catalog.service.ts`:
 
 ```ts
 {
   agentRef: 'my-new-agent',
-  framework: 'python' /* or 'langgraph' | 'langchain' | 'crewai' | 'node' */,
+  name: 'My New Agent',
   role: 'evaluator',
-  entrypoint: 'agents/my_new_agent/main.py', // or 'src/example-agents/runtime/my-new-agent.worker.ts'
-  bootstrap: { strategy: 'external' },
+  description: 'What this agent evaluates.',
+  framework: 'python', // or 'langgraph' | 'langchain' | 'crewai' | 'node'
   supportedScenarioRefs: ['fraud/high-value-new-device@1.0.0'],
+}
+```
+
+2. Create a matching manifest at `agents/manifests/my-new-agent.json`:
+
+```json
+{
+  "id": "my-new-agent",
+  "name": "My New Agent",
+  "framework": "python",
+  "version": "1.0.0",
+  "entrypoint": { "type": "python_file", "value": "agents/my_new_agent/main.py" },
+  "host": { "python": "python3", "cwd": ".", "env": {}, "startupTimeoutMs": 30000 },
+  "macp": { "role": "evaluator", "supportedMessageTypes": ["Evaluation"], "capabilities": [] }
 }
 ```
 
@@ -202,7 +233,7 @@ if (bootstrap.initiator) {
 
 ### Cancellation (Option A — RFC-pure default)
 
-Expose a local HTTP `POST <cancelCallback.path>` endpoint from your agent. The control-plane's UI-triggered cancel calls it; your agent responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.2 — only the initiator (or a policy-delegated role) may cancel. See `examples-service/src/example-agents/runtime/cancel-callback-server.ts` for a reference implementation.
+Both SDKs auto-bind a local HTTP `POST <cancelCallback.path>` listener for you — you don't need to hand-roll one. The control-plane's UI-triggered cancel calls that listener; the SDK responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.2 — only the initiator (or a policy-delegated role) may cancel. See the SDK guides linked above if you need to override the default cancel behavior.
 
 ---
 
@@ -219,17 +250,18 @@ Expose a local HTTP `POST <cancelCallback.path>` endpoint from your agent. The c
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Agent logs `UNAUTHENTICATED` on first `send` | Runtime doesn't know the token | Check step 2 — token and sender in `MACP_AUTH_TOKENS_JSON` must exactly match. Redeploy runtime. |
-| Agent throws `bootstrap.runtime.bearerToken is required` | Token map missing the sender | Check step 3 — add entry to `EXAMPLES_SERVICE_AGENT_TOKENS_JSON`. |
-| Initiator's SessionStart is rejected with `Forbidden` | `can_start_sessions: false` on the runtime identity | Flip it to `true` in the runtime's `MACP_AUTH_TOKENS_JSON` entry. |
-| Agent sends envelopes but they're rejected with `sender does not match identity` | Sender string mismatch | The string in `bootstrap.participant.participantId`, the envelope's `sender` field, and the runtime's identity `sender` field must all be identical byte-for-byte. Check for stray `agent://` prefixes. |
-| Cancel from UI doesn't take effect | Missing `cancelCallback` or unreachable | Verify the callback is exposed from the agent and reachable from the control-plane. Verify `bootstrap.cancelCallback` is populated. |
+| Agent logs `UNAUTHENTICATED` on first `send` | Runtime doesn't recognize the credential | Static bearer: check Step 2A — token and sender in `MACP_AUTH_TOKENS_JSON` must match, then redeploy. JWT: check Step 2B — issuer/audience/JWKS config on the runtime. |
+| Agent's bootstrap is missing its Bearer credential | Credential never reached the agent | Static bearer: check Step 3A. `macp-playground`: check its `auth_mint_failure` logs and that `MACP_AUTH_SERVICE_URL` is reachable (Step 3B). |
+| Initiator's SessionStart is rejected with `Forbidden` | `can_start_sessions: false` on the identity | Static bearer: flip it to `true` in `MACP_AUTH_TOKENS_JSON`. JWT: check the minted token's `allowed_modes`/`can_start_sessions` scopes. |
+| Agent sends envelopes but they're rejected with `sender does not match identity` | Sender string mismatch | The string in `bootstrap.participant.participantId`, the envelope's `sender` field, and the runtime-resolved identity `sender` must all be identical byte-for-byte. Check for stray `agent://` prefixes. |
+| Cancel from UI doesn't take effect | Missing or unreachable cancel-callback listener | Verify the SDK's auto-bound listener is reachable from the control-plane and `bootstrap.cancelCallback` is populated. |
 
 ---
 
 ## See also
 
-- `ui-console/plans/direct-agent-auth.md` — full architecture + invariants + RFC justification
+- [`macp-playground/docs/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-playground/blob/main/docs/direct-agent-auth.md) — reference deployment's bootstrap production, JWT minting, and policy registration
+- [`macp-sdk-python/docs/guides/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-python/blob/main/docs/guides/direct-agent-auth.md) and [`macp-sdk-typescript/docs/guides/authentication.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript/blob/main/docs/guides/authentication.md) — agent-side patterns
 - `schemas/json/macp-run-descriptor.schema.json` — control-plane `POST /runs` contract
 - `schemas/json/macp-agent-bootstrap.schema.json` — agent bootstrap contract
 - `schemas/json/macp-session-metadata.schema.json` — session metadata runtime returns
