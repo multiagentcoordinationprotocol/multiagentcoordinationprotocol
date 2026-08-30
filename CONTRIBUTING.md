@@ -36,7 +36,7 @@ Breaking changes require:
 
 ## Registry Additions
 
-To add an entry to a registry (capabilities, error codes, media types, modes, or transports), submit a PR that adds a row to the relevant table in `registries/`. Each entry MUST include a `Status` value (see `registries/README.md` for valid statuses). New identifiers MUST NOT conflict with existing entries.
+To add an entry to a registry (capabilities, error codes, media types, modes, or transports), submit a PR that adds a row to the relevant table in `registries/`. Each entry MUST include a `Status` value (see `registries/README.md` for valid statuses). New identifiers MUST NOT conflict with existing entries. A brand-new registry *file* must also be added to `registries/README.md` and `README.md`'s repo tree — `make check-indexes` enforces this.
 
 ## RFC Proposals
 
@@ -44,7 +44,8 @@ To propose a new RFC:
 
 1. Open an issue using the [RFC proposal template](.github/ISSUE_TEMPLATE/rfc_proposal.yml).
 2. After discussion, create `rfcs/RFC-MACP-XXXX-<topic>.md` (sequential numbering) following the structure of existing RFCs.
-3. Submit a PR referencing the issue; RFCs are accepted through community consensus.
+3. Add the new file to every index that enumerates RFCs — `README.md`'s repo tree, `rfcs/README.md`, `rfcs/RFC-MACP-0001.md`, and this file's Normative RFCs list. `make check-indexes` verifies this and names anything you missed.
+4. Submit a PR referencing the issue; RFCs are accepted through community consensus.
 
 ## Technical Requirements
 
@@ -52,6 +53,7 @@ To propose a new RFC:
 - JSON examples MUST validate against the JSON Schema.
 - Backward compatibility MUST be addressed explicitly.
 - Mode extensions MUST NOT violate MACP Core invariants.
+- Index lists MUST stay in sync with the files on disk (`make check-indexes`).
 
 ## Proto Package Publishing
 
