@@ -1,5 +1,5 @@
 .PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
-	conformance-lint cmt-hash-vectors clean install-tools \
+	conformance-lint cmt-hash-vectors check-indexes clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
 PROTO_SRC := schemas/proto
@@ -18,6 +18,7 @@ help:
 	@echo "  make json-validate         Validate JSON examples against schema"
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
+	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
 	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
 	@echo ""
@@ -40,7 +41,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors check-indexes proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -65,6 +66,11 @@ conformance-lint:
 cmt-hash-vectors:
 	@echo "Checking commitment-hash vectors..."
 	@python3 scripts/check-cmt-hash-vectors.py
+
+# Check the hand-maintained RFC/registry/fixture indexes against files on disk
+check-indexes:
+	@echo "Checking indexes..."
+	@./scripts/check-indexes.sh
 
 # Lint protobuf files with buf
 proto-lint:

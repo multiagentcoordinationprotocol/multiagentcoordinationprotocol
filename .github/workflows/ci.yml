@@ -44,6 +44,12 @@ jobs:
           echo "Checking canonical commitment-hash vectors..."
           python3 scripts/check-cmt-hash-vectors.py
 
+      - name: Check index sync (RFCs, registries, fixtures)
+        run: |
+          echo "Checking hand-maintained indexes against files on disk..."
+          chmod +x scripts/check-indexes.sh
+          ./scripts/check-indexes.sh
+
       - name: Install protoc
         run: |
           sudo apt-get update
