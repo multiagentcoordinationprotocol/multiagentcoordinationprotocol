@@ -14,6 +14,7 @@ Each registry entry has a status:
 ## Registries
 
 - [capabilities.md](capabilities.md)
+- [commitment-hash.md](commitment-hash.md)
 - [error-codes.md](error-codes.md)
 - [media-types.md](media-types.md)
 - [modes.md](modes.md)

@@ -54,6 +54,7 @@ MACP/
   registries/
     README.md
     capabilities.md
+    commitment-hash.md
     error-codes.md
     media-types.md
     modes.md
