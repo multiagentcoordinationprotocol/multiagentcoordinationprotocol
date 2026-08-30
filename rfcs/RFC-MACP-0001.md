@@ -16,6 +16,7 @@ The MACP standards set has been split into focused documents.
 - [RFC-MACP-0010 Handoff Mode](RFC-MACP-0010-handoff-mode.md)
 - [RFC-MACP-0011 Quorum Mode](RFC-MACP-0011-quorum-mode.md)
 - [RFC-MACP-0012 Governance Policy Framework](RFC-MACP-0012-policy.md)
+- [RFC-MACP-0013 Canonical Commitment Hash](RFC-MACP-0013-commitment-hash.md)
 
 ## Notes
 
