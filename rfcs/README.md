@@ -18,6 +18,6 @@ The MACP standard is intentionally split.
 
 ### Companion Content
 
-- **`registries/`** - initial registry definitions for capabilities, error codes, media types, transports, and standard mode identifiers
+- **`registries/`** - registry definitions for capabilities, error codes, media types, modes, transports, and more
 - **`schemas/`** - canonical Protobuf definitions and human-friendly entrypoints for Core and standard modes
 - **`examples/`** - discovery examples and one transcript for each standard mode in the main repo

@@ -32,8 +32,8 @@ A policy descriptor has five required fields:
 | `rules` | object | Mode-specific governance rules (see Rule Schemas) |
 | `schema_version` | uint32 | Version of the rule schema used (`1` or `2`; version `2` adds Decision Mode decline-gating, additive) |
 
-Canonical proto: [`schemas/proto/macp/v1/policy.proto`](../schemas/proto/macp/v1/policy.proto)
-JSON Schema: [`schemas/json/macp-policy-descriptor.schema.json`](../schemas/json/macp-policy-descriptor.schema.json)
+Canonical proto: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
+JSON Schema: [`schemas/json/macp-policy-descriptor.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-policy-descriptor.schema.json)
 
 In the Protobuf wire format, `rules` is a `string` containing JSON-encoded text. In JSON examples, `rules` is shown as a decoded JSON object for readability.
 
@@ -43,11 +43,11 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 
 | Mode | Rule Schema | Key Parameters |
 |------|-------------|----------------|
-| Decision | [`decision-rules.schema.json`](../schemas/json/policy/decision-rules.schema.json) | Voting algorithm, quorum, objection handling, evaluation constraints, commitment authority |
-| Quorum | [`quorum-rules.schema.json`](../schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority |
-| Proposal | [`proposal-rules.schema.json`](../schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior |
-| Task | [`task-rules.schema.json`](../schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority |
-| Handoff | [`handoff-rules.schema.json`](../schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority |
+| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, quorum, objection handling, evaluation constraints, commitment authority |
+| Quorum | [`quorum-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority |
+| Proposal | [`proposal-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior |
+| Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority |
+| Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority |
 
 Decision Mode supports six voting algorithms: `none`, `majority`, `supermajority`, `unanimous`, `weighted`, and `plurality`. See [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md) for full details.
 
@@ -97,7 +97,7 @@ Policies are managed through five gRPC RPCs on `MACPRuntimeService`:
 
 Registration constraints: `policy.default` cannot be registered or unregistered; `policy_id` must be unique; `rules` must validate against the target mode's rule schema.
 
-Canonical proto definitions: [`schemas/proto/macp/v1/policy.proto`](../schemas/proto/macp/v1/policy.proto)
+Canonical proto definitions: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
 
 ## Replay Invariant
 
@@ -105,8 +105,8 @@ The resolved `PolicyDescriptor` MUST be persisted as part of the session snapsho
 
 ## Examples
 
-- [`examples/policy-decision-session.json`](../examples/policy-decision-session.json) — Decision Mode session governed by a supermajority voting policy with quorum and critical-severity veto
-- [`examples/policy-registration-exchange.json`](../examples/policy-registration-exchange.json) — Dynamic policy registration request and response via gRPC
+- [`examples/policy-decision-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-decision-session.json) — Decision Mode session governed by a supermajority voting policy with quorum and critical-severity veto
+- [`examples/policy-registration-exchange.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-registration-exchange.json) — Dynamic policy registration request and response via gRPC
 
 ## Error Codes
 

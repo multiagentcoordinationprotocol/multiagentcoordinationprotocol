@@ -15,7 +15,7 @@ Each MACP component publishes a manifest describing:
 - supported coordination modes
 - transport endpoints
 
-The manifest JSON Schema is at [`schemas/json/macp-agent-manifest.schema.json`](../schemas/json/macp-agent-manifest.schema.json). A full example is available at [`examples/discovery/agent_manifest.json`](../examples/discovery/agent_manifest.json).
+The manifest JSON Schema is at [`schemas/json/macp-agent-manifest.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-agent-manifest.schema.json). A full example is available at [`examples/discovery/agent_manifest.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/agent_manifest.json).
 
 ## Well-known Discovery
 
