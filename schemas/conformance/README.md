@@ -114,9 +114,15 @@ canonical commitment hash algorithm), not session transcripts. Each vector
 pins the projected `CommitmentPayload`, the JCS-canonicalized bytes, the
 domain-separated preimage, and the resulting hash, so a diverging
 implementation can identify exactly which step it diverged at. This is a
-different shape from `schema.json`'s session-transcript format and is
-validated against its own `cmt-hash/vector-schema.json`, deliberately outside
-`schema.json`'s closed shape.
+different shape from `schema.json`'s session-transcript format, deliberately
+outside `schema.json`'s closed shape. `cmt-hash/vector-schema.json` documents
+that shape, including RFC-MACP-0013 Section 5's frozen nine-field constraint,
+but nothing invokes it directly (no ajv or other validator runs against it);
+the shape it documents is instead enforced in code by
+`scripts/check-cmt-hash-vectors.py`, which asserts each vector's `payload`
+keys are a subset of exactly those nine fields (and, when present,
+`supersedes`'s keys are a subset of exactly `session_id` and
+`commitment_hash`), failing loudly on any unrecognized field.
 
 Both `scripts/validate-json.sh` (via `"${CONFORMANCE_DIR}"/*.json`) and
 `lint_fixtures.py` (via `fixtures_dir.glob("*.json")`) glob this directory

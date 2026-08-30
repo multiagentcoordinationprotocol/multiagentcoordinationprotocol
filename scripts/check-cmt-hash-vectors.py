@@ -43,6 +43,24 @@ from pathlib import Path
 VECTORS_DIR = Path(__file__).resolve().parent.parent / "schemas" / "conformance" / "cmt-hash"
 PREIMAGE_PREFIX = b"macp-commitment-hash/1:"
 
+# RFC-MACP-0013 Section 5's frozen nine-field constraint (D5): a
+# CommitmentPayload projection MUST contain exactly these fields and no
+# others. A payload carrying an unrecognized field is not a valid input to
+# the Section 4 algorithm and MUST be treated as cannot-verify (Section 5)
+# rather than silently hashed.
+ALLOWED_PAYLOAD_FIELDS = {
+    "commitment_id",
+    "action",
+    "authority_scope",
+    "reason",
+    "mode_version",
+    "policy_version",
+    "configuration_version",
+    "outcome_positive",
+    "supersedes",
+}
+ALLOWED_SUPERSEDES_FIELDS = {"session_id", "commitment_hash"}
+
 # Expected shape of the fixture pack (RFC-MACP-0013 Section 11). These are
 # asserted after processing so a silently-deleted vector file, or a silently
 # -removed must_differ_from field, fails the run instead of just shrinking
@@ -124,6 +142,31 @@ def check_vector(path: Path) -> list[str]:
     for key in ("name", "payload", "jcs_utf8_hex", "preimage_utf8_hex", "hash"):
         if key not in data:
             errors.append(f"{path.name}: missing required key '{key}'")
+    if errors:
+        return errors
+
+    # Frozen nine-field constraint (RFC-MACP-0013 Section 5, D5): any
+    # unrecognized top-level payload field -- or unrecognized field nested
+    # under 'supersedes' -- means this payload is not a valid input to the
+    # Section 4 algorithm at all, so we fail loudly here instead of hashing
+    # it and reporting a misleadingly "valid" canonical hash.
+    payload = data["payload"]
+    if isinstance(payload, dict):
+        for field in payload:
+            if field not in ALLOWED_PAYLOAD_FIELDS:
+                errors.append(
+                    f"{path.name}: payload has unrecognized field '{field}' -- "
+                    "RFC-MACP-0013 Section 5's frozen field set permits only "
+                    f"{sorted(ALLOWED_PAYLOAD_FIELDS)}"
+                )
+        supersedes = payload.get("supersedes")
+        if isinstance(supersedes, dict):
+            for field in supersedes:
+                if field not in ALLOWED_SUPERSEDES_FIELDS:
+                    errors.append(
+                        f"{path.name}: payload.supersedes has unrecognized field '{field}' -- "
+                        f"RFC-MACP-0013 Section 5 permits only {sorted(ALLOWED_SUPERSEDES_FIELDS)}"
+                    )
     if errors:
         return errors
 

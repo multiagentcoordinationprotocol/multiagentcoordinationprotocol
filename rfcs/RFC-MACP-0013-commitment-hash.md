@@ -110,7 +110,7 @@ An alternative design would embed the label directly in the output string — fo
 
 Conforming runtimes and SDKs MUST compute `commitment_hash` identically per this RFC, and MUST use the resulting value wherever a `commitment_hash` is written — not only when constructing a new `CommitmentRef`, but in every code path that produces one.
 
-That second obligation, not merely the syntactic non-empty check of RFC-MACP-0001 §7.3.1, is what makes a `commitment_hash` value computed before this RFC existed non-conforming: it was not, and cannot retroactively become, the output of the Section 4 algorithm.
+That second obligation, not merely the syntactic canonical-hash-shape check of RFC-MACP-0001 §7.3.1, is what makes a `commitment_hash` value computed before this RFC existed non-conforming: it was not, and cannot retroactively become, the output of the Section 4 algorithm.
 
 This RFC adopts **hard rejection, effective immediately, with no dual-read period**: a `commitment_hash` value that does not match the syntactic shape and the semantic construction defined by this RFC is non-conforming from the day this RFC takes effect. There is no transitional window in which pre-0013 values are accepted alongside post-0013 values.
 
