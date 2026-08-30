@@ -8,13 +8,13 @@ This repository includes illustrative transcripts for each standards-track mode 
 
 | File | Mode | What it shows |
 |------|------|---------------|
-| [`examples/decision-mode-session.json`](../examples/decision-mode-session.json) | `macp.mode.decision.v1` | initialization, `SessionStart`, proposal, evaluations, objection, votes, and terminal `Commitment` |
-| [`examples/proposal-mode-session.json`](../examples/proposal-mode-session.json) | `macp.mode.proposal.v1` | offer, counteroffer, dual acceptance, and bound agreement |
-| [`examples/task-mode-session.json`](../examples/task-mode-session.json) | `macp.mode.task.v1` | bounded delegation, progress, completion, and bound task outcome |
-| [`examples/handoff-mode-session.json`](../examples/handoff-mode-session.json) | `macp.mode.handoff.v1` | responsibility transfer with context handoff and acceptance |
-| [`examples/quorum-mode-session.json`](../examples/quorum-mode-session.json) | `macp.mode.quorum.v1` | threshold approval leading to a final commitment |
-| [`examples/policy-decision-session.json`](../examples/policy-decision-session.json) | `macp.mode.decision.v1` | policy-governed Decision Mode with supermajority voting, quorum, and critical-severity veto (RFC-MACP-0012) |
-| [`examples/policy-registration-exchange.json`](../examples/policy-registration-exchange.json) | N/A (gRPC exchange) | dynamic policy registration request and response (RFC-MACP-0012 Section 7) |
+| [`examples/decision-mode-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/decision-mode-session.json) | `macp.mode.decision.v1` | initialization, `SessionStart`, proposal, evaluations, objection, votes, and terminal `Commitment` |
+| [`examples/proposal-mode-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/proposal-mode-session.json) | `macp.mode.proposal.v1` | offer, counteroffer, dual acceptance, and bound agreement |
+| [`examples/task-mode-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/task-mode-session.json) | `macp.mode.task.v1` | bounded delegation, progress, completion, and bound task outcome |
+| [`examples/handoff-mode-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/handoff-mode-session.json) | `macp.mode.handoff.v1` | responsibility transfer with context handoff and acceptance |
+| [`examples/quorum-mode-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/quorum-mode-session.json) | `macp.mode.quorum.v1` | threshold approval leading to a final commitment |
+| [`examples/policy-decision-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-decision-session.json) | `macp.mode.decision.v1` | policy-governed Decision Mode with supermajority voting, quorum, and critical-severity veto (RFC-MACP-0012) |
+| [`examples/policy-registration-exchange.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-registration-exchange.json) | N/A (gRPC exchange) | dynamic policy registration request and response (RFC-MACP-0012 Section 7) |
 
 ## Discovery, lifecycle, and runtime examples
 
@@ -22,13 +22,13 @@ Single-document examples that exercise non-transcript schemas:
 
 | File | Schema | What it shows |
 |------|--------|---------------|
-| [`examples/discovery/agent_manifest.json`](../examples/discovery/agent_manifest.json) | [`macp-agent-manifest.schema.json`](../schemas/json/macp-agent-manifest.schema.json) | agent identity, supported modes, transport endpoints |
-| [`examples/discovery/mode_descriptor.json`](../examples/discovery/mode_descriptor.json) | [`macp-mode-descriptor.schema.json`](../schemas/json/macp-mode-descriptor.schema.json) | mode advertisement with message types and schema URIs |
-| [`examples/discovery/policy_descriptor.json`](../examples/discovery/policy_descriptor.json) | [`macp-policy-descriptor.schema.json`](../schemas/json/macp-policy-descriptor.schema.json) | governance policy advertisement (RFC-MACP-0012) |
-| [`examples/discovery/session_metadata.json`](../examples/discovery/session_metadata.json) | [`macp-session-metadata.schema.json`](../schemas/json/macp-session-metadata.schema.json) | `SessionMetadata` returned by `GetSession` |
-| [`examples/discovery/session_lifecycle_event.json`](../examples/discovery/session_lifecycle_event.json) | [`macp-session-lifecycle-event.schema.json`](../schemas/json/macp-session-lifecycle-event.schema.json) | `SessionLifecycleEvent` emitted by `WatchSessions` |
-| [`examples/discovery/run_descriptor.json`](../examples/discovery/run_descriptor.json) | [`macp-run-descriptor.schema.json`](../schemas/json/macp-run-descriptor.schema.json) | scenario-agnostic run descriptor for a control-plane `POST /runs` |
-| [`examples/discovery/agent_bootstrap.json`](../examples/discovery/agent_bootstrap.json) | [`macp-agent-bootstrap.schema.json`](../schemas/json/macp-agent-bootstrap.schema.json) | bootstrap payload written to `MACP_BOOTSTRAP_FILE` before the initiator agent starts |
+| [`examples/discovery/agent_manifest.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/agent_manifest.json) | [`macp-agent-manifest.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-agent-manifest.schema.json) | agent identity, supported modes, transport endpoints |
+| [`examples/discovery/mode_descriptor.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/mode_descriptor.json) | [`macp-mode-descriptor.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-mode-descriptor.schema.json) | mode advertisement with message types and schema URIs |
+| [`examples/discovery/policy_descriptor.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/policy_descriptor.json) | [`macp-policy-descriptor.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-policy-descriptor.schema.json) | governance policy advertisement (RFC-MACP-0012) |
+| [`examples/discovery/session_metadata.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/session_metadata.json) | [`macp-session-metadata.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-session-metadata.schema.json) | `SessionMetadata` returned by `GetSession` |
+| [`examples/discovery/session_lifecycle_event.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/session_lifecycle_event.json) | [`macp-session-lifecycle-event.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-session-lifecycle-event.schema.json) | `SessionLifecycleEvent` emitted by `WatchSessions` |
+| [`examples/discovery/run_descriptor.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/run_descriptor.json) | [`macp-run-descriptor.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-run-descriptor.schema.json) | scenario-agnostic run descriptor for a control-plane `POST /runs` |
+| [`examples/discovery/agent_bootstrap.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/discovery/agent_bootstrap.json) | [`macp-agent-bootstrap.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-agent-bootstrap.schema.json) | bootstrap payload written to `MACP_BOOTSTRAP_FILE` before the initiator agent starts |
 
 ## Example shape
 
@@ -57,4 +57,4 @@ The important property is not the specific business scenario in each example. It
 
 ## Related: conformance fixtures
 
-The examples above are illustrative. For **machine-checked** message sequences with per-message accept/reject expectations — consumed by SDK projection harnesses and the runtime conformance suite — see the canonical fixture pack in [`schemas/conformance/`](../schemas/conformance/README.md). Fixtures exist for every standards-track mode plus the `ext.multi_round.v1` extension mode, and CI validates each fixture against the fixture-format schema and lints it for internal consistency.
+The examples above are illustrative. For **machine-checked** message sequences with per-message accept/reject expectations — consumed by SDK projection harnesses and the runtime conformance suite — see the canonical fixture pack in [`schemas/conformance/`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/conformance/README.md). Fixtures exist for every standards-track mode plus the `ext.multi_round.v1` extension mode, and CI validates each fixture against the fixture-format schema and lints it for internal consistency.

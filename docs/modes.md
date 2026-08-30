@@ -88,7 +88,7 @@ Key differences from standards-track modes:
 
 - `ListModes` returns only standards-track modes. Extensions are discoverable through implementation-defined surfaces.
 - `GetManifest` and `Initialize` may include extension identifiers in `supported_modes` to advertise the full runtime capability.
-- Extension modes do not have RFCs in this repository. A widely-implemented extension mode may still ship a canonical payload schema for interoperability: `ext.multi_round.v1` (iterative convergence over opaque contributions) is defined in [`schemas/proto/macp/modes/multi_round/v1/multi_round.proto`](../schemas/proto/macp/modes/multi_round/v1/multi_round.proto), with conformance fixtures under [`schemas/conformance/`](../schemas/conformance/README.md).
+- Extension modes do not have RFCs in this repository. A widely-implemented extension mode may still ship a canonical payload schema for interoperability: `ext.multi_round.v1` (iterative convergence over opaque contributions) is defined in [`schemas/proto/macp/modes/multi_round/v1/multi_round.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/modes/multi_round/v1/multi_round.proto), with conformance fixtures under [`schemas/conformance/`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/conformance/README.md).
 - Runtimes may support dynamic registration, removal, and promotion of extension modes.
 
 See [RFC-MACP-0002 §12](../rfcs/RFC-MACP-0002-modes.md) for normative guidance.
@@ -107,4 +107,4 @@ Example transcripts live under `examples/`:
 - `handoff-mode-session.json`
 - `quorum-mode-session.json`
 
-Machine-checked per-mode conformance fixtures (happy paths and reject paths, including `ext.multi_round.v1`) live under [`schemas/conformance/`](../schemas/conformance/README.md).
+Machine-checked per-mode conformance fixtures (happy paths and reject paths, including `ext.multi_round.v1`) live under [`schemas/conformance/`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/conformance/README.md).
