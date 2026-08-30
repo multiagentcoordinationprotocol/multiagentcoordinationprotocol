@@ -271,6 +271,8 @@ For high-assurance scenarios:
 }
 ```
 
+`commitment_hash` is now canonically defined by [RFC-MACP-0013](../rfcs/RFC-MACP-0013-commitment-hash.md); `session_hash` remains implementation-defined, as shown above.
+
 ## Testing Determinism
 
 ### Unit Tests for Modes
