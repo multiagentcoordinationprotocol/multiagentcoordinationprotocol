@@ -159,11 +159,19 @@ message SessionResumePayload {
 // supersession (RFC-MACP-0001 §7.3).
 message CommitmentRef {
   string session_id = 1;
-  // Content hash of the superseded CommitmentPayload (an implementation-defined
-  // digest over its canonical encoding).
+  // Canonical commitment hash of the superseded CommitmentPayload
+  // (RFC-MACP-0013): "sha256:" followed by 64 lowercase hex characters,
+  // computed per the RFC-MACP-0013 §3-4 projection and algorithm.
   string commitment_hash = 2;
 }
 
+// The fields below are frozen under hashing label "macp-commitment-hash/1"
+// (RFC-MACP-0013 §5): CommitmentRef.commitment_hash is computed over exactly
+// these nine fields. Adding a field to this message is a LABEL BUMP to
+// "macp-commitment-hash/2" (RFC-MACP-0013 §5, §7), not a routine additive
+// proto change — a new field MUST either be explicitly excluded from the
+// hash under the existing label or included only under a newly defined and
+// advertised label. Read RFC-MACP-0013 before adding field 10.
 message CommitmentPayload {
   string commitment_id = 1;
   // Action identifier describing the outcome (e.g., "decision.approved",

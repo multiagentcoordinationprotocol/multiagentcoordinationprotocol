@@ -36,6 +36,7 @@ MACP/
     RFC-MACP-0010-handoff-mode.md
     RFC-MACP-0011-quorum-mode.md
     RFC-MACP-0012-policy.md
+    RFC-MACP-0013-commitment-hash.md
 
   docs/
     architecture.md
@@ -54,6 +55,7 @@ MACP/
   registries/
     README.md
     capabilities.md
+    commitment-hash.md
     error-codes.md
     media-types.md
     modes.md
@@ -111,16 +113,21 @@ MACP/
       README.md
       schema.json         # fixture-format JSON Schema
       lint_fixtures.py    # internal-consistency linter (CI)
+      cmt-hash/           # RFC-MACP-0013 canonical hash vectors + vector-schema.json
       decision_happy_path.json
       decision_negative_outcome.json
       decision_reject_paths.json
       proposal_happy_path.json
+      proposal_negative_outcome.json
       proposal_reject_paths.json
       task_happy_path.json
+      task_negative_outcome.json
       task_reject_paths.json
       handoff_happy_path.json
+      handoff_negative_outcome.json
       handoff_reject_paths.json
       quorum_happy_path.json
+      quorum_negative_outcome.json
       quorum_reject_paths.json
       multi_round_happy_path.json
       multi_round_reject_paths.json
@@ -157,10 +164,11 @@ If you are new to MACP, start here:
 3. **[RFC-MACP-0002-modes.md](rfcs/RFC-MACP-0002-modes.md)** - the mode extension framework and the standard-mode boundary for the main repo.
 4. **[RFC-MACP-0007-decision-mode.md](rfcs/RFC-MACP-0007-decision-mode.md)** through **[RFC-MACP-0011-quorum-mode.md](rfcs/RFC-MACP-0011-quorum-mode.md)** - the standard coordination primitives defined in this repository.
 5. **[RFC-MACP-0012-policy.md](rfcs/RFC-MACP-0012-policy.md)** - governance policy framework for declarative, replay-safe session governance.
-6. **[RFC-MACP-0003-determinism.md](rfcs/RFC-MACP-0003-determinism.md)** - replay integrity and determinism classes.
-7. **[RFC-MACP-0005-discovery-and-manifests.md](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** - agent and runtime discovery, manifest schemas.
-8. **[RFC-MACP-0006-transport-bindings.md](rfcs/RFC-MACP-0006-transport-bindings.md)** - standard transport bindings.
-9. **[docs/architecture.md](docs/architecture.md)** and **[docs/runtime.md](docs/runtime.md)** - how to implement and operate a runtime.
+6. **[RFC-MACP-0013-commitment-hash.md](rfcs/RFC-MACP-0013-commitment-hash.md)** - canonical algorithm for computing `CommitmentRef.commitment_hash`.
+7. **[RFC-MACP-0003-determinism.md](rfcs/RFC-MACP-0003-determinism.md)** - replay integrity and determinism classes.
+8. **[RFC-MACP-0005-discovery-and-manifests.md](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** - agent and runtime discovery, manifest schemas.
+9. **[RFC-MACP-0006-transport-bindings.md](rfcs/RFC-MACP-0006-transport-bindings.md)** - standard transport bindings.
+10. **[docs/architecture.md](docs/architecture.md)** and **[docs/runtime.md](docs/runtime.md)** - how to implement and operate a runtime.
 
 ## Standards posture
 
@@ -174,6 +182,7 @@ MACP is intentionally split into a small set of RFCs because that makes the stan
 - **RFC-MACP-0006 Transport Bindings** defines standard transport bindings (gRPC, HTTP, WebSocket, Message Bus).
 - **RFC-MACP-0007 through RFC-MACP-0011** define the main-repository standard modes: Decision, Proposal, Task, Handoff, and Quorum.
 - **RFC-MACP-0012 Policy** defines the governance policy framework for declarative, deterministic, replay-safe session governance.
+- **RFC-MACP-0013 Canonical Commitment Hash** defines the canonical algorithm for computing `CommitmentRef.commitment_hash`.
 
 The main RFC repo standardizes only foundational coordination primitives. Domain workflows and fast-moving experiments should live in incubator or vendor repositories, not in this standards repo. Runtimes may still ship additional implementation-defined modes, but those modes should not be presented as part of the five-mode standards-track set unless they are promoted into this repo and registry.
 

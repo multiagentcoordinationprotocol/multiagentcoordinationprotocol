@@ -1,5 +1,5 @@
 .PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
-	conformance-lint clean install-tools \
+	conformance-lint cmt-hash-vectors clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
 PROTO_SRC := schemas/proto
@@ -17,6 +17,7 @@ help:
 	@echo "  make json-schema-validate  Validate JSON Schema itself"
 	@echo "  make json-validate         Validate JSON examples against schema"
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
+	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
 	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
 	@echo ""
@@ -39,7 +40,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -59,6 +60,11 @@ json-validate:
 conformance-lint:
 	@echo "Linting conformance fixtures..."
 	@python3 schemas/conformance/lint_fixtures.py
+
+# Check canonical commitment-hash vectors (RFC-MACP-0013) — stdlib only, no third-party imports
+cmt-hash-vectors:
+	@echo "Checking commitment-hash vectors..."
+	@python3 scripts/check-cmt-hash-vectors.py
 
 # Lint protobuf files with buf
 proto-lint:

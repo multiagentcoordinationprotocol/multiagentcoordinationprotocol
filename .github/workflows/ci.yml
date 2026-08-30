@@ -39,6 +39,11 @@ jobs:
           echo "Linting canonical conformance fixtures..."
           python3 schemas/conformance/lint_fixtures.py
 
+      - name: Check commitment-hash vectors (RFC-MACP-0013)
+        run: |
+          echo "Checking canonical commitment-hash vectors..."
+          python3 scripts/check-cmt-hash-vectors.py
+
       - name: Install protoc
         run: |
           sudo apt-get update
