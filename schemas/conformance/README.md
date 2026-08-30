@@ -106,6 +106,34 @@ make sync-fixtures     # Copy canonical fixtures into tests/conformance/
 make verify-fixtures   # Fail if the local copy has drifted (CI gate)
 ```
 
+## `cmt-hash/` — commitment-hash test vectors (RFC-MACP-0013)
+
+`cmt-hash/` holds a different kind of fixture than the rest of this directory:
+canonical **commitment-hash vectors** for RFC-MACP-0013 Section 4 (the
+canonical commitment hash algorithm), not session transcripts. Each vector
+pins the projected `CommitmentPayload`, the JCS-canonicalized bytes, the
+domain-separated preimage, and the resulting hash, so a diverging
+implementation can identify exactly which step it diverged at. This is a
+different shape from `schema.json`'s session-transcript format and is
+validated against its own `cmt-hash/vector-schema.json`, deliberately outside
+`schema.json`'s closed shape.
+
+Both `scripts/validate-json.sh` (via `"${CONFORMANCE_DIR}"/*.json`) and
+`lint_fixtures.py` (via `fixtures_dir.glob("*.json")`) glob this directory
+**non-recursively**, so `cmt-hash/` is invisible to both by design — it is not
+an oversight. Coverage instead comes from `make cmt-hash-vectors` (wired into
+`make validate` and CI), which runs `scripts/check-cmt-hash-vectors.py`
+against every file in `cmt-hash/`.
+
+Vectors are **generated** by `scripts/gen-cmt-hash-vectors.py` and must never
+be hand-edited; regenerate and re-run `make cmt-hash-vectors` instead.
+
+There are five vector files (`cmt_hash_001_minimal.json` through
+`cmt_hash_005_escapes.json`). Casual references to "six cases" mean those five
+files plus one machine-checked inequality assertion: `cmt_hash_004` (empty
+`supersedes`) MUST hash differently from `cmt_hash_003` (no `supersedes` at
+all) — asserted by `check-cmt-hash-vectors.py`, not a sixth file.
+
 ## Adding or Changing Fixtures
 
 1. Edit the JSON here in the spec repo (this is the only place fixtures are authored).
