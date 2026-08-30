@@ -14,6 +14,18 @@ MACP introduces one strict invariant:
 
 Ambient interaction remains continuous and non-binding through **Signals**. Binding interaction occurs only inside **Sessions**. That separation keeps coordination explicit, bounded, auditable, and replayable.
 
+## Project status
+
+MACP is maintained by a single maintainer on a best-effort basis. Changes land when a consumer needs them; there is no release schedule and no SLA. That fact belongs at the top rather than in the commit graph, because it should inform how much of this you choose to build on.
+
+**What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI and crates.io, to GitHub Packages for the npm, Java, Kotlin, and C# artifacts, and as a Go module resolved from the tag itself. They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
+
+**What is not frozen:** the RFC text. All thirteen RFCs are drafts — twelve at `**Version:** 1.0.0-draft`, RFC-MACP-0006 at `1.1.0-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
+
+**There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
+
+What *is* mechanically enforced is narrower and real: `make validate` compiles the canonical Protobuf schemas, validates every example and conformance fixture against its JSON Schema, and checks that the indexes in this file match the files on disk. The RFC-MACP-0013 commitment-hash vectors additionally reproduce byte-for-byte in `macp-runtime` and in both SDKs. Enforcement covers the schemas and fixtures — not the normative prose.
+
 ## What this repository contains
 
 This repository is structured like a publishable protocol standard rather than a single monolithic spec. The goal is to keep the normative core small and stable while giving implementers enough architectural and operational guidance to build real runtimes.
