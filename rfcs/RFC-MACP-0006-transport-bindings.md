@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.1.0-draft
+**Version:** 1.2.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.2.0-draft:** §3.8 now describes the paged `ListSessions` contract (`page_size`, opaque `page_token`, `next_page_token`), which shipped in `core.proto` without a matching prose update. The prose is a correction, not a wire change: it states what the proto already defines, including that only an empty `next_page_token` signals completion.
+>
 > **Changelog — 1.1.0-draft:** passive session subscription is promoted from the former Appendix A.1 to core `StreamSession` semantics in §3.2. `subscribe_session_id` and `after_sequence` are normative on every runtime that advertises `sessions.stream = true`; they are not an optional capability.
 
 ## 1. Introduction
@@ -143,21 +145,6 @@ A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelo
 
 `ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, and `PromoteMode` manage the lifecycle of non-standards-track (extension) coordination modes. These RPCs are implementation-defined surfaces for registering, discovering, and promoting experimental modes. See [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics and the relationship between extension and standards-track modes.
 
-### 3.8 Session Lifecycle Observation RPCs
-
-`ListSessions` and `WatchSessions` provide programmatic session lifecycle observation.
-
-```protobuf
-rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
-rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
-```
-
-`ListSessions` returns `SessionMetadata` for all currently known sessions (active and terminal). A runtime MUST advertise `sessions.list_sessions = true` before `ListSessions` can be assumed interoperable.
-
-`WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, or CANCELLED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
-
-Session lifecycle events are ephemeral — they are not persisted and are not available for replay. Clients that disconnect MAY miss events. Control-planes and UIs SHOULD use `ListSessions` for initial sync and `WatchSessions` for incremental updates.
-
 ### 3.7 Policy Lifecycle RPCs
 
 Five RPCs manage the governance policy lifecycle (see [RFC-MACP-0012](RFC-MACP-0012-policy.md)):
@@ -173,6 +160,29 @@ rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
 `RegisterPolicy` and `UnregisterPolicy` mutate the policy registry. `GetPolicy` and `ListPolicies` are read-only queries. `WatchPolicies` is a server-streaming RPC for policy registry change notifications.
 
 See RFC-MACP-0012 Section 7 for registration constraints and evaluation semantics.
+
+### 3.8 Session Lifecycle Observation RPCs
+
+`ListSessions` and `WatchSessions` provide programmatic session lifecycle observation.
+
+```protobuf
+rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
+```
+
+`ListSessions` returns a bounded page of `SessionMetadata` for the sessions the runtime currently knows about (active and terminal, subject to whatever retention the runtime applies to terminal sessions). It is paginated: a single response is not required to carry the full result set. The pagination fields are defined in [`core.proto`](../schemas/proto/macp/v1/core.proto) — `page_size` and `page_token` on `ListSessionsRequest`, `next_page_token` on `ListSessionsResponse`. A runtime MUST advertise `sessions.list_sessions = true` before `ListSessions` can be assumed interoperable.
+
+**Page size.** `page_size` is the maximum number of entries the client wants in one response. `page_size = 0` means server-chosen default; a runtime MUST substitute a bounded default rather than returning every known session. A runtime MAY cap the effective page size below the requested value, and the cap MUST be applied silently — clamping is not an error, and the client observes it only as a page smaller than it asked for. A runtime MUST reject a negative `page_size`.
+
+**Continuation.** `page_token` is an opaque continuation token; an empty `page_token` begins a new traversal. The client MUST pass a non-empty `next_page_token` back verbatim as the next request's `page_token`. Tokens are implementation-defined and MAY be short-lived; clients MUST NOT parse them, construct them, or carry one across runtimes. A runtime that cannot decode a supplied `page_token` — malformed, expired, or issued elsewhere — MUST reject the request with gRPC status `INVALID_ARGUMENT`; the HTTP binding maps this to `400 Bad Request`. `INVALID_ARGUMENT` here is a transport status, not a MACP error code — the codes in [`registries/error-codes.md`](../registries/error-codes.md) are envelope-scoped, and `ListSessions` carries no Envelope.
+
+**Completion.** Only an **empty** `next_page_token` means the result set is complete. A short page — one carrying fewer entries than `page_size`, including an empty one — does **not** mean completion while `next_page_token` is non-empty. Clients MUST continue paging until the token comes back empty, and MUST NOT treat page length as a termination signal.
+
+**Traversal semantics.** A page is not a point-in-time snapshot, and `next_page_token` is a position, not a snapshot handle. Runtimes SHOULD traverse in a stable order such that a session present for the whole traversal is returned exactly once; a session created or removed mid-traversal MAY or MAY NOT appear, depending on where it falls relative to the current position. Clients that need to observe what changes during or after a traversal SHOULD pair `ListSessions` with `WatchSessions`.
+
+`WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, or CANCELLED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
+
+Session lifecycle events are ephemeral — they are not persisted and are not available for replay. Clients that disconnect MAY miss events. Control-planes and UIs SHOULD use `ListSessions` for initial sync and `WatchSessions` for incremental updates.
 
 ## 4. HTTP Binding
 
