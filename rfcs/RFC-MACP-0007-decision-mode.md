@@ -76,7 +76,7 @@ Implementations of `macp.mode.decision.v1` MUST enforce the following:
 
 1. `Proposal.proposal_id` MUST be unique within the Session.
 2. `Evaluation`, `Objection`, and `Vote` MUST reference an existing `proposal_id`.
-3. A participant MAY cast at most one `Vote` per `proposal_id` unless a stricter or more permissive rule is explicitly bound in configuration. Base Decision Mode v1 assumes one vote per participant per proposal.
+3. A participant MUST cast at most one `Vote` per `proposal_id`. A runtime MUST reject a second `Vote` from the same sender for the same `proposal_id`; the first accepted `Vote` stands. Configuration MAY bind a *stricter* rule (for example, restricting which participants may vote at all), but MUST NOT relax this one. A permissive multi-vote rule would need replacement or tally semantics that this mode does not define, and without them two conforming implementations could tally identical accepted history differently — which Section 7's semantic-deterministic claim forbids.
 4. The runtime or policy authority MUST reject `Commitment` from unauthorized senders.
 5. The Session MUST NOT resolve before at least one proposal exists unless policy explicitly allows a no-go outcome with zero proposals.
 
