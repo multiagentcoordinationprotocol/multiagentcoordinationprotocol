@@ -145,6 +145,22 @@ A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelo
 
 `ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, and `PromoteMode` manage the lifecycle of non-standards-track (extension) coordination modes. These RPCs are implementation-defined surfaces for registering, discovering, and promoting experimental modes. See [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics and the relationship between extension and standards-track modes.
 
+### 3.7 Policy Lifecycle RPCs
+
+Five RPCs manage the governance policy lifecycle (see [RFC-MACP-0012](RFC-MACP-0012-policy.md)):
+
+```protobuf
+rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);
+rpc UnregisterPolicy(UnregisterPolicyRequest) returns (UnregisterPolicyResponse);
+rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
+rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
+```
+
+`RegisterPolicy` and `UnregisterPolicy` mutate the policy registry. `GetPolicy` and `ListPolicies` are read-only queries. `WatchPolicies` is a server-streaming RPC for policy registry change notifications.
+
+See RFC-MACP-0012 Section 7 for registration constraints and evaluation semantics.
+
 ### 3.8 Session Lifecycle Observation RPCs
 
 `ListSessions` and `WatchSessions` provide programmatic session lifecycle observation.
@@ -167,22 +183,6 @@ rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
 `WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, or CANCELLED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
 
 Session lifecycle events are ephemeral — they are not persisted and are not available for replay. Clients that disconnect MAY miss events. Control-planes and UIs SHOULD use `ListSessions` for initial sync and `WatchSessions` for incremental updates.
-
-### 3.7 Policy Lifecycle RPCs
-
-Five RPCs manage the governance policy lifecycle (see [RFC-MACP-0012](RFC-MACP-0012-policy.md)):
-
-```protobuf
-rpc RegisterPolicy(RegisterPolicyRequest) returns (RegisterPolicyResponse);
-rpc UnregisterPolicy(UnregisterPolicyRequest) returns (UnregisterPolicyResponse);
-rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
-rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
-rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
-```
-
-`RegisterPolicy` and `UnregisterPolicy` mutate the policy registry. `GetPolicy` and `ListPolicies` are read-only queries. `WatchPolicies` is a server-streaming RPC for policy registry change notifications.
-
-See RFC-MACP-0012 Section 7 for registration constraints and evaluation semantics.
 
 ## 4. HTTP Binding
 
