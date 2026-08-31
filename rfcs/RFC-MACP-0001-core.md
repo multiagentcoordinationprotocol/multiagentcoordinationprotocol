@@ -184,6 +184,7 @@ A session is created by accepting a valid `SessionStart` message.
 
 A valid `SessionStart` message consists of an Envelope with a non-empty `session_id`, a non-empty `mode` field (the Mode identifier), and a non-empty `sender`, combined with a `SessionStartPayload` that MUST bind:
 
+- `intent` (MAY be empty; descriptive only — see below),
 - `mode_version`,
 - `configuration_version`,
 - `ttl_ms` (MUST be greater than zero),
@@ -195,6 +196,10 @@ A valid `SessionStart` message consists of an Envelope with a non-empty `session
 - `extensions` when present (see §7.4.2).
 
 `configuration_version` is an opaque string that identifies a mode-specific configuration profile. Its format and interpretation are implementation-defined and not part of the MACP interoperability contract. Runtimes MUST store the bound `configuration_version` in session metadata for replay integrity.
+
+`intent` is a human-readable description of why the session was opened. It MAY be empty, and a runtime MUST NOT reject a `SessionStart` solely because `intent` is empty. When present, a runtime MUST preserve it verbatim and MUST NOT modify it after the `SessionStart` is accepted — like the other bound values, it is immutable for the life of the session.
+
+`intent` is descriptive only. It MUST NOT influence acceptance decisions, Mode semantics, or policy evaluation, and it is therefore outside the determinism boundary of RFC-MACP-0003 Section 3: two sessions differing only in `intent` MUST produce identical state transitions. Note that `intent` is not carried on `SessionMetadata`, so it is not returned by `GetSession`; consumers that need it read it from the accepted `SessionStart` envelope in session history.
 
 A Mode MAY also bind additional immutable authority roles through the accepted `SessionStart` sender or through mode-specific policy encoded in bound session context.
 
