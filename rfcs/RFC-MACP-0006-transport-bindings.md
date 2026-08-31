@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.3.0-draft
+**Version:** 1.4.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.4.0-draft:** §3.2 gains a **Redelivery** subsection stating the client-side counterpart of RFC-MACP-0001 §8.2: a client MUST tolerate being redelivered an envelope it has already observed (both from at-least-once transport and from ordinary re-subscribe replay), MUST key duplicate detection on `message_id`, and MUST NOT let a repeat advance its sequence position, count against a Mode cardinality rule, or mutate accumulated state. The sequence-counting sentence is tightened to "distinct accepted envelopes" accordingly.
+>
 > **Changelog — 1.3.0-draft:** §3.2 now defines what the passive-subscribe sequence *is* — the 1-based ordinal of accepted session-scoped envelopes, exclusive `after_sequence`, internal entries consuming no ordinals, stability across restart and compaction, and `FAILED_PRECONDITION` for a resume below the compacted base. Previously the sequence was specified only behaviorally ("starting from `after_sequence + 1`"), which left clients no defined way to compute their own position.
 >
 > **Changelog — 1.2.0-draft:** §3.8 now describes the paged `ListSessions` contract (`page_size`, opaque `page_token`, `next_page_token`), which shipped in `core.proto` without a matching prose update. The prose is a correction, not a wire change: it states what the proto already defines, including that only an empty `next_page_token` signals completion.
@@ -115,12 +117,25 @@ On a request with `subscribe_session_id` set, a runtime that advertises `session
 - Entries a runtime records for its own bookkeeping — the `SessionSuspend` / `SessionResume` annotations of RFC-MACP-0001 §7.5, TTL expiry, storage checkpoints, and any other internal log entry — MUST NOT consume ordinals. Client-visible ordinals are therefore contiguous.
 - `after_sequence` is **exclusive**. Replay resumes at `after_sequence + 1`; `after_sequence = 0` replays from the session's first accepted envelope.
 
-The Envelope carries no sequence field on the wire (RFC-MACP-0001 §6), so a client can determine its position only by counting the envelopes delivered to it. Two obligations follow, and a runtime MUST satisfy both:
+The Envelope carries no sequence field on the wire (RFC-MACP-0001 §6), so a client can determine its position only by counting the **distinct accepted envelopes** it has been delivered — see **Redelivery** below, since the same envelope may arrive more than once and a repeat MUST NOT advance the count. Two obligations follow, and a runtime MUST satisfy both:
 
 1. The envelopes delivered on a subscribe stream MUST be exactly those that consume ordinals. A runtime MUST NOT deliver an internal annotation on this stream: a client cannot distinguish it from an ordinal-consuming envelope, and would over-count.
 2. An ordinal MUST be stable for the life of the session — across runtime restarts, storage migration, and log compaction. A runtime that renumbers accepted envelopes breaks every resuming client silently, because the client asks to continue from a position that no longer denotes the same envelope and history is skipped or repeated with no error surface.
 
 **Compaction.** A runtime that compacts session history MUST record, in the compaction checkpoint, the number of accepted ordinals it discarded, so that surviving envelopes retain their original ordinals instead of being renumbered from 1. A resume whose `after_sequence` falls below the compacted base MUST be rejected with gRPC status `FAILED_PRECONDITION`, identifying the lowest ordinal still available; it MUST NOT be silently served from the oldest surviving envelope. As with §3.8's `INVALID_ARGUMENT`, this is a transport status rather than a MACP error code — the codes in [`registries/error-codes.md`](../registries/error-codes.md) are envelope-scoped, and a resume request carries no Envelope.
+
+**Redelivery.** A client MUST tolerate being delivered an envelope it has already observed. Two independent mechanisms produce this, and neither is a malfunction:
+
+- MACP assumes at-least-once delivery semantics at the transport layer (RFC-MACP-0001 §8), so a transport MAY present the same envelope more than once.
+- Re-subscribing replays history. A client that reconnects, or that opens a subscription with an `after_sequence` at or below a position it has already consumed, is delivered every accepted envelope after that point again — including ones it has already applied. `after_sequence = 0` on a reconnect replays the entire session.
+
+A redelivered envelope is **the same message, not a new one**. Clients MUST key duplicate detection on `message_id` — the identity the runtime itself uses for this purpose (RFC-MACP-0001 §8.2) — and MUST observe the following:
+
+1. A redelivery MUST NOT advance the client's sequence position; only a distinct accepted envelope does. A client that counts raw delivery events rather than distinct envelopes arrives at a position ahead of the true one, and its next resume silently skips history.
+2. A redelivery MUST NOT count a second time against any Mode cardinality rule. Where a Mode limits a participant to one message of a kind — RFC-MACP-0007 §5.3's one `Vote` per `proposal_id`, RFC-MACP-0011 §5's one ballot per eligible participant — "a second" means a distinct `message_id`, never the same envelope arriving twice.
+3. A consumer that accumulates state per envelope — appending to a list, incrementing a counter — MUST be idempotent with respect to `message_id`. Re-applying a redelivered envelope MUST NOT change derived state.
+
+Runtimes are already required to enforce duplicate handling at their own ingress (RFC-MACP-0001 §8.2), so a duplicate never enters accepted history and is never broadcast. The requirements above are the client-side counterpart: a client reconstructing session state from a stream is handed the same envelope twice through ordinary reconnection, and MUST arrive at the state the runtime holds.
 
 A stream opened with a passive-subscribe frame is conventionally read-only. Implementations MAY refuse subsequent envelope frames on such a stream; clients that intend to coordinate on the session SHOULD open a separate `StreamSession` or use unary `Send`.
 
