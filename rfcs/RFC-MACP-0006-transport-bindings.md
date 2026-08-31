@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.1.0-draft
+**Version:** 1.2.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.2.0-draft:** §3.8 now describes the paged `ListSessions` contract (`page_size`, opaque `page_token`, `next_page_token`), which shipped in `core.proto` without a matching prose update. The prose is a correction, not a wire change: it states what the proto already defines, including that only an empty `next_page_token` signals completion.
+>
 > **Changelog — 1.1.0-draft:** passive session subscription is promoted from the former Appendix A.1 to core `StreamSession` semantics in §3.2. `subscribe_session_id` and `after_sequence` are normative on every runtime that advertises `sessions.stream = true`; they are not an optional capability.
 
 ## 1. Introduction
@@ -152,7 +154,15 @@ rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
 rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
 ```
 
-`ListSessions` returns `SessionMetadata` for all currently known sessions (active and terminal). A runtime MUST advertise `sessions.list_sessions = true` before `ListSessions` can be assumed interoperable.
+`ListSessions` returns a bounded page of `SessionMetadata` for the sessions the runtime currently knows about (active and terminal, subject to whatever retention the runtime applies to terminal sessions). It is paginated: a single response is not required to carry the full result set. The pagination fields are defined in [`core.proto`](../schemas/proto/macp/v1/core.proto) — `page_size` and `page_token` on `ListSessionsRequest`, `next_page_token` on `ListSessionsResponse`. A runtime MUST advertise `sessions.list_sessions = true` before `ListSessions` can be assumed interoperable.
+
+**Page size.** `page_size` is the maximum number of entries the client wants in one response. `page_size = 0` means server-chosen default; a runtime MUST substitute a bounded default rather than returning every known session. A runtime MAY cap the effective page size below the requested value, and the cap MUST be applied silently — clamping is not an error, and the client observes it only as a page smaller than it asked for. A runtime MUST reject a negative `page_size`.
+
+**Continuation.** `page_token` is an opaque continuation token; an empty `page_token` begins a new traversal. The client MUST pass a non-empty `next_page_token` back verbatim as the next request's `page_token`. Tokens are implementation-defined and MAY be short-lived; clients MUST NOT parse them, construct them, or carry one across runtimes. A runtime that cannot decode a supplied `page_token` — malformed, expired, or issued elsewhere — MUST reject the request with gRPC status `INVALID_ARGUMENT`; non-gRPC bindings map this to their equivalent client-error status.
+
+**Completion.** Only an **empty** `next_page_token` means the result set is complete. A short page — one carrying fewer entries than `page_size`, including an empty one — does **not** mean completion while `next_page_token` is non-empty. Clients MUST continue paging until the token comes back empty, and MUST NOT treat page length as a termination signal.
+
+**Traversal semantics.** A page is not a point-in-time snapshot, and `next_page_token` is a position, not a snapshot handle. Runtimes SHOULD traverse in a stable order such that a session present for the whole traversal is returned exactly once; a session created or removed mid-traversal MAY or MAY NOT appear, depending on where it falls relative to the current position. Clients that need to observe what changes during or after a traversal SHOULD pair `ListSessions` with `WatchSessions`.
 
 `WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, or CANCELLED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
 

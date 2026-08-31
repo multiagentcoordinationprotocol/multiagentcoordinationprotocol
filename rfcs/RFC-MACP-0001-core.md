@@ -368,7 +368,7 @@ If a `StreamSession` receives an invalid or unauthorized envelope, the runtime M
 - `ListRoots` — root listing
 - `WatchRoots` — root change notifications
 - `WatchSignals` — server-streaming RPC that broadcasts accepted Ambient Signal Envelopes in real time. The stream carries only Signals (messages with empty `session_id` and empty `mode`). Signals are ephemeral; there is no built-in backlog or resume mechanism. Clients that disconnect MAY miss Signals.
-- `ListSessions` — returns metadata for all currently active sessions. Advertised by `sessions.list_sessions`.
+- `ListSessions` — returns a bounded page of `SessionMetadata` for the sessions the runtime currently knows about, active and terminal. The listing is paginated: `page_size` bounds the page (0 selects a server-chosen default, and the runtime MAY cap the requested value), `page_token` continues a traversal, and the result set is complete only once `next_page_token` comes back empty — a short page does not signal completion. Advertised by `sessions.list_sessions`. See [RFC-MACP-0006 Section 3.8](RFC-MACP-0006-transport-bindings.md#38-session-lifecycle-observation-rpcs) for the full contract.
 - `WatchSessions` — server-streaming RPC that emits `SessionLifecycleEvent` notifications when sessions are created, resolved, or expired. Advertised by `sessions.watch_sessions`.
 
 The proto file also defines extension mode lifecycle RPCs (`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`); see [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics.
