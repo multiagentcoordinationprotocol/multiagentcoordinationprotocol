@@ -24,7 +24,7 @@
         },
         "quorum": {
           "type": "object",
-          "description": "Minimum participation required before votes are counted.",
+          "description": "Minimum participation bar. Applied only when commitment.require_vote_quorum is true; on its own this object gates nothing. See RFC-MACP-0012 Section 4.1.",
           "properties": {
             "type": {
               "type": "string",
@@ -35,7 +35,7 @@
               "type": "number",
               "minimum": 0,
               "default": 0,
-              "description": "Minimum count or percentage (0-1) of participants that must vote."
+              "description": "Minimum number of participants that must vote ('count'), or the minimum share of declared participants that must vote as a percentage in 0-100 ('percentage')."
             }
           }
         },
