@@ -31,7 +31,7 @@ The participant set MUST be declared at `SessionStart`, but resolution is based 
 | `Abstain` | Any eligible declared participant |
 | `Commitment` | Session initiator (default) or policy-designated authority |
 
-Each eligible participant MAY cast at most one ballot across `Approve`, `Reject`, or `Abstain`. Runtimes MUST reject messages from senders not authorized per this matrix.
+Each eligible participant casts at most one ballot across `Approve`, `Reject`, or `Abstain`; the first accepted ballot stands (Section 5, rule 3). Runtimes MUST reject messages from senders not authorized per this matrix.
 
 The session initiator (coordinator) is NOT an eligible ballot caster unless they are also listed in the `participants` array of the `SessionStart` payload. The `participants` list defines the voter pool, which is distinct from the coordinator role.
 
@@ -62,9 +62,9 @@ Quorum Mode defines the following mode-specific message types:
 
 Implementations MUST enforce the following:
 
-1. A Session MUST accept at most one `ApprovalRequest` in base v1.
+1. A Session MUST accept at most one `ApprovalRequest` in base v1. This cap is a design invariant of `macp.mode.quorum.v1`, not a provisional restriction: no `configuration_version`, `policy_version`, or `mode_version` within the v1 line may relax it. Multi-request quorum, if ever standardized, would arrive as a new mode revision with its own identifier and validation rules, and MUST NOT be introduced by reinterpreting this document. Because at most one `request_id` can ever be accepted per Session, the per-`request_id` scope in rule 3 is equivalent to per-Session scope throughout base v1, and an implementation MAY rely on that equivalence in its internal state.
 2. `required_approvals` MUST be greater than zero and MUST NOT exceed the count of eligible participants.
-3. Each eligible participant MAY cast at most one ballot across `Approve`, `Reject`, or `Abstain`.
+3. Each ballot (`Approve`, `Reject`, or `Abstain`) MUST reference the Session's accepted `request_id`; a runtime MUST reject a ballot that references any other `request_id` or that precedes the accepted `ApprovalRequest`. Each eligible participant MUST cast at most one ballot per `request_id`, counted across `Approve`, `Reject`, and `Abstain` combined. A runtime MUST reject a second ballot from the same sender for the same `request_id`, regardless of the type of either ballot; the first accepted ballot stands. Configuration or policy MAY bind a *stricter* rule (for example, restricting which participants may ballot at all), but MUST NOT relax this one. A permissive re-ballot or last-wins rule would need replacement semantics that this mode does not define, and without them two conforming implementations could derive different quorum state from identical accepted history — which Section 7's semantic-deterministic claim forbids.
 4. A Session becomes eligible for `Commitment` when approvals reach the required threshold, or when the remaining possible approvals can no longer reach that threshold.
 4a. `Abstain` ballots do NOT count toward `required_approvals` and do NOT count as rejections. An abstaining participant is removed from the pool of potential approvers. Therefore, a Session becomes eligible for negative `Commitment` when `(remaining_eligible_participants + current_approvals) < required_approvals`, where `remaining_eligible_participants` excludes those who have already voted (approve, reject, or abstain). These are the default semantics. Policy MAY override abstention interpretation (see RFC-MACP-0012 Section 4.2 for `abstention.interpretation` options including `neutral`, `implicit_reject`, and `ignored`).
 4b. When all eligible participants have abstained (or a combination of abstentions and rejections makes the threshold unreachable), the Session becomes eligible for `Commitment` with a negative outcome (e.g., `action: quorum.rejected`). The `CommitmentPayload.reason` SHOULD indicate that the threshold was not met.
