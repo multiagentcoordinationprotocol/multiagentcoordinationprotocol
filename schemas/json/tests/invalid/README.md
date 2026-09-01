@@ -15,6 +15,8 @@ itself never causes the rejection.
 |---------|---------------------|
 | `signal_with_session_id.json` | Signals are ambient: `mode` and `session_id` MUST be empty (RFC-MACP-0001 §6) |
 | `session_scoped_empty_session_id.json` | Session-scoped messages MUST carry non-empty `mode` and `session_id` (RFC-MACP-0001 §6) |
+| `progress_mode_without_session_id.json` | `Progress` MUST have `mode` and `session_id` both empty or both non-empty — mixed (non-empty `mode`, empty `session_id`) MUST be rejected (RFC-MACP-0001 §6) |
+| `progress_session_id_without_mode.json` | `Progress` MUST have `mode` and `session_id` both empty or both non-empty — mixed (empty `mode`, non-empty `session_id`) MUST be rejected (RFC-MACP-0001 §6) |
 | `payload_and_payload_b64.json` | `payload` and `payload_b64` are mutually exclusive (RFC-MACP-0001 §10) |
 | `missing_payload.json` | Exactly one of `payload` / `payload_b64` is required (RFC-MACP-0001 §10) |
 | `bad_macp_version.json` | `macp_version` MUST be semantic-version formatted |

@@ -167,7 +167,7 @@ For all accepted Envelopes:
 - `message_id` MUST be non-empty,
 - `sender` MUST be non-empty,
 - `session_id` and `mode` MUST both be empty for Ambient Signals,
-- `session_id` and `mode` MUST agree on `Progress`: a runtime MAY accept `Progress` either in ambient form (`session_id` and `mode` both empty, correlating to a session, if at all, only through a payload-defined field) or in session-scoped form (`session_id` and `mode` both non-empty); an Envelope with exactly one of the two empty MUST be rejected. This is a distinct rule from Signals: unlike Signals, `Progress` is not required to be ambient,
+- `session_id` and `mode` MUST agree on `Progress`: a runtime MAY accept `Progress` either in ambient form (`session_id` and `mode` both empty) or in session-scoped form (`session_id` and `mode` both non-empty); an Envelope with exactly one of the two empty MUST be rejected. Ambient `Progress` has no payload field that correlates it to a session; `ProgressPayload.target_message_id` correlates it only to the originating message. This is a distinct rule from Signals: unlike Signals, `Progress` is not required to be ambient,
 - for every other message type, `session_id` and `mode` MUST both be non-empty (session-scoped),
 - `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
 

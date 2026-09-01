@@ -21,7 +21,7 @@
     },
     "mode": {
       "type": "string",
-      "description": "Empty string for Ambient Signals; canonical mode identifier for session-scoped messages (for example macp.mode.decision.v1)."
+      "description": "Empty string for Ambient Signals; empty or non-empty for Progress (see §6, both forms are valid but MUST agree with session_id); canonical mode identifier for session-scoped messages (for example macp.mode.decision.v1)."
     },
     "message_type": {
       "type": "string",
@@ -35,7 +35,7 @@
     },
     "session_id": {
       "type": "string",
-      "description": "Empty string for Ambient Signals; non-empty for session-scoped messages."
+      "description": "Empty string for Ambient Signals; empty or non-empty for Progress (see §6, both forms are valid but MUST agree with mode); non-empty for session-scoped messages."
     },
     "sender": {
       "type": "string",

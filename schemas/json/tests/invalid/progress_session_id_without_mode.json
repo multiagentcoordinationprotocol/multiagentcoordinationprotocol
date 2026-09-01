@@ -1,0 +1,15 @@
+{
+  "_invalid_because": "Progress MUST agree on mode/session_id: both empty (ambient) or both non-empty (session-scoped) (RFC-MACP-0001 §6). This Progress carries a non-empty session_id but an empty mode.",
+  "macp_version": "1.0.0",
+  "mode": "",
+  "message_type": "Progress",
+  "message_id": "msg-invalid-004",
+  "session_id": "sess-abc123",
+  "sender": "agent://worker",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "progress_token": "tok-001",
+    "progress": 40,
+    "total": 100
+  }
+}
