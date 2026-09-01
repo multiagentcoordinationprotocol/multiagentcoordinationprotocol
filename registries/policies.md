@@ -14,21 +14,18 @@ Example:
 
 ## Reserved Policies
 
-| Policy ID | Mode | Description | Status | Reference |
-|-----------|------|-------------|--------|-----------|
-| `policy.default` | `*` | Default policy — no additional governance constraints beyond the mode's built-in rules | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
+| Policy ID | Mode | Description | Provision | Reference |
+|-----------|------|-------------|-----------|-----------|
+| `policy.default` | `*` | Default policy — no additional governance constraints beyond the mode's built-in rules | required | [RFC-MACP-0012 §5.1](../rfcs/RFC-MACP-0012-policy.md) |
+| `policy.std.majority` | `macp.mode.decision.v1` | Simple majority — at least half of the decisive votes approve, minimum 1 voter | optional | [RFC-MACP-0012 §5.2](../rfcs/RFC-MACP-0012-policy.md) |
+| `policy.std.supermajority` | `macp.mode.decision.v1` | Two-thirds supermajority, minimum 2 voters | optional | [RFC-MACP-0012 §5.2](../rfcs/RFC-MACP-0012-policy.md) |
+| `policy.std.unanimous` | `macp.mode.decision.v1` | Every declared participant approves and no reject is cast | optional | [RFC-MACP-0012 §5.2](../rfcs/RFC-MACP-0012-policy.md) |
 
 The `policy.default` identifier is reserved and MUST NOT be registered or unregistered. It is pre-registered in every conformant runtime.
 
-## Well-Known Policies
+The whole `policy.std.` namespace is reserved. A runtime MAY pre-register any subset of the profiles above, including none of them — reservation is a collision guarantee, not a provisioning requirement. A runtime that does provide one MUST use the canonical rules in RFC-MACP-0012 §5.2 verbatim, and a `SessionStart` naming a `policy.std.` identifier the runtime does not provide is rejected with `UNKNOWN_POLICY_VERSION`. Identifiers under `policy.std.` not listed above are reserved but unassigned.
 
-Well-known policies are not reserved but are recommended for common governance patterns:
-
-| Policy ID | Mode | Description | Status |
-|-----------|------|-------------|--------|
-| `policy.majority` | `macp.mode.decision.v1` | Simple majority vote (>50%) with no quorum requirement | recommended |
-| `policy.supermajority` | `macp.mode.decision.v1` | Two-thirds supermajority with minimum 2-voter quorum | recommended |
-| `policy.unanimous` | `macp.mode.decision.v1` | All participants must vote approve; any reject blocks | recommended |
+Short unnamespaced identifiers such as `policy.majority` are **not** reserved and remain available to deployments. Deployments SHOULD still use their own namespace (`policy.{org}.{name}`) so that later additions under `policy.std.` cannot collide with local rules.
 
 ## Registration
 

@@ -43,7 +43,20 @@ Examples:
 
 ### 2.2 Reserved Namespace
 
-The `policy.default` identifier is reserved. Runtimes MUST NOT allow registration of a policy with this identifier; it is always pre-registered.
+Two reservations exist.
+
+**`policy.default`.** The `policy.default` identifier is reserved. Runtimes MUST NOT allow registration of a policy with this identifier; it is always pre-registered (Section 5.1). It predates the `policy.{namespace}.{name}` convention of Section 2.1 and retains its two-segment form.
+
+**`policy.std.`.** Every identifier beginning with `policy.std.` is reserved for the built-in governance profiles published in this specification. Runtimes MUST NOT allow registration of a policy whose `policy_id` begins with `policy.std.` — via `RegisterPolicy` or via any implementation-defined loading path — unless the descriptor is one of the canonical definitions in Section 5.2. A registration that violates this MUST be rejected with `INVALID_POLICY_DEFINITION`.
+
+Reservation is a **collision guarantee, not a provisioning requirement**:
+
+- A runtime MAY pre-register any subset of the profiles defined in Section 5.2, including none of them. `policy.default` remains the only policy a runtime MUST provide.
+- If a runtime provides a policy under a reserved `policy.std.` identifier, that policy MUST be semantically equal to the canonical definition for that identifier: every rule parameter — whether spelled out explicitly or left to its JSON Schema default — MUST resolve to the value Section 5.2 gives, and `mode` and `schema_version` MUST match. A runtime MUST NOT ship different rules under a reserved identifier.
+- A `SessionStart` naming a `policy.std.` identifier the runtime does not provide is an unknown policy and MUST be rejected with `UNKNOWN_POLICY_VERSION` per Section 6.1. Clients MUST NOT assume that a reserved identifier resolves on every runtime; `ListPolicies` reports what is actually available.
+- Identifiers under `policy.std.` that this specification has not assigned are reserved but unassigned: they MUST NOT be registered and MUST NOT resolve.
+
+Identifiers outside these two reservations — including short unnamespaced forms such as `policy.majority` — are **not** reserved and remain available to deployments. Deployments SHOULD nevertheless use their own namespace (`policy.{org}.{name}`) so that later additions under `policy.std.` cannot collide with local governance rules.
 
 ### 2.3 Immutability
 
@@ -85,11 +98,19 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 **Voting algorithms:**
 
 - `none` — no voting constraint enforced (mode's built-in logic applies)
-- `majority` — more than 50% of cast votes must approve
-- `supermajority` — at least `threshold` fraction of cast votes must approve
-- `unanimous` — all cast votes must approve
-- `weighted` — weighted votes using `weights` map; `threshold` applies to weighted sum
-- `plurality` — proposal with the most approve votes wins; no threshold
+- `majority` — at least `threshold` (default `0.5`) of the decisive votes approve
+- `supermajority` — at least `threshold` of the decisive votes approve; the schema constrains `threshold` to be greater than `0.5`
+- `unanimous` — every declared participant has cast an approve vote and no reject vote was cast; `threshold` is not used
+- `weighted` — weighted votes using `weights` map; `threshold` applies to the weighted approve share
+- `plurality` — more approve votes than reject votes; a tie fails; no threshold
+
+**Denominator.** For the ratio-based algorithms (`majority`, `supermajority`, `weighted`) the denominator is the **decisive** votes — those cast as approve or reject. Abstentions are excluded and neither help nor hinder the ratio (RFC-MACP-0004).
+
+**Inclusive comparison.** Every threshold comparison in this section is inclusive (`ratio >= threshold`). With `majority` at its default `threshold` of `0.5`, an even split therefore approves. A rule that requires strictly more approvals than rejections is `plurality`, not `majority` with `threshold: 0.5`. `unanimous` is stricter than "all decisive votes approve": a declared participant who has not voted blocks it.
+
+**`voting.quorum` is inert on its own.** `voting.quorum` states the participation bar but does not itself gate a commitment; it is applied only when `commitment.require_vote_quorum` is `true`. A policy that sets `voting.quorum` without `require_vote_quorum` imposes no participation requirement.
+
+**No decisive votes.** With any algorithm other than `none`, if no decisive vote has been cast the algorithm produces no result — it neither passes nor fails. Whether that blocks the commitment is then governed entirely by `commitment.require_vote_quorum`: with it `false`, a positive commitment is **not** blocked by the absence of votes, even under `majority` or `unanimous`. A policy that intends its voting algorithm to be binding therefore MUST set `commitment.require_vote_quorum` to `true`. A negative commitment is always blocked in this case, because a decline must be backed by at least one explicit reject (see RFC-MACP-0007 §6.2).
 
 **Quorum:**
 
@@ -151,7 +172,9 @@ Canonical schema: `schemas/json/policy/handoff-rules.schema.json`
 
 Extension modes registered via `RegisterExtMode` MAY define custom rule schemas. The runtime SHOULD validate custom rules against the mode's declared policy schema if one exists. Extension modes without a declared policy schema accept any valid JSON as rules.
 
-## 5. Default Policy
+## 5. Built-in Policies
+
+### 5.1 Default Policy
 
 Every conformant runtime MUST pre-register the following default policy:
 
@@ -168,6 +191,88 @@ Every conformant runtime MUST pre-register the following default policy:
 The default policy applies no additional governance constraints beyond base mode validation. Mode-specific default behaviors (e.g., Decision Mode's default voting algorithm, Quorum Mode's default abstention handling) are defined by each mode's base validation rules in their respective RFCs, not by the default policy.
 
 When `policy_version` in `SessionStartPayload` is empty or equals `policy.default`, the runtime MUST apply this default. The default policy sets all rule parameters to permissive values such that the mode's built-in validation is the only constraint applied. It does not disable mode validation — it simply adds no governance restrictions on top of it.
+
+An empty `rules` object and a `rules` object that spells out every parameter at its JSON Schema default are the same policy. A runtime MAY pre-register either form.
+
+### 5.2 Reserved Governance Profiles
+
+Three common governance profiles are assigned reserved identifiers under the `policy.std.` namespace of Section 2.2. Unlike `policy.default`, they are **optional**: a runtime MAY pre-register any subset of them, and one that pre-registers none of them remains conformant. What the reservation guarantees is that these identifiers cannot be claimed by a user registration, so an identifier that does resolve resolves to the rules below on every runtime.
+
+All three target `macp.mode.decision.v1` and declare `schema_version: 1`; they use only schema-version-1 rule fields. They are Decision Mode profiles specifically because a descriptor binds exactly one `mode` (Section 3) and because Decision Mode is the only standard mode whose rule schema can express these three bars exactly — see the note at the end of this section.
+
+| Policy ID | Mode | Governance bar |
+|-----------|------|----------------|
+| `policy.std.majority` | `macp.mode.decision.v1` | At least half of the decisive votes approve |
+| `policy.std.supermajority` | `macp.mode.decision.v1` | At least two-thirds of the decisive votes approve, with at least two voters |
+| `policy.std.unanimous` | `macp.mode.decision.v1` | Every declared participant has approved and no reject was cast |
+
+Each profile sets `commitment.require_vote_quorum` to `true`. Without it the voting algorithm is not binding on a positive commitment when no vote has been cast (see the "No decisive votes" note in Section 4.1), which would make each of these profiles vacuous in exactly the case they exist to govern.
+
+#### `policy.std.majority`
+
+```json
+{
+  "policy_id": "policy.std.majority",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 1,
+  "description": "Simple majority — at least half of the decisive votes approve",
+  "rules": {
+    "voting": {
+      "algorithm": "majority",
+      "threshold": 0.5,
+      "quorum": { "type": "count", "value": 1 }
+    },
+    "commitment": { "require_vote_quorum": true }
+  }
+}
+```
+
+A positive commitment is allowed when at least one participant has voted and `approve / (approve + reject) >= 0.5`. The comparison is inclusive per Section 4.1, so an even split approves; a profile in which a tie fails is `plurality`, which this specification does not reserve.
+
+#### `policy.std.supermajority`
+
+```json
+{
+  "policy_id": "policy.std.supermajority",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 1,
+  "description": "Two-thirds supermajority with a minimum of two voters",
+  "rules": {
+    "voting": {
+      "algorithm": "supermajority",
+      "threshold": 0.6666666666666666,
+      "quorum": { "type": "count", "value": 2 }
+    },
+    "commitment": { "require_vote_quorum": true }
+  }
+}
+```
+
+A positive commitment is allowed when at least two participants have voted and `approve / (approve + reject) >= threshold`.
+
+**Determinism note:** two-thirds is not exactly representable in binary floating point. The literal `0.6666666666666666` is the IEEE-754 binary64 value nearest to two-thirds, and it is the same binary64 value that `2 / 3` produces under binary64 division. Implementations MUST evaluate this comparison in binary64 so that the intended outcomes hold: 2 of 3, 4 of 6, 20 of 30, and 67 of 100 approvals pass, and 66 of 100 does not. An implementation using exact decimal or rational arithmetic would compute `2/3 < 0.6666666666666666` and reject 2 of 3, which is why the arithmetic is pinned rather than left implicit under Section 6.3.
+
+#### `policy.std.unanimous`
+
+```json
+{
+  "policy_id": "policy.std.unanimous",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 1,
+  "description": "Unanimous — every declared participant approves and no reject is cast",
+  "rules": {
+    "voting": {
+      "algorithm": "unanimous",
+      "quorum": { "type": "count", "value": 1 }
+    },
+    "commitment": { "require_vote_quorum": true }
+  }
+}
+```
+
+A positive commitment is allowed when every identifier in the session's declared `participants` has cast an approve vote and no reject vote exists. Per Section 4.1 this is stricter than "all decisive votes approve": a participant who has not voted blocks the commitment, and `threshold` is not consulted. The `quorum` entry only keeps the algorithm binding; the all-participants requirement comes from the algorithm itself.
+
+**Why Decision Mode only.** "Majority", "supermajority", and "unanimous" are meaningful in Quorum Mode as well, but Quorum Mode expresses its bar through `threshold` (Section 4.2), whose `n_of_m` type is an absolute approval count and whose `percentage` type is an integer 0–100 rounded up against the declared participant count. An absolute count cannot express a bar that scales with participants, and an integer percentage cannot express two-thirds or a strict majority exactly at every participant count: `67` requires 3 of 3 rather than 2 of 3, and `51` requires 102 of 200 rather than 101. `100` does express unanimity exactly, but reserving a single Quorum Mode profile whose siblings cannot exist would be worse than reserving none. Quorum Mode profiles are therefore left unassigned; they need an exact-fraction threshold type, which is a schema addition and out of scope here.
 
 ## 6. Evaluation Semantics
 
@@ -229,6 +334,7 @@ Unlike `WatchModeRegistry` (which returns a lightweight `RegistryChanged` notifi
 Registration constraints:
 
 - `policy.default` MUST NOT be registered or unregistered (it is built-in).
+- A `policy_id` in the reserved `policy.std.` namespace MUST NOT be registered unless the descriptor is the canonical definition for that identifier (Section 2.2), and a pre-registered `policy.std.` policy MUST NOT be unregistered.
 - `policy_id` MUST be unique; re-registration of an existing ID MUST fail.
 - `rules` MUST validate against the target mode's rule JSON Schema if a schema exists.
 - Unregistering a policy does not affect sessions that have already resolved it.
