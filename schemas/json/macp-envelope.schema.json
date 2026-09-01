@@ -114,8 +114,22 @@
             "$ref": "#/$defs/SignalPayload"
           }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "message_type": {
+            "not": {
+              "enum": ["Signal", "Progress"]
+            }
+          }
+        },
+        "required": [
+          "message_type"
+        ]
       },
-      "else": {
+      "then": {
         "properties": {
           "mode": {
             "minLength": 1
@@ -196,16 +210,32 @@
       },
       "then": {
         "properties": {
-          "mode": {
-            "minLength": 1
-          },
-          "session_id": {
-            "minLength": 1
-          },
           "payload": {
             "$ref": "#/$defs/ProgressPayload"
           }
-        }
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "mode": {
+                "maxLength": 0
+              },
+              "session_id": {
+                "maxLength": 0
+              }
+            }
+          },
+          {
+            "properties": {
+              "mode": {
+                "minLength": 1
+              },
+              "session_id": {
+                "minLength": 1
+              }
+            }
+          }
+        ]
       }
     }
   ],
