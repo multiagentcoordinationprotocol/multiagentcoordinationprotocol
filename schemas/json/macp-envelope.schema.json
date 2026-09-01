@@ -26,7 +26,7 @@
     "message_type": {
       "type": "string",
       "minLength": 1,
-      "description": "Message type discriminator (e.g., Signal, SessionStart, Commitment)."
+      "description": "Message type discriminator (e.g., Signal, SessionStart, Commitment). For Mode-defined payloads, interpreted relative to `mode`: (mode, message_type) is the discriminating key for a payload's declared type, since more than one Mode may declare a payload of the same name — an implementation MUST NOT assume a given message_type denotes the same payload type across Modes. Mode-independent Core types (Signal, Progress, SessionStart, SessionCancel, SessionSuspend, SessionResume, Commitment) each denote one payload type regardless of mode; Ambient Signals carry an empty `mode` and remain fully identified by message_type alone."
     },
     "message_id": {
       "type": "string",

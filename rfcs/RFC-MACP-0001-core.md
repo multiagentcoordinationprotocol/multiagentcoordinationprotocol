@@ -159,7 +159,7 @@ The Envelope provides:
 - message identity for idempotency,
 - payload carriage for Core or Mode-specific content.
 
-The canonical Protobuf definition is maintained under [`schemas/proto/macp/v1/envelope.proto`](../schemas/proto/macp/v1/envelope.proto). Core payload definitions (`SignalPayload`, `SessionStartPayload`, `SessionCancelPayload`, `CommitmentPayload`) are in [`schemas/proto/macp/v1/core.proto`](../schemas/proto/macp/v1/core.proto).
+The canonical Protobuf definition is maintained under [`schemas/proto/macp/v1/envelope.proto`](../schemas/proto/macp/v1/envelope.proto). Core payload definitions (`SignalPayload`, `ProgressPayload`, `SessionStartPayload`, `SessionCancelPayload`, `SessionSuspendPayload`, `SessionResumePayload`, `CommitmentPayload`) are in [`schemas/proto/macp/v1/core.proto`](../schemas/proto/macp/v1/core.proto).
 
 For all accepted Envelopes:
 
@@ -169,6 +169,8 @@ For all accepted Envelopes:
 - `session_id` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
 - `mode` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
 - `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
+
+For Mode-defined payloads, `message_type` is interpreted relative to the Envelope's `mode`: `(mode, message_type)`, not `message_type` alone, is the discriminating key for a payload's declared type, and an implementation MUST NOT assume a given `message_type` denotes the same payload type across Modes. This is not a hypothetical concern — more than one Mode already declares the same payload name (for example, `ProposalPayload` is declared by both `macp.mode.decision.v1` and `macp.mode.proposal.v1`, and `RejectPayload` is declared by both `macp.mode.proposal.v1` and `macp.mode.quorum.v1`). Core types, by contrast, are mode-independent: `Signal`, `Progress`, `SessionStart`, `SessionCancel`, `SessionSuspend`, `SessionResume`, and `Commitment` each denote one payload type regardless of the Envelope's `mode`, corresponding one-to-one with the Core payload definitions listed above. This scopes the *interpretation* of `message_type` for Mode-defined payloads; it does not qualify the Core types. Per the rule above, `mode` MUST be empty for Ambient Signals, so such a Signal remains fully identified by `message_type` alone, with no `mode` to pair it with. Neither mode-independent types nor empty-`mode` Signals are made non-conforming by this rule. This clarifies how an existing discriminator is scoped; it does not establish a message-type registry.
 
 The `cancelled_by` field in `SessionCancelPayload` is set by the runtime and MUST match the authenticated `sender` of the originating `CancelSession` RPC. It is not a self-asserted claim.
 
