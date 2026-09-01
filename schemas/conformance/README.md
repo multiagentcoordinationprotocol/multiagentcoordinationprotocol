@@ -80,6 +80,16 @@ Notes:
   `ABSTAIN`); fixtures must use the uppercase form.
 - Proto `bytes` payload fields (e.g. `context`) are written as plain strings and
   UTF-8 encoded by the harnesses.
+- Every ballot/vote-bearing mode fixtures an *accepted* first ballot followed
+  by a *rejected* duplicate from the same sender for the same
+  `proposal_id`/`request_id` (`decision_reject_paths.json`,
+  `quorum_reject_paths.json` — the latter includes a cross-type case, since
+  the per-`request_id` cap in RFC-MACP-0011 §5 rule 3 is counted across
+  `Approve`/`Reject`/`Abstain` combined). `ObjectionPayload`
+  (`decision_happy_path.json`, `decision_reject_paths.json`),
+  `WithdrawPayload` (`proposal_reject_paths.json`), and `TaskUpdatePayload`
+  (`task_reject_paths.json`) each have at least one accepted and one
+  RFC-cited rejected instance.
 
 ## Source of truth & enforcement
 
