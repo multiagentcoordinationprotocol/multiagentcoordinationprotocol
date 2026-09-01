@@ -166,8 +166,9 @@ For all accepted Envelopes:
 - `message_type` MUST be non-empty,
 - `message_id` MUST be non-empty,
 - `sender` MUST be non-empty,
-- `session_id` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
-- `mode` MUST be empty for Ambient Signals and non-empty for session-scoped messages,
+- `session_id` and `mode` MUST both be empty for Ambient Signals,
+- `session_id` and `mode` MUST agree on `Progress`: a runtime MAY accept `Progress` either in ambient form (`session_id` and `mode` both empty) or in session-scoped form (`session_id` and `mode` both non-empty); an Envelope with exactly one of the two empty MUST be rejected. Ambient `Progress` has no payload field that correlates it to a session; `ProgressPayload.target_message_id` correlates it only to the originating message. This is a distinct rule from Signals: unlike Signals, `Progress` is not required to be ambient,
+- for every other message type, `session_id` and `mode` MUST both be non-empty (session-scoped),
 - `sender` MUST be treated as authenticated/derived identity for session-scoped acceptance per RFC-MACP-0004, not as an untrusted self-asserted hint.
 
 For Mode-defined payloads, `message_type` is interpreted relative to the Envelope's `mode`: `(mode, message_type)`, not `message_type` alone, is the discriminating key for a payload's declared type, and an implementation MUST NOT assume a given `message_type` denotes the same payload type across Modes. This is not a hypothetical concern — more than one Mode already declares the same payload name (for example, `ProposalPayload` is declared by both `macp.mode.decision.v1` and `macp.mode.proposal.v1`, and `RejectPayload` is declared by both `macp.mode.proposal.v1` and `macp.mode.quorum.v1`). Core types, by contrast, are mode-independent: `Signal`, `Progress`, `SessionStart`, `SessionCancel`, `SessionSuspend`, `SessionResume`, and `Commitment` each denote one payload type regardless of the Envelope's `mode`, corresponding one-to-one with the Core payload definitions listed above. This scopes the *interpretation* of `message_type` for Mode-defined payloads; it does not qualify the Core types. Per the rule above, `mode` MUST be empty for Ambient Signals, so such a Signal remains fully identified by `message_type` alone, with no `mode` to pair it with. Neither mode-independent types nor empty-`mode` Signals are made non-conforming by this rule. This clarifies how an existing discriminator is scoped; it does not establish a message-type registry.
@@ -396,8 +397,8 @@ MACP defines a canonical JSON mapping for interoperability with REST gateways, d
 |----------------|-----------|---------|
 | `timestamp_unix_ms` (int64) | `timestamp` | RFC3339 string (UTC recommended) |
 | `payload` (bytes) | `payload` or `payload_b64` | See §10.2 |
-| `mode` (string) | `mode` | Empty string for Ambient Signals; non-empty for session-scoped messages |
-| `session_id` (string) | `session_id` | Empty string for Ambient Signals |
+| `mode` (string) | `mode` | Empty string for Ambient Signals; empty or non-empty for `Progress` per §6; non-empty for all other message types |
+| `session_id` (string) | `session_id` | Empty string for Ambient Signals; empty or non-empty for `Progress` per §6; non-empty for all other message types |
 | All enum fields | Same name | String form of protobuf enum name |
 
 **Normative mapping rule:** In the canonical JSON form, the Protobuf field `timestamp_unix_ms` (int64, milliseconds since Unix epoch) is **renamed** to `timestamp` and **converted** to an RFC 3339 string. Encoders MUST perform this conversion when producing JSON. Decoders MUST convert `timestamp` back to `timestamp_unix_ms` when producing Protobuf. This is the only Protobuf-to-JSON field rename in the MACP envelope.

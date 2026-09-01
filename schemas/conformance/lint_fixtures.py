@@ -95,10 +95,10 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
             errors.append(f"messages[{i}].expect {expect!r} not in {sorted(VALID_EXPECT)}")
         # An ACCEPTED message must come from a participant — except the
         # initiator's role-based messages (SessionStart / Commitment /
-        # CancelSession), which do not require participant-list membership
+        # SessionCancel), which do not require participant-list membership
         # (see the initiator note above). A REJECTED message may legitimately
         # come from an outsider (that is often why it rejects).
-        initiator_role_messages = {"SessionStart", "Commitment", "CancelSession"}
+        initiator_role_messages = {"SessionStart", "Commitment", "SessionCancel"}
         # Mode-specific messages that are likewise issued by the initiator
         # ROLE: the quorum coordinator poses the question (RFC-0011 §2), the
         # task requester issues the request (RFC-0009 §4).

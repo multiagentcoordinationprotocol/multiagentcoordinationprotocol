@@ -187,10 +187,10 @@ package macp.v1;
 
 message Envelope {
   string macp_version = 1;
-  string mode = 2;                // empty for Ambient Signals
+  string mode = 2;                // empty for Ambient Signals; empty or non-empty for Progress (§6)
   string message_type = 3;
   string message_id = 4;
-  string session_id = 5;          // empty for Signals
+  string session_id = 5;          // empty for Signals; empty or non-empty for Progress (§6)
   string sender = 6;
   int64  timestamp_unix_ms = 7;   // informational
   bytes  payload = 8;             // mode-defined
