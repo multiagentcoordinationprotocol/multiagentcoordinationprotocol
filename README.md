@@ -129,6 +129,8 @@ MACP/
       decision_happy_path.json
       decision_negative_outcome.json
       decision_reject_paths.json
+      decision_critical_objection_veto.json
+      decision_critical_objection_finalize_decline.json
       proposal_happy_path.json
       proposal_negative_outcome.json
       proposal_reject_paths.json
