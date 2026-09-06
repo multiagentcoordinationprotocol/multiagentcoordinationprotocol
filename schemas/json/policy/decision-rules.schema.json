@@ -68,7 +68,7 @@
           "type": "string",
           "enum": ["deny", "finalize_decline", "hold"],
           "default": "deny",
-          "description": "Action when a critical objection would block commitment: deny (reject), finalize_decline (resolve as a negative outcome), or hold (leave the session open)."
+          "description": "Action when a critical objection would block commitment: deny (reject the commitment), finalize_decline (resolve the session as a negative outcome), or hold (reject the commitment as deny does, annotated as an escalation). deny and hold are observationally identical — both reject with POLICY_DENIED and leave the session OPEN; hold is an operator-facing annotation, not a distinct protocol outcome. See RFC-MACP-0012 §4.1."
         }
       }
     },
