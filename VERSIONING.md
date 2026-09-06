@@ -75,28 +75,50 @@ Maven `io.macp:macp-proto` and `io.macp:macp-proto-kotlin`, and NuGet
 - Field additions are proto3-backward-compatible and bump the PATCH/MINOR
   version; anything wire-breaking is not permitted post-freeze without a
   new package major.
+- **Generator versions MUST be pinned.** Every remote plugin in
+  `buf/buf.gen.*.yaml` carries an explicit revision, and the Python generator
+  (`grpcio-tools`) is pinned in both `publish-proto-packages.yml` and `ci.yml`.
+  An unpinned generator floats to whatever is latest at release time, which
+  silently changes the emitted code's runtime requirements between two
+  releases of identical `.proto` files.
 - **Generated-code dependency floors are part of the release contract.**
-  Five packages ship *generated* code — `proto-python`, `proto-go`,
-  `proto-java`, `proto-kotlin`, `proto-csharp` — and for each of them the
-  code-generator version used at release determines the real runtime floors
-  of the emitted code. Wherever those floors are *hand-declared*, the
-  declared floors MUST equal what the pinned generator's output actually
-  requires, and the generator pin and the declared floors MUST be bumped
-  together in the same change:
+  Five packages ship *generated* code, and for each of them the pinned
+  generator determines the real runtime requirements of the emitted code. The
+  declared floors MUST equal what that generator's output actually requires,
+  and the pin and the floors MUST be bumped **in the same change**:
 
-  | Package | Floors declared in | Generator |
+  | Package | Floors declared in | Pinned generator |
   | --- | --- | --- |
-  | `proto-python` | `packages/proto-python/pyproject.toml` | `grpcio-tools`, pinned in `publish-proto-packages.yml` |
-  | `proto-java` | `packages/proto-java/build.gradle.kts` | `buf.build/protocolbuffers/java`, `buf.build/grpc/java` |
-  | `proto-kotlin` | `packages/proto-kotlin/build.gradle.kts` | `buf.build/protocolbuffers/kotlin` |
-  | `proto-csharp` | `packages/proto-csharp/Macp.Proto.csproj` | `buf.build/protocolbuffers/csharp` |
-  | `proto-go` | *derived* — `go.mod` is recomputed by `go mod tidy` in the release job | `buf.build/protocolbuffers/go`, `buf.build/grpc/go` |
+  | `proto-python` | `packages/proto-python/pyproject.toml` | `grpcio-tools` (`publish-proto-packages.yml`, `ci.yml`) |
+  | `proto-java` | `packages/proto-java/build.gradle.kts` | `protocolbuffers/java`, `grpc/java` |
+  | `proto-kotlin` | `packages/proto-kotlin/build.gradle.kts` | `protocolbuffers/kotlin` |
+  | `proto-csharp` | `packages/proto-csharp/Macp.Proto.csproj` | `protocolbuffers/csharp` |
+  | `proto-go` | `packages/proto-go/go.mod` | `protocolbuffers/go`, `grpc/go` |
 
-  `proto-go` is the exception: because its floors are recomputed at release
-  rather than declared by hand, they cannot drift away from the generator.
-  Every other row can, and issue #53 is the cautionary tale — an unpinned
-  generator silently raised the real floor above the declared one, and
-  wheels 0.1.4–0.1.7 could not be imported at their declared minimums.
-- Raw-proto packages (`proto-rust`, `proto-npm`) carry no generated code
-  and are exempt from the floor rule; they must stay byte-identical to
-  `schemas/proto/` (`make check-proto-sync`).
+  **A build that compiles is not evidence that the floors are right.** Some
+  gencode asserts its required runtime version at *class load* rather than at
+  compile time — `protobuf-java` does, via
+  `RuntimeVersion.validateProtobufGencodeVersion` in a static initializer. A
+  package whose declared floor is below its gencode version therefore compiles
+  clean, publishes, and fails for the first consumer who loads it. That is what
+  issue #53 was: wheels 0.1.4–0.1.7 built and published green and could not be
+  imported at their declared minimums. CI load-tests the Java artifact against
+  its declared floors for this reason (`scripts/java-loadtest/LoadTest.java`);
+  a compile-only check cannot detect this class of error.
+
+  `proto-go` needs one qualification. `google.golang.org/protobuf` shares a
+  release train with `protoc-gen-go` and tracks it exactly. `grpc-go` does
+  not: `protoc-gen-go-grpc` versions independently, and its gencode requires
+  only the `grpc.SupportPackageIsVersion*` window rather than a specific
+  `grpc-go` release, so that floor moves when the window does, not when the
+  plugin pin does. Note also that `go mod tidy` does **not** raise an existing
+  requirement to match a newer generator — it resolves the build graph, not
+  the generator — so `go.mod` is not self-healing and is maintained like every
+  other declared floor above.
+
+- Raw-proto packages (`proto-rust`, `proto-npm`) ship no generated code and
+  are exempt from the floor rule; they must stay byte-identical to
+  `schemas/proto/` (`make check-proto-sync`). `proto-npm` does run the JS
+  generator, but only as a CI compile check: the output is gitignored and
+  excluded from the published tarball, and the package declares no
+  dependencies, so it has no floors to drift.

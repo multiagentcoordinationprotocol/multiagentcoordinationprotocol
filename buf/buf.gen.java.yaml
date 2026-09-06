@@ -1,3 +1,7 @@
+# Remote plugins are PINNED. An unpinned plugin floats to latest, and the
+# generator version determines the real runtime floors of the code it emits.
+# Bump a pin and the matching declared floors in the same change
+# (VERSIONING.md §8). Issue #53 is what happens otherwise.
 version: v2
 managed:
   enabled: true
@@ -5,7 +9,7 @@ managed:
     - file_option: java_package_prefix
       value: io.macp.proto
 plugins:
-  - remote: buf.build/protocolbuffers/java
+  - remote: buf.build/protocolbuffers/java:v36.1
     out: packages/proto-java/src/main/java
-  - remote: buf.build/grpc/java
+  - remote: buf.build/grpc/java:v1.84.0
     out: packages/proto-java/src/main/java

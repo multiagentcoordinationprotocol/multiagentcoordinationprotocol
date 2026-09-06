@@ -1,3 +1,7 @@
+# Remote plugins are PINNED. An unpinned plugin floats to latest, and the
+# generator version determines the real runtime floors of the code it emits.
+# Bump a pin and the matching declared floors in the same change
+# (VERSIONING.md §8). Issue #53 is what happens otherwise.
 version: v2
 managed:
   enabled: true
@@ -5,11 +9,11 @@ managed:
     - file_option: go_package_prefix
       value: github.com/multiagentcoordinationprotocol/macp-proto-go
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - remote: buf.build/protocolbuffers/go:v1.36.12
     out: packages/proto-go
     opt:
       - paths=source_relative
-  - remote: buf.build/grpc/go
+  - remote: buf.build/grpc/go:v1.6.2
     out: packages/proto-go
     opt:
       - paths=source_relative

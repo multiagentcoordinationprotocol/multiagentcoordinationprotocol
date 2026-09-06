@@ -28,7 +28,10 @@ repositories {
 
 dependencies {
     api("io.macp:macp-proto:0.1.3")
-    api("com.google.protobuf:protobuf-kotlin:4.34.1")
+    // protobuf-kotlin MUST track protobuf-java: the generated DSL wraps the Java
+    // classes, whose gencode asserts its runtime version at class load.
+    // buf/buf.gen.kotlin.yaml pins protocolbuffers/kotlin:v36.1 — VERSIONING.md §8.
+    api("com.google.protobuf:protobuf-kotlin:4.36.1")
     api("io.grpc:grpc-kotlin-stub:1.4.3")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
