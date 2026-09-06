@@ -149,6 +149,18 @@ jobs:
           cd packages/proto-java
           gradle compileJava
 
+      # Compiling is NOT sufficient. protobuf-java gencode asserts its required
+      # runtime version in a static initializer, so a gencode/floor mismatch
+      # compiles clean and throws at class load — the #53 failure mode, which
+      # shipped four unusable wheels while CI was green. Load a generated class
+      # against the DECLARED floor to catch it.
+      - name: Verify Java gencode loads at the declared floor
+        run: |
+          cd packages/proto-java
+          gradle -q printRuntimeClasspath > /tmp/java-cp.txt
+          javac -d /tmp/loadtest ../../scripts/java-loadtest/LoadTest.java
+          java -cp "/tmp/loadtest:build/classes/java/main:$(cat /tmp/java-cp.txt)" LoadTest
+
       - name: Publish Java to mavenLocal for Kotlin dependency
         run: |
           cd packages/proto-java

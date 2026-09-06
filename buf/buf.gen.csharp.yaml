@@ -1,3 +1,7 @@
+# Remote plugins are PINNED. An unpinned plugin floats to latest, and the
+# generator version determines the real runtime floors of the code it emits.
+# Bump a pin and the matching declared floors in the same change
+# (VERSIONING.md §8). Issue #53 is what happens otherwise.
 version: v2
 managed:
   enabled: true
@@ -5,5 +9,5 @@ managed:
     - file_option: csharp_namespace_prefix
       value: Macp.Proto
 plugins:
-  - remote: buf.build/protocolbuffers/csharp
+  - remote: buf.build/protocolbuffers/csharp:v36.1
     out: packages/proto-csharp

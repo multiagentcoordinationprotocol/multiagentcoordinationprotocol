@@ -18,10 +18,20 @@ repositories {
 }
 
 dependencies {
-    api("com.google.protobuf:protobuf-java:4.34.1")
-    api("io.grpc:grpc-protobuf:1.74.0")
-    api("io.grpc:grpc-stub:1.74.0")
+    // Floors MUST match what the pinned generators in buf/buf.gen.java.yaml emit
+    // (protocolbuffers/java:v36.1 -> gencode 4.36.1, grpc/java:v1.84.0).
+    // Bump the pins and these together — VERSIONING.md §8.
+    api("com.google.protobuf:protobuf-java:4.36.1")
+    api("io.grpc:grpc-protobuf:1.84.0")
+    api("io.grpc:grpc-stub:1.84.0")
     compileOnly("org.apache.tomcat:annotations-api:6.0.53")
+}
+
+// Emits the resolved runtime classpath so CI can load-test the generated classes
+// against the DECLARED floors (see scripts/java-loadtest/LoadTest.java).
+tasks.register("printRuntimeClasspath") {
+    val runtimeClasspath = configurations.named("runtimeClasspath")
+    doLast { println(runtimeClasspath.get().asPath) }
 }
 
 publishing {

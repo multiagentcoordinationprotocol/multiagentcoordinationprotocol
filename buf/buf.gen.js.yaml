@@ -1,8 +1,12 @@
+# Remote plugins are PINNED. An unpinned plugin floats to latest, and the
+# generator version determines the real runtime floors of the code it emits.
+# Bump a pin and the matching declared floors in the same change
+# (VERSIONING.md §8). Issue #53 is what happens otherwise.
 version: v2
 managed:
   enabled: true
 plugins:
-  - remote: buf.build/protocolbuffers/js
+  - remote: buf.build/protocolbuffers/js:v4.0.2
     out: packages/proto-npm/generated
     opt:
       - import_style=commonjs
