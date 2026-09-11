@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "threshold.value MUST be greater than zero (RFC-MACP-0011 §5 rule 2; RFC-MACP-0012 §4.2). A zero approval bar is trivially satisfied, so a policy that reads as restrictive approves everything -- fail-open, the worst polarity to leave authorable. This is the quorum-side twin of issue #98 item 2, which was fixed on the Decision side in RFC-MACP-0012 1.1.0-draft. Uses 'n_of_m' deliberately: under 'percentage' the maximum:100 arm plays no part, but keeping the type off the conditional arm entirely guarantees the rejection can come from exclusiveMinimum and nothing else.",
+  "threshold": {
+    "type": "n_of_m",
+    "value": 0
+  }
+}

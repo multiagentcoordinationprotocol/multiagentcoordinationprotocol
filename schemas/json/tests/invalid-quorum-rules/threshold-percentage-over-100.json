@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "Under threshold.type 'percentage', threshold.value MUST NOT exceed 100 (RFC-MACP-0012 §4.2) -- it is an integer percentage of the declared participant count, so 101 is not expressible. This constraint is PRE-EXISTING: the percentage allOf arm has been in quorum-rules.schema.json since it was written, and until this fixture nothing had ever exercised it, because nothing validated a quorum rules object against the quorum rule schema at all (issue #100).",
+  "threshold": {
+    "type": "percentage",
+    "value": 101
+  }
+}

@@ -7,17 +7,18 @@
   "properties": {
     "threshold": {
       "type": "object",
-      "description": "Override the required_approvals from ApprovalRequest (RFC-MACP-0012 Section 4.2). This is the approval bar and the ONLY gate in schema_version <= 3 — there is no separate participation quorum. Type 'n_of_m' uses a raw approval count, 'percentage' uses an integer percentage (0-100) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
+      "description": "Override the required_approvals from ApprovalRequest (RFC-MACP-0012 Section 4.2). This is the approval bar and the ONLY gate in schema_version <= 3 — there is no separate participation quorum. Type 'n_of_m' uses a raw approval count; 'percentage' uses an integer percentage (1-100) of the participant count declared at SessionStart, with the effective threshold rounded UP: ceil(value * declared_participant_count / 100). The identifier 'weighted' is RESERVED: it was removed in RFC-MACP-0012 1.2.0-draft without ever having had defined semantics (no weights vocabulary, no electorate rule, no termination arithmetic) and MUST NOT be reused with a different meaning.",
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["n_of_m", "percentage", "weighted"],
+          "enum": ["n_of_m", "percentage"],
           "default": "n_of_m"
         },
         "value": {
           "type": "integer",
-          "minimum": 0,
-          "description": "Threshold value: approval count for n_of_m, integer percentage 0-100 for percentage, weighted sum for weighted."
+          "exclusiveMinimum": 0,
+          "description": "Threshold value: approval count for n_of_m; integer percentage 1-100 for percentage, resolved to an effective approval count of ceil(value * declared_participant_count / 100). MUST be greater than zero (RFC-MACP-0011 Section 5, rule 2; RFC-MACP-0012 Section 4.2).",
+          "$comment": "exclusiveMinimum 0: a zero approval bar is trivially satisfied, so a restrictive-looking quorum policy approves everything. Quorum-side twin of issue #98 item 2, fixed on the Decision side in RFC-MACP-0012 1.1.0-draft."
         }
       },
       "allOf": [

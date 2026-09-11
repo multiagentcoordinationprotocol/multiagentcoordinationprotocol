@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) - Quorum Mode
 
 **Document:** RFC-MACP-0011
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0002
+
+> **Changelog — 1.1.0-draft:** rewrites Section 5 rule 6. The `weighted` threshold type is removed ([RFC-MACP-0012](RFC-MACP-0012-policy.md) 1.2.0-draft): rule 6's former second sentence pointed at a `weights` field no schema defined, and no weighted analogue of rule 2's bound or of rules 4/4a's termination arithmetic ever existed, so `weighted` had no conformant evaluation — a standing hole in Section 7's semantic-determinism claim. The identifier is reserved, not reused. Rule 6 now also states that a policy `threshold` override is outside rule 2's scope (an unreachable `n_of_m` override terminates under rule 4's second clause, with rule 4b's negative outcome shape) and that a `percentage` override resolves to an effective approval count via the ceiling rule of RFC-MACP-0012 §4.2.
 
 ## Abstract
 
@@ -69,7 +71,7 @@ Implementations MUST enforce the following:
 4a. `Abstain` ballots do NOT count toward `required_approvals` and do NOT count as rejections. An abstaining participant is removed from the pool of potential approvers. Therefore, a Session becomes eligible for negative `Commitment` when `(remaining_eligible_participants + current_approvals) < required_approvals`, where `remaining_eligible_participants` excludes those who have already voted (approve, reject, or abstain). These are the default semantics. Policy MAY override abstention interpretation (see RFC-MACP-0012 Section 4.2 for `abstention.interpretation` options including `neutral`, `implicit_reject`, and `ignored`).
 4b. When all eligible participants have abstained (or a combination of abstentions and rejections makes the threshold unreachable), the Session becomes eligible for `Commitment` with a negative outcome (e.g., `action: quorum.rejected`). The `CommitmentPayload.reason` SHOULD indicate that the threshold was not met.
 5. Only an authorized coordinator may emit the final `Commitment`.
-6. When policy specifies a `threshold` override, it replaces (not supplements) the `required_approvals` value from `ApprovalRequest`. For the `weighted` threshold type, participant weights are stored in the policy `rules` object, not in individual ballot payloads.
+6. When policy specifies a `threshold` override, it replaces (not supplements) the `required_approvals` value from `ApprovalRequest`. Rule 2 constrains the `ApprovalRequest` payload; a policy override is evaluated as given. An `n_of_m` override greater than the count of eligible participants is not rejected at admission — the rule schema cannot see any session's participant count — and simply makes the threshold unreachable, so the Session becomes eligible for `Commitment` under rule 4's second clause — the remaining possible approvals can no longer reach the threshold — with the negative outcome of rule 4b. Note that rule 4b's own antecedent is stated in terms of abstentions and rejections and so does not literally cover this case: an override of 5 over 3 declared participants is unreachable even if all three approve. Rule 4 is the operative clause; 4b supplies the outcome shape. A `percentage` override is resolved to an effective approval count by the ceiling rule of [RFC-MACP-0012](RFC-MACP-0012-policy.md) Section 4.2, and that effective count is then used wherever these rules reference the approval threshold, including the termination arithmetic of rules 4 and 4a. The `weighted` threshold type referenced by earlier drafts of this rule was removed in RFC-MACP-0012 1.2.0-draft: it was never accompanied by a weights vocabulary, a weighted analogue of rule 2's bound, or weighted termination arithmetic for rules 4 and 4a, so no conformant evaluation of it ever existed. Its identifier is reserved and MUST NOT be reused with a different meaning.
 
 ## 6. Terminal semantics
 
