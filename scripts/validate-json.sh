@@ -34,6 +34,8 @@ RULES_EXTRACTOR="${PROJECT_ROOT}/scripts/extract-policy-rules.py"
 # lowers this number while every remaining instance still passes. Without the pin the
 # run stays green with less coverage than it reports. Bump it when adding a rules object.
 EXPECTED_RULES_INSTANCES=24
+INVALID_QUORUM_RULES_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-quorum-rules"
+QUORUM_RULES_SCHEMA="${PROJECT_ROOT}/schemas/json/policy/quorum-rules.schema.json"
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -304,6 +306,43 @@ if [ -d "${INVALID_POLICY_RULES_DIR}" ]; then
 
             if ajv validate -s "${DECISION_RULES_SCHEMA}" -d "${invalid_rules_file}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
                 echo "  [X] Fixture unexpectedly PASSED validation -- the decision rule schema no longer rejects this case"
+                exit 1
+            else
+                VALIDATED=$((VALIDATED + 1))
+                echo "  [OK] Correctly rejected"
+            fi
+            echo ""
+        fi
+    done
+fi
+
+# --- Invalid quorum rules fixtures (MUST fail quorum-rules.schema.json) ---
+#
+# Sibling of the Decision loop above. The split is structural: each loop binds ONE
+# rule schema, so a quorum fixture dropped into the Decision directory would be
+# rejected by decision-rules.schema.json for entirely the wrong reason -- silently.
+echo "-- Invalid quorum rules fixtures (${INVALID_QUORUM_RULES_DIR}) --"
+echo "Schema: ${QUORUM_RULES_SCHEMA}"
+echo "These MUST all FAIL validation."
+echo ""
+
+# Same guard as the Decision loop: ajv exits non-zero for a MISSING schema exactly
+# as it does for a rejected instance, so without this a renamed or deleted quorum
+# schema would report three cheerful "Correctly rejected" lines. Until this
+# directory existed, NOTHING in the repository validated an instance against
+# quorum-rules.schema.json, so nothing else would catch it either.
+if [ ! -f "${QUORUM_RULES_SCHEMA}" ]; then
+    echo "[X] Quorum rule schema not found: ${QUORUM_RULES_SCHEMA}"
+    exit 1
+fi
+
+if [ -d "${INVALID_QUORUM_RULES_DIR}" ]; then
+    for f in "${INVALID_QUORUM_RULES_DIR}"/*.json; do
+        if [ -f "$f" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating (expect failure): $(basename "$f")"
+            if ajv validate -s "${QUORUM_RULES_SCHEMA}" -d "${f}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+                echo "  [X] Fixture unexpectedly PASSED validation -- the quorum rule schema no longer rejects this case"
                 exit 1
             else
                 VALIDATED=$((VALIDATED + 1))

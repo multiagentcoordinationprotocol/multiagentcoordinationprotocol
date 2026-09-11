@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "threshold.type MUST be one of the closed enum [\"n_of_m\", \"percentage\"] (RFC-MACP-0012 §4.2). 'weighted' was removed in RFC-MACP-0012 1.2.0-draft and its identifier reserved: it was enum-legal but had no weights vocabulary, no electorate rule, and no weighted analogue of RFC-MACP-0011 §5 rules 2/4/4a's count-only termination arithmetic, so no conformant evaluation of it ever existed (issue #102). The same enum closure rejects the 'count' alias that one implementation used for 'n_of_m', which the spec has never blessed (issue #98, item 4) -- both rulings are pinned by this one fixture, because two enum fixtures would BOTH start validating if the enum keyword were deleted, which would break the one-constraint-per-fixture isolation this directory depends on.",
+  "threshold": {
+    "type": "weighted",
+    "value": 3
+  }
+}

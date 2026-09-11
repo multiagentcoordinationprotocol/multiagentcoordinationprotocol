@@ -51,8 +51,24 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 
 Decision Mode supports six voting algorithms: `none`, `majority`, `supermajority`, `unanimous`, `weighted`, and `plurality`. See [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md) for full details.
 
-`threshold` must be greater than `0`, at least `0.5` for `majority`, and greater than `0.5` for
-`supermajority`. The `> 0` floor is enforced unconditionally, so `unanimous` and `plurality` —
+Quorum Mode expresses its bar through `threshold`, which takes one of **two** types: `n_of_m`
+(a raw approval count) and `percentage` (an integer `1`–`100` of the participant count declared
+at `SessionStart`). A `percentage` threshold resolves to an effective approval count that is
+rounded **up** — `ceil(value × declared_participant_count / 100)` — so a fractional product never
+lowers the bar: `50` over 3 participants requires 2 approvals, not 1. `threshold.value` must be
+greater than `0` in either type. See [RFC-MACP-0012 Section 4.2](../rfcs/RFC-MACP-0012-policy.md).
+
+Two identifiers are **not** part of that vocabulary. `weighted` was removed in RFC-MACP-0012
+1.2.0-draft — it was enum-legal but never had a weights vocabulary, an electorate rule, or a
+weighted analogue of RFC-MACP-0011 §5's count-only termination arithmetic, so no conformant
+evaluation of it ever existed; its identifier is reserved and must not be reused with a
+different meaning. `count` has never been MACP vocabulary: some implementations accepted it as
+an alias for `n_of_m`, but `count` names a *participation floor* in Decision Mode's
+`voting.quorum`, and reusing it for Quorum Mode's *approval bar* would make one token mean two
+different gates in adjacent modes.
+
+Decision Mode's `threshold` must be greater than `0`, at least `0.5` for `majority`, and greater
+than `0.5` for `supermajority`. The `> 0` floor is enforced unconditionally, so `unanimous` and `plurality` —
 which never consult `threshold` — still reject an explicit `0`. Threshold comparisons are **inclusive** (`ratio >=
 threshold`), so `majority` at the default `0.5` approves an even split. The denominator is the
 **decisive** votes — those cast as approve or reject; abstentions are excluded.
