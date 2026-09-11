@@ -19,7 +19,10 @@ message PolicyDescriptor {
   // (e.g., schemas/json/policy/decision-rules.schema.json for Decision Mode).
   string rules = 4;
 
-  // Version of the rule schema used (RFC-MACP-0012 defines versions 1 and 2).
+  // Version of the rule schema used (RFC-MACP-0012 defines versions 1, 2, and 3).
+  // Version 3 is a SEMANTIC bump: it changes empty-tally voting evaluation.
+  // A stored policy MUST be evaluated under the version it declares, so 1 and
+  // 2 keep their original semantics permanently (RFC-MACP-0012 §4.1, §8).
   uint32 schema_version = 5;
 
   int64 registered_at_unix_ms = 6; // Unix epoch milliseconds; set by the runtime, ignored in RegisterPolicyRequest.
