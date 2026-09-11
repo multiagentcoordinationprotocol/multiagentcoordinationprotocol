@@ -67,8 +67,8 @@ does not authorize a decline. It still counts as a vote cast for the `voting.quo
 floor.
 
 This rule is normative at **every** `schema_version`, not just `3`. So is the decline guard: a
-negative commitment must be backed by at least one **decisive** explicit `REJECT` vote, which means a
-`REJECT` from a weight-`0` participant never authorizes one.
+**vote-authorized** negative commitment must be backed by at least one **decisive** explicit
+`REJECT` vote, which means a `REJECT` from a weight-`0` participant never authorizes one.
 
 ### Empty tallies and `schema_version`
 
@@ -79,11 +79,19 @@ rather than in vocabulary.
 | | `schema_version` 1 and 2 | `schema_version` 3 |
 |---|---|---|
 | **Positive commitment** on an empty tally | The algorithm produces **no result** — it neither passes nor fails. Whether the commitment is blocked is governed **solely** by `commitment.require_vote_quorum`. With it `false` (the default), the commitment is **allowed**, even under `majority` or `unanimous`. | **Denied** for every algorithm except `none`. The algorithm is binding on its own; its predicate is evaluated over the actual tally, including the empty one, and fails. |
-| **Negative commitment** on an empty tally | Denied for every algorithm except `none` — the decline guard needs a decisive `REJECT` and there is none. | Denied for every algorithm except `none`, for the same reason. |
+| **Vote-authorized negative commitment** on an empty tally | Denied for every algorithm except `none` — the decline guard needs a decisive `REJECT` and there is none. | Denied for every algorithm except `none`, for the same reason. |
 | `voting.algorithm: "none"` | Unaffected. | Unaffected. |
 
 For `weighted`, "empty tally" means **zero total decisive weight**, which covers both no ballots at
 all and a complete ballot set cast entirely by weight-`0` participants.
+
+The table governs **vote-authorized** commitment only. There is one other way a session can resolve
+negatively on an empty tally, at every `schema_version` from `2` onward: if the policy sets
+`objection_handling.critical_objection_action` to `finalize_decline` and a critical `Objection` is
+standing, the decline is **objection-authorized** — the objection is itself the attributable
+dissent the decline guard exists to require, so neither the guard nor the empty-tally rule applies.
+Without that channel a session with a bound algorithm, no votes, and a standing critical objection
+could only ever end by expiring.
 
 The `1`/`2` behavior is fail-open: a policy that looks restrictive approves when nobody votes, and
 adding one approving ballot could convert an allowed commitment into a denied one. It is retained

@@ -98,16 +98,18 @@ Notes:
   preserved fail-open arm (RFC-MACP-0012 §4.1, §8). `decision_weighted_zero_weight.json`
   (v3) and `decision_weighted_zero_weight_v1.json` (v1) do the same for a
   ballot set cast entirely by weight-`0` participants, and additionally pin
-  that the *negative* direction is denied at **every** schema version — the
-  assertion that distinguishes `NoVotes` from `Failed`.
+  that the **vote-authorized** negative direction is denied at **every** schema
+  version — the assertion that distinguishes `NoVotes` from `Failed`. (Neither
+  fixture's policy sets `finalize_decline`, so the objection-authorized channel
+  described below is not in play in either of them.)
   `decision_majority_empty_tally.json` and
   `decision_supermajority_empty_tally.json` cover the two ratio algorithms that
   carry the explicit "MUST NOT compute `0/0`" prohibition (`weighted`, the
   third ratio algorithm, is worded differently and covered separately above); the former also
   pins that the threshold comparison is **inclusive** (an even split approves at
   `0.5`), and the latter pins the `Failed` vs `NoVotes` distinction from the
-  opposite side — a genuine `Failed` result authorizes a negative commitment,
-  where `NoVotes` denies it.  `decision_plurality.json` pins `plurality`'s empty
+  opposite side — a genuine `Failed` result authorizes a vote-authorized negative
+  commitment, where `NoVotes` denies it.  `decision_plurality.json` pins `plurality`'s empty
   tally, its tie-fails rule, and its passing case — note it DENIES the same 1-1
   tally `decision_majority_empty_tally.json` approves.
   `decision_none_v3_empty_tally.json` is the regression guard for the `none`

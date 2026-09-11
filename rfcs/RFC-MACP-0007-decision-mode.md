@@ -101,7 +101,7 @@ Decision Mode allows both positive and negative committed outcomes. `CommitmentP
 
 Decision sessions MAY be governed by declarative policies that constrain voting algorithms, quorum requirements, objection handling, and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/decision-rules.schema.json` for the Decision Mode rule schema.
 
-### 6.2 Negative committed outcomes (vote-gated decline)
+### 6.2 Negative committed outcomes (vote-gated and objection-gated decline)
 
 When a Decision session binds a governance policy with a real voting algorithm (`voting.algorithm != "none"`), the eligibility of a positive versus negative `Commitment` is gated as follows. A **vote-authorized** commitment — one whose authorization derives from the computed voting result — is gated by that result per the tri-state below; an **objection-authorized** negative commitment (defined after the face-value exception) is the single exception to this gate:
 
