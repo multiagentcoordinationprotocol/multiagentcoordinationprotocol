@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) — Governance Policy Framework
 
 **Document:** RFC-MACP-0012
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0002, RFC-MACP-0003
+
+> **Changelog — 1.1.0-draft:** adds `schema_version: 3`, the first **semantic** schema-version bump. Under schema_version ≥ 3 every voting algorithm other than `none` is binding on its own and **fails on the empty tally** (§4.1); the legacy fail-open rule — no decisive votes produces no result, gated only by `commitment.require_vote_quorum` — is preserved for schema_version ≤ 2, which stored sessions replay under per §8 (with one addition: the `weighted` zero-total-weight case, which the original rule left undefined, is now pinned as the NoVotes/no-result state at **every** schema version, weight-`0` votes being non-decisive and unable to satisfy the decline guard). Also: the `weights` map is defined as the weighted electorate with omission meaning weight `0` (§4.1, all schema versions); `threshold` floors are tightened in the schema (`> 0` everywhere, `≥ 0.5` for `majority`); and the zero-total-decisive-weight case is pinned for `weighted`.
 
 ## Abstract
 
@@ -72,9 +74,11 @@ A policy descriptor is a structured document with the following required fields:
 | `mode` | string | Target mode identifier (e.g., `macp.mode.decision.v1`) or `*` for mode-agnostic |
 | `description` | string | Human-readable description of the policy's governance rules |
 | `rules` | object | Mode-specific governance rules (see Section 4) |
-| `schema_version` | uint32 | Version of the rule schema used (`1` or `2`) |
+| `schema_version` | uint32 | Version of the rule schema used (`1`, `2`, or `3`) |
 
-Schema version `2` adds the Decision Mode decline-gating parameters (`commitment.allow_decline_over_approval`, `objection_handling.critical_objection_action`; see §4.1). The bump is **additive**: the new fields are optional and default to legacy behavior, so `schema_version: 1` policies remain valid and a runtime MUST accept every schema version it supports (`{1, 2}`). Declaring `schema_version: 2` signals only that the descriptor MAY use the new fields.
+Schema version `2` adds the Decision Mode decline-gating parameters (`commitment.allow_decline_over_approval`, `objection_handling.critical_objection_action`; see §4.1). That bump is **additive**: the new fields are optional and default to legacy behavior, so `schema_version: 1` policies remain valid. Declaring `schema_version: 2` signals only that the descriptor MAY use the new fields. A runtime MUST accept every schema version it supports (`{1, 2, 3}`).
+
+Schema version `3` is the first **semantic** bump: it changes the evaluation of existing fields — the empty-tally rule of §4.1 — rather than adding fields. It is not additive: the same descriptor bytes can evaluate differently under versions 2 and 3. Authors select semantics by the version they declare; Section 8 pins every stored session to its declared version. New policies that use a voting algorithm other than `none` SHOULD declare `schema_version: 3`.
 
 The canonical wire format is defined in `schemas/proto/macp/v1/policy.proto`. The `rules` field is JSON-encoded bytes to allow mode-specific schemas without requiring proto changes per mode.
 
@@ -98,19 +102,29 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 **Voting algorithms:**
 
 - `none` — no voting constraint enforced (mode's built-in logic applies)
-- `majority` — at least `threshold` (default `0.5`) of the decisive votes approve
+- `majority` — at least `threshold` (default `0.5`) of the decisive votes approve; the schema constrains `threshold` to at least `0.5` (a lower ratio bar is not a majority — express one as `weighted` with equal weights)
 - `supermajority` — at least `threshold` of the decisive votes approve; the schema constrains `threshold` to be greater than `0.5`
 - `unanimous` — every declared participant has cast an approve vote and no reject vote was cast; `threshold` is not used
-- `weighted` — weighted votes using `weights` map; `threshold` applies to the weighted approve share
+- `weighted` — weighted votes using the `weights` map; `threshold` applies to the weighted approve share. The `weights` map defines the **weighted electorate**: a declared participant absent from the map has weight `0` (an observer is expressed by omission, and the schema rejects explicit `0` values and an empty map). A vote cast by an unlisted (weight-`0`) participant is accepted as a message and preserved in history, but it is **non-decisive** under `weighted` evaluation: it contributes to neither side of the weighted ratio, does not enter the decisive tally, and does not satisfy the decline guard of RFC-MACP-0007 §6.2 — for tally purposes it is treated as an abstention. It still counts as a vote cast for the `voting.quorum` participation floor, which this rule does not alter. A ballot set cast entirely by weight-`0` participants therefore leaves the decisive tally **empty** (zero total decisive weight) — see the empty-tally rules below. This electorate rule, including the non-decisiveness of weight-`0` votes, was previously unspecified and is normative for **every** schema version.
 - `plurality` — more approve votes than reject votes; a tie fails; no threshold
 
-**Denominator.** For the ratio-based algorithms (`majority`, `supermajority`, `weighted`) the denominator is the **decisive** votes — those cast as approve or reject. Abstentions are excluded and neither help nor hinder the ratio (RFC-MACP-0004).
+**Denominator.** For the ratio-based algorithms (`majority`, `supermajority`, `weighted`) the denominator is the **decisive** votes — those cast as approve or reject. Abstentions are excluded and neither help nor hinder the ratio (RFC-MACP-0004). Under `weighted`, only weight-bearing votes are decisive (see the electorate rule above); a weight-`0` ballot joins the abstentions outside the ratio.
 
 **Inclusive comparison.** Every threshold comparison in this section is inclusive (`ratio >= threshold`). With `majority` at its default `threshold` of `0.5`, an even split therefore approves. A rule that requires strictly more approvals than rejections is `plurality`, not `majority` with `threshold: 0.5`. `unanimous` is stricter than "all decisive votes approve": a declared participant who has not voted blocks it.
 
-**`voting.quorum` is inert on its own.** `voting.quorum` states the participation bar but does not itself gate a commitment; it is applied only when `commitment.require_vote_quorum` is `true`. A policy that sets `voting.quorum` without `require_vote_quorum` imposes no participation requirement.
+**`voting.quorum` is inert on its own.** `voting.quorum` states the participation bar but does not itself gate a commitment; it is applied only when `commitment.require_vote_quorum` is `true`. A policy that sets `voting.quorum` without `require_vote_quorum` imposes no participation requirement. Under `schema_version ≥ 3` this pairing is unchanged; the flag's contribution there is purely the participation floor, since the algorithm is already binding (see **Empty tally** below).
 
-**No decisive votes.** With any algorithm other than `none`, if no decisive vote has been cast the algorithm produces no result — it neither passes nor fails. Whether that blocks the commitment is then governed entirely by `commitment.require_vote_quorum`: with it `false`, a positive commitment is **not** blocked by the absence of votes, even under `majority` or `unanimous`. A policy that intends its voting algorithm to be binding therefore MUST set `commitment.require_vote_quorum` to `true`. A negative commitment is always blocked in this case, because a decline must be backed by at least one explicit reject (see RFC-MACP-0007 §6.2).
+**Empty tally (schema_version ≥ 3).** Under `schema_version` 3 or later, every algorithm other than `none` is binding on its own: the algorithm's predicate is evaluated over the actual tally, including the empty one, and every algorithm other than `none` **fails** when no decisive vote has been cast. This rule is primary: the per-algorithm notes below describe how each predicate realizes it, and where a predicate's own text would not fail on an empty tally, this rule controls.
+
+- `majority`, `supermajority` — with zero decisive votes the approval ratio is undefined; the arm MUST fail without evaluating `ratio >= threshold`. Implementations MUST NOT compute `0/0`.
+- `unanimous` — the arm MUST fail on an empty tally. With at least one declared participant this follows from the predicate as written: "every declared participant has cast an approve vote" is false when nobody has voted. With **zero** declared participants the universally quantified predicate is vacuously true and MUST NOT be taken as a pass: MACP does not require `SessionStart` to declare a non-empty `participants` list, and a zero-participant Decision session can never accept a `Vote` (only declared participants are vote-authorized, RFC-MACP-0007 §2.1), so its decisive tally is permanently empty and the empty-tally rule — not the predicate — governs. Under `schema_version ≥ 3`, `unanimous` over an empty declared set therefore always fails; such a session can positively resolve only under `voting.algorithm: "none"`.
+- `weighted` — because weight-`0` votes are non-decisive (see the electorate rule above), a tally whose total decisive weight is zero **is** the empty decisive tally: it covers both no ballots at all and a complete ballot set cast entirely by weight-`0` (unlisted) participants. This state is **NoVotes** in the tri-state of RFC-MACP-0007 §6.2, not Failed: a positive commitment is denied by this rule, and a negative commitment is denied because no decisive reject exists — a weight-`0` `REJECT` does not satisfy the decline guard. Implementations MUST NOT compute a weighted ratio with a zero denominator.
+- `plurality` — zero approvals against zero rejections is a tie, and a tie fails. No special case is required.
+- `none` — unaffected; no voting constraint is enforced at any tally, so nothing in this paragraph applies to it.
+
+A negative commitment on an empty decisive tally remains blocked by the decline guard (at least one **decisive** explicit reject; under `weighted` a `REJECT` cast by a weight-`0` participant is non-decisive and does not satisfy the guard; RFC-MACP-0007 §6.2), which — like the rulings above — does not reach `voting.algorithm == "none"`: that case is governed by the face-value exception in RFC-MACP-0007 §6.2. Under `schema_version ≥ 3` with any algorithm other than `none`, an empty tally therefore blocks commitment in **both** directions. Adding an approving ballot can never convert an allowed positive commitment into a denied one.
+
+**Legacy empty-tally rule (schema_version ≤ 2).** Under `schema_version` 1 and 2, with any algorithm other than `none`, if no decisive vote has been cast — for `weighted`, if the total decisive weight is zero — the algorithm produces no result: it neither passes nor fails. Whether that blocks a positive commitment is then governed entirely by `commitment.require_vote_quorum`: with it `false`, a positive commitment is **not** blocked by the absence of votes, even under `majority` or `unanimous`. A schema_version ≤ 2 policy that intends its voting algorithm to be binding MUST set `commitment.require_vote_quorum` to `true`. A negative commitment is always blocked in this case: an empty tally contains no reject, and under `weighted` a `REJECT` cast by a weight-`0` participant is non-decisive and does not satisfy the decline guard (see RFC-MACP-0007 §6.2). The zero-total-decisive-weight state therefore denies commitment in the negative direction at **every** schema version; the schema versions differ only in the positive direction, which this legacy arm gates solely on `commitment.require_vote_quorum`. This rule is fail-open and is retained **solely** so that stored sessions replay identically (Section 8); implementations MUST keep this arm, MUST NOT apply it to schema_version ≥ 3 policies, and SHOULD warn when a newly registered schema_version ≤ 2 policy declares a voting algorithm other than `none` without `require_vote_quorum: true`.
 
 **Quorum:**
 
@@ -124,7 +138,7 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 
 > **`deny` and `hold` are observationally identical.** Both reject the `Commitment` with `POLICY_DENIED` and leave the session `OPEN` — a rejected message never mutates accepted history or session state ([RFC-MACP-0001](RFC-MACP-0001-core.md) §8.3), so "reject the commitment" and "leave the session open" describe the same outcome. `hold` is an operator-facing annotation on the denial, not a distinct protocol outcome. Runtimes MUST NOT expose a distinction between the two over the wire, and agents MUST NOT rely on one. Consequently the conformance corpus pins `deny` and `finalize_decline` only; a `hold` fixture would assert nothing that a `deny` fixture does not already assert.
 
-The **decline guard** for a vote-authorized negative commitment (≥1 explicit `Vote` with `vote == "REJECT"`; optional `commitment.require_vote_quorum`) is defined with the Decision Mode terminal semantics — see [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) §6.2. Both parameters are additive with conservative defaults that preserve pre-existing behavior; policies that use them declare `schema_version: 2`.
+The **decline guard** for a vote-authorized negative commitment (≥1 **decisive** explicit `Vote` with `vote == "REJECT"`; optional `commitment.require_vote_quorum`) is defined with the Decision Mode terminal semantics — see [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) §6.2. Both parameters are additive with conservative defaults that preserve pre-existing behavior; policies that use them declare `schema_version: 2` or later.
 
 ### 4.2 Quorum Mode Rules
 
@@ -136,7 +150,7 @@ Canonical schema: `schemas/json/policy/quorum-rules.schema.json`
 | `abstention` | `counts_toward_quorum`, `interpretation` | How abstentions affect quorum calculation |
 | `commitment` | `authority` | Who can emit the terminal `Commitment` |
 
-`threshold` is the **approval bar** — the number (or percentage/weighted sum) of approvals required for a positive outcome — and it is the **only gate** defined in schema_version ≤ 2. There is no separate *participation quorum* (a minimum number of ballots cast regardless of direction); implementations MUST NOT reinterpret `threshold` as one. If a participation quorum is desired, it requires a distinct rule field in a future schema version. The `percentage` threshold type is an **integer percentage (0–100)** of eligible participants.
+`threshold` is the **approval bar** — the number (or percentage/weighted sum) of approvals required for a positive outcome — and it is the **only gate** defined in schema_version ≤ 3. There is no separate *participation quorum* (a minimum number of ballots cast regardless of direction); implementations MUST NOT reinterpret `threshold` as one. If a participation quorum is desired, it requires a distinct rule field in a future schema version. The `percentage` threshold type is an **integer percentage (0–100)** of eligible participants.
 
 ### 4.3 Proposal Mode Rules
 
@@ -208,7 +222,7 @@ All three target `macp.mode.decision.v1` and declare `schema_version: 1`; they u
 | `policy.std.supermajority` | `macp.mode.decision.v1` | At least two-thirds of the decisive votes approve, with at least two voters |
 | `policy.std.unanimous` | `macp.mode.decision.v1` | Every declared participant has approved and no reject was cast |
 
-Each profile sets `commitment.require_vote_quorum` to `true`. Without it the voting algorithm is not binding on a positive commitment when no vote has been cast (see the "No decisive votes" note in Section 4.1), which would make each of these profiles vacuous in exactly the case they exist to govern.
+Each profile declares `schema_version: 1` and sets `commitment.require_vote_quorum` to `true`. Under schema-version-1 semantics that flag is what makes the voting algorithm binding on a positive commitment when no vote has been cast (see the legacy empty-tally rule in Section 4.1); under `schema_version ≥ 3` the algorithm is binding on its own and the flag's remaining contribution is the `voting.quorum` participation floor (two voters for `policy.std.supermajority`). The profiles produce identical outcomes under both semantics at every tally containing at least one decisive vote. They differ only where an empty decisive tally nonetheless clears the participation floor — a lone abstention satisfies `policy.std.majority`'s `count: 1` quorum, which schema-version-1 semantics allow and `schema_version ≥ 3` denies. They remain at `schema_version: 1` unchanged regardless: bumping them would alter the canonical definitions that Section 2.2's semantic-equality requirement pins on every runtime, and a runtime wanting the fail-closed reading registers its own `schema_version: 3` policy rather than redefining a reserved identifier.
 
 #### `policy.std.majority`
 

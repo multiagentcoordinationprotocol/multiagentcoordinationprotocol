@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) - Decision Mode
 
 **Document:** RFC-MACP-0007
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0002
+
+> **Changelog — 1.1.0-draft:** §6.2's **NoVotes** bullet now states the positive-commitment half of the rule, which it previously left to inference. Under a bound policy declaring `schema_version ≥ 3` a positive commitment is denied on an empty tally for every algorithm other than `none`; under `schema_version ≤ 2` it remains gated only by `commitment.require_vote_quorum`. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) §4.1. The decline guard is restated to count **decisive** rejects: under `weighted` a `REJECT` cast by a weight-`0` participant is non-decisive (RFC-MACP-0012 §4.1) and does not authorize a decline, at every schema version. The `voting.algorithm == "none"` scoping and the face-value exception are unchanged.
 
 ## Abstract
 
@@ -105,9 +107,9 @@ When a Decision session binds a governance policy with a real voting algorithm (
 
 - **Passed** — a positive commitment (`outcome_positive: true`) is allowed; a negative commitment is denied **unless** `commitment.allow_decline_over_approval` is `true`.
 - **Failed** — a positive commitment is denied; a negative commitment is allowed **iff** the decline guard (below) is satisfied.
-- **NoVotes** — a negative commitment is denied; there is no explicit reject to authorize a decline.
+- **NoVotes** — the decisive tally is empty. A negative commitment is denied: an empty decisive tally contains no decisive reject, so the decline guard cannot be satisfied. A positive commitment is governed by the bound policy's `schema_version`: under `schema_version ≥ 3` it is denied (every algorithm other than `none` fails on the empty tally), and under `schema_version ≤ 2` it is denied only when `commitment.require_vote_quorum` is `true` ([RFC-MACP-0012](RFC-MACP-0012-policy.md) §4.1). For `weighted`, a vote cast by a weight-`0` participant is **non-decisive** (RFC-MACP-0012 §4.1), so a tally whose total decisive weight is zero — including a ballot set consisting entirely of weight-`0` votes — is the NoVotes state at every schema version; the weight-`0` `REJECT`s such a tally may contain do not satisfy the decline guard.
 
-**Decline guard (normative):** a vote-authorized negative commitment MUST be backed by at least one explicit `Vote` with `vote == "REJECT"` (`reject_count > 0`), and, when `commitment.require_vote_quorum` is `true`, the voting quorum MUST be met. The guard applies across all three voting results.
+**Decline guard (normative):** a vote-authorized negative commitment MUST be backed by at least one **decisive** explicit `Vote` with `vote == "REJECT"` (`reject_count > 0`, where `reject_count` counts decisive rejects; under `weighted` a `REJECT` cast by a weight-`0` participant is non-decisive and does not count), and, when `commitment.require_vote_quorum` is `true`, the voting quorum MUST be met. The guard applies across all three voting results and at every policy `schema_version`.
 
 **Face-value exception:** when `voting.algorithm == "none"` (or no policy is bound), the commitment is initiator-driven and `outcome_positive` is taken at face value with no decline guard.
 
