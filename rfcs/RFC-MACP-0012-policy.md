@@ -403,7 +403,7 @@ The following error codes are added to the MACP Error Code Registry:
 | Code | Description | HTTP Status | Status | Reference |
 |------|-------------|-------------|--------|-----------|
 | `UNKNOWN_POLICY_VERSION` | `policy_version` not found in policy registry at SessionStart | 404 | permanent | RFC-MACP-0012 |
-| `POLICY_DENIED` | Commitment rejected because governance policy rules are not satisfied | 403 | permanent | RFC-MACP-0012 |
+| `POLICY_DENIED` | Commitment rejected because governance policy rules are not satisfied. Breaches of `commitment.authority` / `commitment.designated_roles` are the exception: those are sender-authorization failures and use `FORBIDDEN`, per [RFC-MACP-0002](RFC-MACP-0002-modes.md) §6.1 and the conformance corpus. | 403 | permanent | RFC-MACP-0012 |
 | `INVALID_POLICY_DEFINITION` | Policy descriptor fails validation (bad JSON, schema mismatch, mode mismatch) | 400 | permanent | RFC-MACP-0012 |
 
 ## 11. Security Considerations

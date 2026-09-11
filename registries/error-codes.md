@@ -11,12 +11,12 @@ UPPER_SNAKE_CASE
 | Code | Description | HTTP Status | Status | Reference |
 |------|-------------|-------------|--------|-----------|
 | UNAUTHENTICATED | Authentication failed | 401 | permanent | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) |
-| FORBIDDEN | Authenticated sender is not authorized for the session or message type | 403 | permanent | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) |
+| FORBIDDEN | Authenticated sender is not authorized for the session, message type, role, or claimed authority (see RFC-MACP-0002 §6.1 for the Mode-rule mapping) | 403 | permanent | [RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md), [RFC-MACP-0002](../rfcs/RFC-MACP-0002-modes.md) |
 | SESSION_NOT_FOUND | Session does not exist | 404 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | SESSION_NOT_OPEN | Session already resolved or expired | 409 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | DUPLICATE_MESSAGE | `message_id` already accepted within the session | 409 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | SESSION_ALREADY_EXISTS | Session already has an accepted SessionStart for this session_id | 409 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
-| INVALID_ENVELOPE | Envelope validation failed or payload did not satisfy the required structural contract | 400 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
+| INVALID_ENVELOPE | Envelope validation failed, payload did not satisfy the required structural contract, or a session-scoped message breached the bound Mode's validation rules (sender-authorization breaches use `FORBIDDEN`; see RFC-MACP-0002 §6.1) | 400 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md), [RFC-MACP-0002](../rfcs/RFC-MACP-0002-modes.md) |
 | UNSUPPORTED_PROTOCOL_VERSION | No mutually supported protocol version exists, or an envelope uses an unsupported negotiated version | 400 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |
 | MODE_NOT_SUPPORTED | The referenced coordination mode or mode version is not supported for new sessions | 400 | permanent | [RFC-MACP-0002](../rfcs/RFC-MACP-0002-modes.md) |
 | PAYLOAD_TOO_LARGE | Payload exceeds allowed size | 413 | permanent | [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) |

@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) - Coordination Modes
 
 **Document:** RFC-MACP-0002
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
+
+> **Changelog — 1.1.0-draft:** New §6.1 pins the error codes for Mode validation-rule breaches — `FORBIDDEN` for sender-authorization breaches, `POLICY_DENIED` for policy-evaluation denials of otherwise-valid Commitments, `INVALID_ENVELOPE` for every other rule breach — codifying the mapping the conformance corpus has asserted since its introduction. No rejection behavior changes; the corpus was previously stricter than any RFC, and this closes that gap.
 
 ## Abstract
 
@@ -107,7 +109,7 @@ This specification recognizes the following participant models:
 
 A Mode MUST declare which participant model it uses.
 
-## 6. Terminal and authority semantics
+## 6. Terminal, authority, and rejection semantics
 
 Core requires sessions to terminate, but Core does not require every possible Mode in the ecosystem to share the same terminal message shape. For standards-track modes in this main repo, however, v1 uses a single rule:
 
@@ -127,6 +129,41 @@ Each Mode MUST declare:
 - whether non-terminal intermediate messages have side effects outside the runtime boundary.
 
 `SessionCancel` and Session expiry remain Core escape paths, not normal success paths for standards-track mode outcomes.
+
+### 6.1 Error codes for Mode-rule breaches
+
+A session-scoped message that satisfies Core envelope validation
+([RFC-MACP-0001](RFC-MACP-0001-core.md) §6) but breaches a validation rule of the
+session's bound Mode MUST be rejected without entering accepted history
+(RFC-MACP-0001 §8.3). For standards-track modes, the rejection MUST use the
+following error codes from [registries/error-codes.md](../registries/error-codes.md):
+
+- `FORBIDDEN` — the breached rule is a sender-authorization rule: the sender is
+  authenticated but not authorized for the message type, role, or authority it
+  claims (for example, a `Commitment` from a sender who is not the commitment
+  authority, or a mode message from a non-participant).
+- `POLICY_DENIED` — the message is a `Commitment` that passes mode validation but
+  fails bound governance-policy evaluation
+  ([RFC-MACP-0012](RFC-MACP-0012-policy.md) §6.2). Mode validation runs before
+  policy evaluation (RFC-MACP-0012 §6.4), so a message that breaches both a mode
+  rule and a policy rule is rejected with the mode-rule code. This bullet is
+  included for completeness of the decision tree: such a message has *passed* mode
+  validation, so it is not itself a Mode-rule breach.
+- `INVALID_ENVELOPE` — every other Mode validation-rule breach, including
+  references to nonexistent entities, duplicate identifiers, messages from a sender
+  who has exhausted a per-sender cap, and messages that arrive in a session state in
+  which the Mode's rules forbid them.
+
+Commitment-eligibility gating that a Mode specifies but conditions on a bound policy —
+for example [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) §6.2's voting tri-state and
+decline guard — is **policy evaluation** for this mapping, not Mode validation, and uses
+`POLICY_DENIED`. The distinction is the one RFC-MACP-0012 §6.4 already draws: Mode
+validation covers message-type authorization, structural validation, and phase
+transitions; outcome eligibility computed from a bound policy is the second step.
+
+This mapping pins the codes already asserted throughout `schemas/conformance/`; it
+introduces no new rejection behavior. Extension modes SHOULD follow the same
+mapping.
 
 ## 7. Determinism claims
 
