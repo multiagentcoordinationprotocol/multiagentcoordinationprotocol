@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "completion.require_output is typed boolean (RFC-MACP-0009 §6). The string \"true\" is the classic config-file coercion bug: a runtime that accepted it would gate task completion on a value its schema never sanctioned. Isolates the type keyword.",
+  "completion": { "require_output": "true" }
+}

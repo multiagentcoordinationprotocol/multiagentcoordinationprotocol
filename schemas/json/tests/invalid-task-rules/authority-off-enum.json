@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "commitment.authority MUST be one of ['initiator_only', 'any_participant', 'designated_role'] (RFC-MACP-0009 §6). 'assignee_only' is a plausible-sounding Task Mode value that the shared commitment vocabulary does not define -- exactly the kind of per-mode invention a closed enum prevents. Isolates the enum keyword.",
+  "commitment": { "authority": "assignee_only" }
+}

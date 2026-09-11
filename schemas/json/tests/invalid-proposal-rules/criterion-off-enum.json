@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "acceptance.criterion MUST be one of ['all_parties', 'counterparty', 'initiator'] (RFC-MACP-0008 §6). 'majority' is borrowed from Decision Mode's voting vocabulary, where it IS legal -- the exact cross-mode confusion a closed enum exists to catch. Isolates the enum keyword.",
+  "acceptance": { "criterion": "majority" }
+}

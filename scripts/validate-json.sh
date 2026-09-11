@@ -278,80 +278,67 @@ if [ -d "${INVALID_ENVELOPE_DIR}" ]; then
         fi
     done
 fi
+# --- Invalid rule fixtures, one directory per mode (MUST all FAIL) ---
+#
+# Table-driven because each loop binds exactly ONE rule schema. A quorum fixture
+# dropped into the decision directory would be "correctly rejected" by
+# decision-rules.schema.json for entirely the wrong reason -- silently, forever.
+# The directory IS the binding, so adding a mode means adding a row here.
+#
+# Every row keeps the missing-schema guard: ajv exits non-zero for a MISSING
+# schema exactly as it does for a rejected instance, so without it a renamed or
+# deleted rule schema reports a run of cheerful "Correctly rejected" lines and
+# nothing else in the repository would notice.
+INVALID_RULES_PAIRS=(
+    "invalid-policy-rules:decision-rules.schema.json:Decision"
+    "invalid-quorum-rules:quorum-rules.schema.json:Quorum"
+    "invalid-proposal-rules:proposal-rules.schema.json:Proposal"
+    "invalid-task-rules:task-rules.schema.json:Task"
+    "invalid-handoff-rules:handoff-rules.schema.json:Handoff"
+)
 
-# Negative tests: Decision Mode governance rules that MUST be rejected by the
-# decision rule schema. Nothing else validates a `rules` object against its rule
-# schema -- the policy descriptor and conformance fixture formats both treat
-# `rules` as opaque -- so this loop is the only thing that exercises the
-# constraints in decision-rules.schema.json.
-if [ -d "${INVALID_POLICY_RULES_DIR}" ]; then
-    # ajv exits non-zero for a MISSING schema exactly as it does for a rejected
-    # instance, so without this guard a deleted or renamed rule schema would report
-    # four cheerful "Correctly rejected" lines. Nothing else in the repository
-    # validates an instance against decision-rules.schema.json, so nothing else
-    # would catch it either.
-    if [ ! -f "${DECISION_RULES_SCHEMA}" ]; then
-        echo "[X] Decision rule schema not found: ${DECISION_RULES_SCHEMA}"
+for pair in "${INVALID_RULES_PAIRS[@]}"; do
+    ir_dir="${PROJECT_ROOT}/schemas/json/tests/${pair%%:*}"
+    ir_rest="${pair#*:}"
+    ir_schema="${POLICY_RULES_SCHEMA_DIR}/${ir_rest%%:*}"
+    ir_label="${ir_rest#*:}"
+
+    echo "-- Negative ${ir_label}-rules tests (${ir_dir}/*.json) --"
+    echo "Schema: ${ir_schema}"
+    echo "Each fixture MUST FAIL validation."
+    echo ""
+
+    if [ ! -f "${ir_schema}" ]; then
+        echo "[X] ${ir_label} rule schema not found: ${ir_schema}"
+        exit 1
+    fi
+    # A deleted directory would otherwise drop a mode's entire coverage silently.
+    if [ ! -d "${ir_dir}" ]; then
+        echo "[X] ${ir_label} negative-fixture directory not found: ${ir_dir}"
         exit 1
     fi
 
-    echo "-- Negative policy-rules tests (${INVALID_POLICY_RULES_DIR}/*.json) --"
-    echo "  Each fixture MUST FAIL decision-rules-schema validation."
-    echo ""
-
-    for invalid_rules_file in "${INVALID_POLICY_RULES_DIR}"/*.json; do
-        if [ -f "$invalid_rules_file" ]; then
-            TOTAL=$((TOTAL + 1))
-            echo "Validating (expect reject): tests/invalid-policy-rules/$(basename "$invalid_rules_file")"
-
-            if ajv validate -s "${DECISION_RULES_SCHEMA}" -d "${invalid_rules_file}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
-                echo "  [X] Fixture unexpectedly PASSED validation -- the decision rule schema no longer rejects this case"
-                exit 1
-            else
-                VALIDATED=$((VALIDATED + 1))
-                echo "  [OK] Correctly rejected"
-            fi
-            echo ""
+    ir_count=0
+    for f in "${ir_dir}"/*.json; do
+        [ -f "$f" ] || continue
+        ir_count=$((ir_count + 1))
+        TOTAL=$((TOTAL + 1))
+        echo "Checking (expect rejection): $(basename "$f")"
+        if ajv validate -s "${ir_schema}" -d "${f}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+            echo "  [X] Fixture unexpectedly PASSED -- ${ir_label} rule schema no longer rejects this case"
+            exit 1
         fi
+        VALIDATED=$((VALIDATED + 1))
+        echo "  [OK] Correctly rejected"
+        echo ""
     done
-fi
 
-# --- Invalid quorum rules fixtures (MUST fail quorum-rules.schema.json) ---
-#
-# Sibling of the Decision loop above. The split is structural: each loop binds ONE
-# rule schema, so a quorum fixture dropped into the Decision directory would be
-# rejected by decision-rules.schema.json for entirely the wrong reason -- silently.
-echo "-- Invalid quorum rules fixtures (${INVALID_QUORUM_RULES_DIR}) --"
-echo "Schema: ${QUORUM_RULES_SCHEMA}"
-echo "These MUST all FAIL validation."
-echo ""
+    if [ "${ir_count}" -eq 0 ]; then
+        echo "[X] ${ir_dir} contains no fixtures -- an empty directory is not coverage."
+        exit 1
+    fi
+done
 
-# Same guard as the Decision loop: ajv exits non-zero for a MISSING schema exactly
-# as it does for a rejected instance, so without this a renamed or deleted quorum
-# schema would report three cheerful "Correctly rejected" lines. Until this
-# directory existed, NOTHING in the repository validated an instance against
-# quorum-rules.schema.json, so nothing else would catch it either.
-if [ ! -f "${QUORUM_RULES_SCHEMA}" ]; then
-    echo "[X] Quorum rule schema not found: ${QUORUM_RULES_SCHEMA}"
-    exit 1
-fi
-
-if [ -d "${INVALID_QUORUM_RULES_DIR}" ]; then
-    for f in "${INVALID_QUORUM_RULES_DIR}"/*.json; do
-        if [ -f "$f" ]; then
-            TOTAL=$((TOTAL + 1))
-            echo "Validating (expect failure): $(basename "$f")"
-            if ajv validate -s "${QUORUM_RULES_SCHEMA}" -d "${f}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
-                echo "  [X] Fixture unexpectedly PASSED validation -- the quorum rule schema no longer rejects this case"
-                exit 1
-            else
-                VALIDATED=$((VALIDATED + 1))
-                echo "  [OK] Correctly rejected"
-            fi
-            echo ""
-        fi
-    done
-fi
 
 # --- Policy rules objects vs their mode's rule schema (issue #100) ---
 #
