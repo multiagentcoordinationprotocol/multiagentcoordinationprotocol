@@ -30,7 +30,7 @@ A policy descriptor has five required fields:
 | `mode` | string | Target mode identifier or `*` for mode-agnostic |
 | `description` | string | Human-readable description |
 | `rules` | object | Mode-specific governance rules (see Rule Schemas) |
-| `schema_version` | uint32 | Version of the rule schema used (`1` or `2`; version `2` adds Decision Mode decline-gating, additive) |
+| `schema_version` | uint32 | Version of the rule schema used (`1`, `2`, or `3`). Version `2` adds Decision Mode decline-gating and is **additive**. Version `3` is the first **semantic** bump: it changes how an empty vote tally is evaluated (see [Empty tallies](#empty-tallies-and-schema_version) below). A stored policy is always evaluated under the version it declares, so `1` and `2` policies keep their original behavior forever. |
 
 Canonical proto: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
 JSON Schema: [`schemas/json/macp-policy-descriptor.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-policy-descriptor.schema.json)
@@ -43,13 +43,58 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 
 | Mode | Rule Schema | Key Parameters |
 |------|-------------|----------------|
-| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, quorum, objection handling, evaluation constraints, commitment authority |
+| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, `threshold`, `weights`, quorum, objection handling, evaluation constraints, commitment authority |
 | Quorum | [`quorum-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority |
 | Proposal | [`proposal-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior |
 | Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority |
 | Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority |
 
 Decision Mode supports six voting algorithms: `none`, `majority`, `supermajority`, `unanimous`, `weighted`, and `plurality`. See [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md) for full details.
+
+`threshold` must be greater than `0` — the schema enforces that unconditionally, for every
+algorithm including those that never consult it — at least `0.5` for `majority`, and greater than `0.5` for
+`supermajority`. Threshold comparisons are **inclusive** (`ratio >=
+threshold`), so `majority` at the default `0.5` approves an even split. The denominator is the
+**decisive** votes — those cast as approve or reject; abstentions are excluded.
+
+### The weighted electorate
+
+Under `weighted`, the `weights` map **is** the electorate. A declared participant absent from the map
+has weight `0`, which is how an observer is expressed — the schema rejects an explicit `0` and an
+empty map. A weight-`0` vote is accepted as a message and preserved in history, but it is
+**non-decisive**: it contributes to neither side of the ratio, does not enter the decisive tally, and
+does not authorize a decline. It still counts as a vote cast for the `voting.quorum` participation
+floor.
+
+This rule is normative at **every** `schema_version`, not just `3`. So is the decline guard: a
+negative commitment must be backed by at least one **decisive** explicit `REJECT` vote, which means a
+`REJECT` from a weight-`0` participant never authorizes one.
+
+### Empty tallies and `schema_version`
+
+What happens when a commitment is attempted before any decisive vote has been cast depends on the
+`schema_version` the bound policy declares. This is the one place the versions differ in behavior
+rather than in vocabulary.
+
+| | `schema_version` 1 and 2 | `schema_version` 3 |
+|---|---|---|
+| **Positive commitment** on an empty tally | The algorithm produces **no result** — it neither passes nor fails. Whether the commitment is blocked is governed **solely** by `commitment.require_vote_quorum`. With it `false` (the default), the commitment is **allowed**, even under `majority` or `unanimous`. | **Denied** for every algorithm except `none`. The algorithm is binding on its own; its predicate is evaluated over the actual tally, including the empty one, and fails. |
+| **Negative commitment** on an empty tally | Denied for every algorithm except `none` — the decline guard needs a decisive `REJECT` and there is none. | Denied for every algorithm except `none`, for the same reason. |
+| `voting.algorithm: "none"` | Unaffected. | Unaffected. |
+
+For `weighted`, "empty tally" means **zero total decisive weight**, which covers both no ballots at
+all and a complete ballot set cast entirely by weight-`0` participants.
+
+The `1`/`2` behavior is fail-open: a policy that looks restrictive approves when nobody votes, and
+adding one approving ballot could convert an allowed commitment into a denied one. It is retained
+**solely** so that stored sessions replay identically — policy equality is `policy_id` +
+`schema_version` + `rules`, and a runtime MUST evaluate a stored policy under the version it declares
+even when a newer one exists. Implementations MUST keep this arm and MUST NOT apply it to
+`schema_version` 3 **or later** policies.
+
+**If you are writing a new policy, declare `schema_version: 3`.** If you must stay on `1` or `2` and
+want the voting algorithm to be binding, set `commitment.require_vote_quorum` to `true` — that is the
+only remedy available before version `3`.
 
 ## Default Policy
 
