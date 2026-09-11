@@ -68,7 +68,9 @@ an alias for `n_of_m`, but `count` names a *participation floor* in Decision Mod
 different gates in adjacent modes.
 
 Decision Mode's `threshold` must be greater than `0`, at least `0.5` for `majority`, and greater
-than `0.5` for `supermajority`. The `> 0` floor is enforced unconditionally, so `unanimous` and `plurality` —
+than `0.5` for `supermajority` — and under `supermajority` it is **required**, not defaulted: the
+field's documented `0.5` default is a value that algorithm's own constraint forbids, so omitting it
+would otherwise yield a supermajority that is a bare majority wearing the name. The `> 0` floor is enforced unconditionally, so `unanimous` and `plurality` —
 which never consult `threshold` — still reject an explicit `0`. Threshold comparisons are **inclusive** (`ratio >=
 threshold`), so `majority` at the default `0.5` approves an even split. The denominator is the
 **decisive** votes — those cast as approve or reject; abstentions are excluded.

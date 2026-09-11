@@ -19,13 +19,14 @@ no `additionalProperties: false` at the root, so the annotation itself never
 causes the rejection.
 
 Every fixture isolates exactly **one** constraint: removing that one keyword from
-the schema makes exactly that fixture validate and leaves the other three
+the schema makes exactly that fixture validate and leaves the other four
 rejected. A fixture that fails for the wrong reason would silently stop testing
 anything, so preserve that property when adding cases.
 
 | Fixture | Violated constraint |
 |---------|---------------------|
 | `threshold-zero-weighted.json` | `voting.threshold` MUST be greater than 0 — `exclusiveMinimum: 0` (RFC-MACP-0012 §4.1; issue #98 item 2) |
+| `supermajority-missing-threshold.json` | Under `supermajority`, `voting.threshold` is REQUIRED — the `supermajority` `allOf` arm's `required` (RFC-MACP-0012 §4.1; issue #101). Deliberately asymmetric with `majority`, which constrains the value without requiring the key |
 | `threshold-below-half-majority.json` | Under `majority`, `voting.threshold` MUST be at least 0.5 — the `majority` `allOf` arm (RFC-MACP-0012 §4.1) |
 | `weights-empty-map.json` | `voting.weights` MUST be non-empty — `minProperties: 1` (RFC-MACP-0012 §4.1; issue #98 item 3) |
 | `weights-explicit-zero.json` | Every `voting.weights` value MUST be greater than 0 — per-weight `exclusiveMinimum: 0` (RFC-MACP-0012 §4.1; issue #98 item 3) |

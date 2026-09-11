@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "Under voting.algorithm 'supermajority', threshold is REQUIRED (RFC-MACP-0012 §4.1). Before this constraint the arm was self-contradicting: this exact object validated, and the threshold subschema's own default of 0.5 then supplied a value the supermajority arm declares illegal (exclusiveMinimum 0.5) -- so a policy that reads as a supermajority evaluated as a bare majority (issue #101). Carries NO threshold key at all, deliberately: an out-of-range value would be rejected by exclusiveMinimum instead, testing the wrong keyword. The asymmetry with 'majority' is intentional and must survive -- that arm constrains the value without requiring the key, because four majority blocks on disk omit it and rely on the legal 0.5 default.",
+  "voting": {
+    "algorithm": "supermajority"
+  }
+}
