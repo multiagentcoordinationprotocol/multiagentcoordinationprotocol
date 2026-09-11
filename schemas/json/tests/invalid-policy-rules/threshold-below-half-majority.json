@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "Under 'majority', voting.threshold MUST be at least 0.5 (RFC-MACP-0012 §4.1). A ratio bar below half is not a majority; express one as 'weighted' with equal weights instead. The bound is inclusive because the reserved policy.std.majority profile sets threshold exactly 0.5.",
+  "voting": {
+    "algorithm": "majority",
+    "threshold": 0.4
+  }
+}

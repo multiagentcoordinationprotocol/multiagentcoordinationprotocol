@@ -21,6 +21,8 @@ TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*.json"
 CONFORMANCE_DIR="${PROJECT_ROOT}/schemas/conformance"
 CONFORMANCE_SCHEMA="${CONFORMANCE_DIR}/schema.json"
 INVALID_ENVELOPE_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid"
+INVALID_POLICY_RULES_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-policy-rules"
+DECISION_RULES_SCHEMA="${PROJECT_ROOT}/schemas/json/policy/decision-rules.schema.json"
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -254,6 +256,43 @@ if [ -d "${INVALID_ENVELOPE_DIR}" ]; then
 
             if ajv validate -s "${ENVELOPE_SCHEMA}" -d "${invalid_file}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
                 echo "  [X] Fixture unexpectedly PASSED validation — the envelope schema no longer rejects this case"
+                exit 1
+            else
+                VALIDATED=$((VALIDATED + 1))
+                echo "  [OK] Correctly rejected"
+            fi
+            echo ""
+        fi
+    done
+fi
+
+# Negative tests: Decision Mode governance rules that MUST be rejected by the
+# decision rule schema. Nothing else validates a `rules` object against its rule
+# schema -- the policy descriptor and conformance fixture formats both treat
+# `rules` as opaque -- so this loop is the only thing that exercises the
+# constraints in decision-rules.schema.json.
+if [ -d "${INVALID_POLICY_RULES_DIR}" ]; then
+    # ajv exits non-zero for a MISSING schema exactly as it does for a rejected
+    # instance, so without this guard a deleted or renamed rule schema would report
+    # four cheerful "Correctly rejected" lines. Nothing else in the repository
+    # validates an instance against decision-rules.schema.json, so nothing else
+    # would catch it either.
+    if [ ! -f "${DECISION_RULES_SCHEMA}" ]; then
+        echo "[X] Decision rule schema not found: ${DECISION_RULES_SCHEMA}"
+        exit 1
+    fi
+
+    echo "-- Negative policy-rules tests (${INVALID_POLICY_RULES_DIR}/*.json) --"
+    echo "  Each fixture MUST FAIL decision-rules-schema validation."
+    echo ""
+
+    for invalid_rules_file in "${INVALID_POLICY_RULES_DIR}"/*.json; do
+        if [ -f "$invalid_rules_file" ]; then
+            TOTAL=$((TOTAL + 1))
+            echo "Validating (expect reject): tests/invalid-policy-rules/$(basename "$invalid_rules_file")"
+
+            if ajv validate -s "${DECISION_RULES_SCHEMA}" -d "${invalid_rules_file}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+                echo "  [X] Fixture unexpectedly PASSED validation -- the decision rule schema no longer rejects this case"
                 exit 1
             else
                 VALIDATED=$((VALIDATED + 1))

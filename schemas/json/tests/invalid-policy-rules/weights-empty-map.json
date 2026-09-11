@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "voting.weights MUST be non-empty (RFC-MACP-0012 §4.1). An empty electorate makes every ballot non-decisive, so a COMPLETE ballot set evaluates as an empty decisive tally (issue #98, item 3).",
+  "voting": {
+    "algorithm": "weighted",
+    "weights": {}
+  }
+}

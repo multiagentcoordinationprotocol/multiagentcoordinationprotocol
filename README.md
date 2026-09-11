@@ -20,7 +20,7 @@ MACP is maintained by a single maintainer on a best-effort basis. Changes land w
 
 **What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI and crates.io, to GitHub Packages for the npm, Java, Kotlin, and C# artifacts, and as a Go module resolved from the tag itself. They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
 
-**What is not frozen:** the RFC text. All thirteen RFCs are drafts — twelve at `**Version:** 1.0.0-draft`, RFC-MACP-0006 at `1.1.0-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
+**What is not frozen:** the RFC text. All thirteen RFCs are drafts — ten at `**Version:** 1.0.0-draft`, RFC-MACP-0007 and RFC-MACP-0012 at `1.1.0-draft`, and RFC-MACP-0006 at `1.4.0-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
 
 **There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
 
@@ -115,6 +115,7 @@ MACP/
       macp-policy-descriptor.schema.json
       tests/
         invalid/          # negative envelope fixtures (MUST fail validation)
+        invalid-policy-rules/  # negative policy-rules fixtures (MUST fail validation)
       policy/
         decision-rules.schema.json
         quorum-rules.schema.json
@@ -131,6 +132,18 @@ MACP/
       decision_reject_paths.json
       decision_critical_objection_veto.json
       decision_critical_objection_finalize_decline.json
+      decision_empty_tally_binding.json
+      decision_empty_tally_legacy.json
+      decision_weighted_zero_weight.json
+      decision_weighted_zero_weight_v1.json
+      decision_zero_participants.json
+      decision_majority_empty_tally.json
+      decision_supermajority_empty_tally.json
+      decision_none_v3_empty_tally.json
+      decision_none_v3_empty_tally_positive.json
+      decision_legacy_require_vote_quorum.json
+      decision_plurality.json
+      decision_finalize_decline_empty_tally.json
       proposal_happy_path.json
       proposal_negative_outcome.json
       proposal_reject_paths.json

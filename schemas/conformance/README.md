@@ -47,8 +47,8 @@ Each fixture is a JSON object with:
     {
       "sender": "agent://lead",
       "message_type": "Proposal",
-      "payload_type": "decision.Proposal",
-      "payload": { "proposalId": "p-1", "option": "deploy", "rationale": "ready" },
+      "payload_type": "macp.modes.decision.v1.ProposalPayload",
+      "payload": { "proposal_id": "p-1", "option": "deploy", "rationale": "ready" },
       "expect": "accept"
     }
   ],
@@ -61,12 +61,12 @@ Each fixture is a JSON object with:
 | Field | Used By | Description |
 |-------|---------|-------------|
 | `mode` | Both | Mode identifier |
-| `initiator` | Both | Session initiator. **Must be a member of `participants`.** |
-| `participants` | Both | Session participants. Must include the initiator and every `accept` sender. |
+| `initiator` | Both | Session initiator. Membership in `participants` is **mode-specific** — required only by handoff's delegated model (RFC-MACP-0010 §2). Elsewhere the initiator's authority is role-based, so an initiator outside `participants` is legitimate if it sends only `SessionStart` / `Commitment` / `SessionCancel` (plus each mode's initiator-role message). See the note above the format section. |
+| `participants` | Both | Declared participant roster. Must include every `accept` sender other than the initiator's role-based messages. **MAY be empty** — MACP does not require `SessionStart` to declare participants, and `decision_zero_participants.json` pins what that implies. |
 | `messages` | Both | Ordered message sequence |
 | `messages[].sender` | Both | Sender identity. For `accept` messages must be a participant; `reject` messages may come from outsiders. |
 | `messages[].expect` | Both | `"accept"` or `"reject"` — whether the runtime accepts the message |
-| `messages[].payload_type` | Both | `"{mode_short}.{MessageType}"` format for payload encoding |
+| `messages[].payload_type` | Both | **Fully-qualified** protobuf message name — `macp.v1.<Name>` for core payloads, `macp.modes.<mode>.v<N>.<Name>Payload` for mode payloads. Enforced by `schema.json`'s `payload_type` pattern, which **rejects** the short `decision.Proposal` form this table previously documented. |
 | `policy` | Runtime | Optional inline `PolicyDescriptor` (`policy_id`, `mode`, `schema_version`, `rules`) the harness registers before `SessionStart`, so a bound (non-`none`) voting algorithm is reachable. `policy_version` must match its `policy_id`. Absent ⇒ default policy. |
 | `messages[].expected_error_code` | Runtime | For `reject` messages, the error code the runtime should return (recommended) |
 | `expected_final_state` | Both | Terminal state: `Open`, `Resolved`, `Suspended`, or `Cancelled`. `Resolved` ⇒ a commitment was emitted. |
@@ -90,6 +90,44 @@ Notes:
   `WithdrawPayload` (`proposal_reject_paths.json`), and `TaskUpdatePayload`
   (`task_reject_paths.json`) each have at least one accepted and one
   RFC-cited rejected instance.
+- **Governance policy `schema_version` semantics** are pinned in matched pairs,
+  because the versions differ only in one direction and no single fixture pins
+  a divergence. `decision_empty_tally_binding.json` (v3) and
+  `decision_empty_tally_legacy.json` (v2) run the same `unanimous` transcript
+  on an empty tally: v3 denies the positive commitment, v2 seals it under the
+  preserved fail-open arm (RFC-MACP-0012 §4.1, §8). `decision_weighted_zero_weight.json`
+  (v3) and `decision_weighted_zero_weight_v1.json` (v1) do the same for a
+  ballot set cast entirely by weight-`0` participants, and additionally pin
+  that the **vote-authorized** negative direction is denied at **every** schema
+  version — the assertion that distinguishes `NoVotes` from `Failed`. (Neither
+  fixture's policy sets `finalize_decline`, so the objection-authorized channel
+  described below is not in play in either of them.)
+  `decision_majority_empty_tally.json` and
+  `decision_supermajority_empty_tally.json` cover the two ratio algorithms that
+  carry the explicit "MUST NOT compute `0/0`" prohibition (`weighted`, the
+  third ratio algorithm, is worded differently and covered separately above); the former also
+  pins that the threshold comparison is **inclusive** (an even split approves at
+  `0.5`), and the latter pins the `Failed` vs `NoVotes` distinction from the
+  opposite side — a genuine `Failed` result authorizes a vote-authorized negative
+  commitment, where `NoVotes` denies it.  `decision_plurality.json` pins `plurality`'s empty
+  tally, its tie-fails rule, and its passing case — note it DENIES the same 1-1
+  tally `decision_majority_empty_tally.json` approves.
+  `decision_none_v3_empty_tally.json` is the regression guard for the `none`
+  exemption at `schema_version` 3: before it, the corpus's only `none` fixture
+  declared `schema_version` 2, so a runtime that swallowed `none` into the
+  fail-closed arm passed every fixture here.
+  `decision_legacy_require_vote_quorum.json` pins the other half of the legacy
+  arm — with `commitment.require_vote_quorum` `true`, a `schema_version` 2 policy
+  denies the empty tally, which is the remedy RFC-MACP-0012 §4.1 prescribes for
+  pre-v3 policies.
+  `decision_finalize_decline_empty_tally.json` pins the objection-authorized
+  decline channel: under `schema_version` 3 with a non-`none` algorithm, an
+  empty tally, and a standing critical objection, `finalize_decline` still
+  seals the session negatively — the empty-tally rule gates vote-authorized
+  commitments only (RFC-MACP-0007 §6.2; RFC-MACP-0012 §4.1). `decision_zero_participants.json` pins the
+  authorization guard that keeps RFC-MACP-0012 §4.1's zero-participant
+  `unanimous` clause unreachable at the wire: a zero-participant session
+  accepts no `Proposal`, not even from the initiator.
 
 ## Source of truth & enforcement
 
@@ -100,8 +138,10 @@ disagrees with the RFC or the runtime, the fixture is wrong — fix it here.
 Enforcement (all wired into CI, runs on every PR):
 
 - **This repo** lints the fixtures for internal consistency:
-  `python3 schemas/conformance/lint_fixtures.py` (initiator + every `accept`
-  sender must be a participant; schema/expect/final-state validity).
+  `python3 schemas/conformance/lint_fixtures.py` (every `accept` sender must be a
+  participant, except the initiator's role-based messages; inline-policy
+  `schema_version` in {1, 2, 3}; `policy_version` matching `policy_id`;
+  schema/expect/final-state validity).
 - **Each SDK** runs `make verify-fixtures`, which fails the build if its vendored
   copy differs byte-for-byte from this canonical set, plus deepened conformance
   harnesses that assert transcript, commitment/resolution (incl.

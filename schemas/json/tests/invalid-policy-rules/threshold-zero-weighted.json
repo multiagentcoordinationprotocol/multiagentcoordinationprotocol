@@ -1,0 +1,10 @@
+{
+  "_invalid_because": "voting.threshold MUST be greater than 0 (RFC-MACP-0012 §4.1). A threshold of 0 is satisfied by an all-REJECT round under both 'majority' and 'weighted', so a policy that looks restrictive approves everything (issue #98, item 2). 'weighted' is used here rather than 'supermajority' so the rejection comes from threshold's own exclusiveMinimum and not from the supermajority allOf arm.",
+  "voting": {
+    "algorithm": "weighted",
+    "threshold": 0,
+    "weights": {
+      "agent://a": 1
+    }
+  }
+}
