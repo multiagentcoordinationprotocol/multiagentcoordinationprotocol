@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "acceptance.implicit_accept_timeout_ms has minimum 0; a negative timeout is meaningless and would make implicit acceptance fire in the past (RFC-MACP-0010 §5.1). Isolates the minimum keyword. 0 IS legal and disables implicit acceptance, so this fixture cannot use 0.",
+  "acceptance": { "implicit_accept_timeout_ms": -1 }
+}

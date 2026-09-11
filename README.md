@@ -24,7 +24,7 @@ MACP is maintained by a single maintainer on a best-effort basis. Changes land w
 
 **There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
 
-What *is* mechanically enforced is narrower and real: `make validate` compiles the canonical Protobuf schemas, validates every example and conformance fixture against its JSON Schema, and checks that the indexes in this file match the files on disk. The RFC-MACP-0013 commitment-hash vectors additionally reproduce byte-for-byte in `macp-runtime` and in both SDKs. Enforcement covers the schemas and fixtures — not the normative prose.
+What *is* mechanically enforced is narrower and real: `make validate` compiles the canonical Protobuf schemas, validates every example and conformance fixture against its JSON Schema, and checks that the indexes in this file match the files on disk. The RFC-MACP-0013 commitment-hash vectors additionally reproduce byte-for-byte in `macp-runtime` and in both SDKs. Enforcement covers the schemas and fixtures, and — as of `make prose-check` — four mechanical properties of the normative prose: no line-number anchors, `schema_version` enumerations that agree across every site, RFC cross-references that resolve, and a README version census that matches the RFC headers. Whether a paragraph is *true* remains unenforced.
 
 ## What this repository contains
 
@@ -117,6 +117,9 @@ MACP/
         invalid/          # negative envelope fixtures (MUST fail validation)
         invalid-policy-rules/  # negative Decision-rules fixtures (MUST fail validation)
         invalid-quorum-rules/  # negative Quorum-rules fixtures (MUST fail validation)
+        invalid-proposal-rules/ # negative Proposal-rules fixtures (MUST fail validation)
+        invalid-task-rules/    # negative Task-rules fixtures (MUST fail validation)
+        invalid-handoff-rules/ # negative Handoff-rules fixtures (MUST fail validation)
       policy/
         decision-rules.schema.json
         quorum-rules.schema.json

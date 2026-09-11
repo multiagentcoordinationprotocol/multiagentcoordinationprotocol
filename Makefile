@@ -1,4 +1,4 @@
-.PHONY: help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
+.PHONY: prose-check help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors check-indexes clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
@@ -41,7 +41,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors check-indexes proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors check-indexes prose-check proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -71,6 +71,11 @@ cmt-hash-vectors:
 check-indexes:
 	@echo "Checking indexes..."
 	@./scripts/check-indexes.sh
+
+# Check RFC prose against the artifacts implementing it (issue #107) — stdlib only
+prose-check:
+	@echo "Checking RFC prose against artifacts..."
+	@python3 scripts/check-prose.py
 
 # Lint protobuf files with buf
 proto-lint:

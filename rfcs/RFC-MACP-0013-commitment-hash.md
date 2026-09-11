@@ -80,7 +80,7 @@ Consequently, **adding a field to `CommitmentPayload` is a label bump to `macp-c
 
 ## 6. Hashability
 
-The canonical commitment hash is defined over any `CommitmentPayload` value that is projectable under Section 3 and covered by the frozen field set of Section 5 — **whether or not that value satisfies the structural well-formedness obligations of RFC-MACP-0001 §7.3.1.** Hashing is a pure function of the projected field values; it MUST NOT be gated on, or skipped because of, a payload's validity under §7.3.1 or any other structural check.
+The canonical commitment hash is defined over any `CommitmentPayload` value that is projectable under Section 3 and covered by the frozen field set of Section 5 — **whether or not that value satisfies the structural well-formedness obligations of RFC-MACP-0001 §7.3.1.** Hashing is a pure function of the projected field values; it MUST NOT be gated on, or skipped because of, a payload's validity under [RFC-MACP-0001](RFC-MACP-0001-core.md) §7.3.1 or any other structural check.
 
 The practical consequence is that a verifier can always compute the canonical commitment hash of a received `CommitmentPayload` — including one whose fields are empty strings, or whose `supersedes` is present with empty sub-fields — and compare it against a claimed value. A disagreement in that comparison is a **mismatch**: a definite, reportable outcome, distinct from the **cannot-verify** outcome of Section 5, which arises only when the payload's field set falls outside what the label covers, not when its field values are themselves invalid or degenerate.
 

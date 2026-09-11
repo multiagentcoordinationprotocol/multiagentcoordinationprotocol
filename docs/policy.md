@@ -200,6 +200,38 @@ Policies for extension modes (`ext.*` and reverse-domain identifiers) are logged
 they have no standards-track rule schema by design. Only an unrecognized `macp.mode.*`
 identifier is an error.
 
+Every mode's rule schema also has a **negative** corpus under `schemas/json/tests/` — one
+directory per mode, each fixture required to FAIL its schema and each isolating exactly one
+constraint, so that removing that constraint flips exactly one fixture. Without them the
+constraints would be unenforced in the direction that matters: a schema only proves it rejects
+what it should if something on disk is actually rejected by it.
+
+## What CI Checks About the RFCs
+
+`make prose-check` (`scripts/check-prose.py`) checks RFC prose against the artifacts that
+implement it. `make validate` never did: it verifies that JSON matches schemas and that protos
+compile, but not that a normative sentence is true, and not that two RFCs agree.
+
+Four checks, chosen because they are mechanical:
+
+- **No line-number anchors.** A citation that pins a source line — an open paren, a colon, a
+  line number, a close paren — drifts the moment anything above it is edited. Cite the heading
+  instead. (The check is self-applying: an earlier draft of this very paragraph used a literal
+  example and was rejected by it.)
+- **`schema_version` enumerations agree.** The valid set is spelled out in five places across
+  markdown, JSON Schema, a Python linter, and a `.proto` comment; `lint_fixtures.py` is the
+  source of truth and the rest must match it.
+- **RFC cross-references resolve.** A `§N.M` pointing at a section that does not exist is
+  detectable. A bare section number resolves against its own document first and only then
+  against the nearest preceding RFC citation, and references to non-MACP standards (IETF RFCs)
+  are left alone.
+- **The README version census matches.** `README.md` hand-maintains a per-RFC version roll-call
+  that nothing verified; it went stale twice during this work alone.
+
+**What it still does not check:** whether a paragraph is *true*. Nothing here would have caught
+an RFC asserting a constraint its schema does not impose, beyond the four narrow classes above.
+That remains a human job.
+
 ## Error Codes
 
 | Code | Description | Reference |

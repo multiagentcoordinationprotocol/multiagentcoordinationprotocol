@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "commitment.designated_roles is typed array (RFC-MACP-0010 §6). A bare string is the natural single-role shorthand a policy author would reach for, and JSON Schema will not coerce it. Isolates the type keyword -- deliberately NOT paired with authority 'designated_role', because handoff-rules.schema.json has no conditional arm requiring the field, so adding one would not change the rejection and would blur which keyword fires.",
+  "commitment": { "designated_roles": "agent://ops" }
+}
