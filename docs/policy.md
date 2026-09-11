@@ -161,6 +161,27 @@ The resolved `PolicyDescriptor` MUST be persisted as part of the session snapsho
 - [`examples/policy-decision-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-decision-session.json) — Decision Mode session governed by a supermajority voting policy with quorum and critical-severity veto
 - [`examples/policy-registration-exchange.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-registration-exchange.json) — Dynamic policy registration request and response via gRPC
 
+## What CI Validates
+
+`make json-validate` checks every policy `rules` object in the repository against its mode's
+rule schema in `schemas/json/policy/`. The mode is taken from the `mode` field beside the
+`rules` object; `mode: "*"` (the mode-agnostic default policy) is skipped, and a `mode` naming
+no known rule schema is a hard failure rather than a silent skip.
+
+This reaches rules objects wherever they sit — discovery descriptors, conformance fixtures,
+the nested descriptor in `examples/policy-registration-exchange.json`, and the fenced JSON
+blocks in the RFCs and in this document.
+
+**What it does not yet check.** None of the five rule schemas sets `additionalProperties: false`
+or a top-level `required`, so an empty `rules` object validates against all of them, and an
+unrecognized rule field is accepted and ignored. Decision Mode carries real constraints and
+Quorum Mode carries one conditional arm; Proposal, Task, and Handoff are enum-and-type only.
+A green run means nothing on disk contradicts its schema — not that the schemas are complete.
+
+Policies for extension modes (`ext.*` and reverse-domain identifiers) are logged and skipped:
+they have no standards-track rule schema by design. Only an unrecognized `macp.mode.*`
+identifier is an error.
+
 ## Error Codes
 
 | Code | Description | Reference |
