@@ -42,7 +42,7 @@
         },
         "weights": {
           "type": "object",
-          "description": "Per-participant vote weights; keys are participant IDs. Used only with the 'weighted' algorithm. This map is the weighted electorate: a declared participant absent from it has weight 0 (observers are expressed by omission), and a weight-0 vote is NON-DECISIVE — it contributes to neither side of the ratio, does not enter the decisive tally, and does not satisfy the decline guard of RFC-MACP-0007 Section 6.2, though it still counts as a vote cast for the voting.quorum participation floor. Values must be greater than 0 and the map must be non-empty. This electorate rule is normative for EVERY schema version, not only 3. See RFC-MACP-0012 Section 4.1.",
+          "description": "Per-participant vote weights; keys are participant IDs. Used only with the 'weighted' algorithm. This map is the weighted electorate: a declared participant absent from it has weight 0 (observers are expressed by omission), and a weight-0 vote is NON-DECISIVE — it contributes to neither side of the ratio, does not enter the decisive tally, and does not satisfy the decline guard of RFC-MACP-0007 Section 6.2, though it still counts as a vote cast for the voting.quorum participation floor. Values must be greater than 0 and the map must be non-empty. Those two constraints are enforced UNCONDITIONALLY, at every algorithm, not only under 'weighted': a weights map is meaningless elsewhere, so an empty or zero-valued one is a policy-authoring error wherever it appears. This electorate rule is normative for EVERY schema version, not only 3. See RFC-MACP-0012 Section 4.1.",
           "minProperties": 1,
           "additionalProperties": {
             "type": "number",
@@ -151,15 +151,17 @@
       "then": {
         "properties": {
           "voting": {
+            "required": ["threshold"],
             "properties": {
               "threshold": { "exclusiveMinimum": 0.5 }
             }
           }
         }
-      }
+      },
+      "$comment": "'supermajority' REQUIRES threshold, deliberately asymmetric with the majority arm below, which constrains the value without requiring the key. Without 'required' this arm was self-contradicting: {\"algorithm\": \"supermajority\"} validated, and the threshold subschema's own default of 0.5 then supplied a value this very arm declares illegal -- a supermajority that is a bare majority wearing the name (issue #101). Safe to require: all five supermajority rule blocks on disk set threshold explicitly."
     },
     {
-      "$comment": "'majority' means at least half: inclusive minimum 0.5, deliberately asymmetric with the supermajority arm's exclusiveMinimum. RFC-MACP-0012 Section 4.1 pins the comparison as inclusive so an even split approves, and the reserved policy.std.majority profile sets threshold exactly 0.5 — exclusiveMinimum here would invalidate a profile Section 2.2 pins byte-identical on every runtime. Constrains the value only; adding 'required' would reject the three existing majority rule blocks that omit threshold entirely.",
+      "$comment": "'majority' means at least half: inclusive minimum 0.5, deliberately asymmetric with the supermajority arm's exclusiveMinimum. RFC-MACP-0012 Section 4.1 pins the comparison as inclusive so an even split approves, and the reserved policy.std.majority profile sets threshold exactly 0.5 — exclusiveMinimum here would invalidate a profile Section 2.2 pins byte-identical on every runtime. Constrains the value only; adding 'required' would reject the four existing majority rule blocks that omit threshold entirely.",
       "if": {
         "properties": {
           "voting": {
