@@ -17,10 +17,11 @@
         },
         "threshold": {
           "type": "number",
-          "minimum": 0,
+          "exclusiveMinimum": 0,
           "maximum": 1,
           "default": 0.5,
-          "description": "Fraction of cast votes required for approval. Used by 'supermajority' and 'weighted' algorithms."
+          "description": "Fraction of the decisive votes required for approval. Used by the 'majority', 'supermajority', and 'weighted' algorithms. Must be greater than 0; at least 0.5 for 'majority'; greater than 0.5 for 'supermajority'. Abstentions are excluded from the denominator, and under 'weighted' so are weight-0 votes. See RFC-MACP-0012 Section 4.1.",
+          "$comment": "exclusiveMinimum 0: threshold 0 made an all-REJECT round return Passed under both majority and weighted (issue #98, item 2)."
         },
         "quorum": {
           "type": "object",
@@ -41,11 +42,13 @@
         },
         "weights": {
           "type": "object",
-          "description": "Per-participant vote weights. Keys are participant IDs. Used only with 'weighted' algorithm.",
+          "description": "Per-participant vote weights; keys are participant IDs. Used only with the 'weighted' algorithm. This map is the weighted electorate: a declared participant absent from it has weight 0 (observers are expressed by omission), and a weight-0 vote is NON-DECISIVE — it contributes to neither side of the ratio, does not enter the decisive tally, and does not satisfy the decline guard of RFC-MACP-0007 Section 6.2, though it still counts as a vote cast for the voting.quorum participation floor. Values must be greater than 0 and the map must be non-empty. This electorate rule is normative for EVERY schema version, not only 3. See RFC-MACP-0012 Section 4.1.",
+          "minProperties": 1,
           "additionalProperties": {
             "type": "number",
-            "minimum": 0
-          }
+            "exclusiveMinimum": 0
+          },
+          "$comment": "exclusiveMinimum 0 + minProperties 1: an all-zero or empty weights map yielded 'no votes' on a COMPLETE ballot set (issue #98, item 3). A legitimately zero-weighted observer is expressed by omission from this map, not by an explicit 0, so nothing is lost."
         }
       }
     },
@@ -150,6 +153,27 @@
           "voting": {
             "properties": {
               "threshold": { "exclusiveMinimum": 0.5 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "'majority' means at least half: inclusive minimum 0.5, deliberately asymmetric with the supermajority arm's exclusiveMinimum. RFC-MACP-0012 Section 4.1 pins the comparison as inclusive so an even split approves, and the reserved policy.std.majority profile sets threshold exactly 0.5 — exclusiveMinimum here would invalidate a profile Section 2.2 pins byte-identical on every runtime. Constrains the value only; adding 'required' would reject the three existing majority rule blocks that omit threshold entirely.",
+      "if": {
+        "properties": {
+          "voting": {
+            "properties": { "algorithm": { "const": "majority" } },
+            "required": ["algorithm"]
+          }
+        },
+        "required": ["voting"]
+      },
+      "then": {
+        "properties": {
+          "voting": {
+            "properties": {
+              "threshold": { "minimum": 0.5 }
             }
           }
         }

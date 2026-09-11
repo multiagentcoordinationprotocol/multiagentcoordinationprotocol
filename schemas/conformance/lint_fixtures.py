@@ -21,8 +21,11 @@ REQUIRED_TOP_LEVEL = ("mode", "initiator", "participants", "messages", "expected
 VALID_EXPECT = {"accept", "reject"}
 VALID_FINAL_STATE = {"Open", "Resolved", "Expired", "Suspended", "Cancelled"}
 # Schema versions a conformant runtime is expected to accept for an inline policy
-# (RFC-MACP-0012 §3). Additive: 1 is legacy, 2 adds Decision decline-gating.
-VALID_POLICY_SCHEMA_VERSIONS = {1, 2}
+# (RFC-MACP-0012 §3). 1 is legacy; 2 adds Decision decline-gating and is additive;
+# 3 is SEMANTIC, not additive -- it changes the empty-tally rule (algorithms other
+# than "none" fail on an empty tally) while 1 and 2 keep the legacy fail-open rule
+# for replay. See RFC-MACP-0012 §4.1 and §8.
+VALID_POLICY_SCHEMA_VERSIONS = {1, 2, 3}
 
 
 def lint_fixture(path: Path) -> tuple[list[str], list[str]]:

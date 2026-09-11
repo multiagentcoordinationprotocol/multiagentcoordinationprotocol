@@ -7,7 +7,7 @@
   "properties": {
     "threshold": {
       "type": "object",
-      "description": "Override the required_approvals from ApprovalRequest (RFC-MACP-0012 Section 4.2). This is the approval bar and the ONLY gate in schema_version <= 2 — there is no separate participation quorum. Type 'n_of_m' uses a raw approval count, 'percentage' uses an integer percentage (0-100) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
+      "description": "Override the required_approvals from ApprovalRequest (RFC-MACP-0012 Section 4.2). This is the approval bar and the ONLY gate in schema_version <= 3 — there is no separate participation quorum. Type 'n_of_m' uses a raw approval count, 'percentage' uses an integer percentage (0-100) of eligible participants, 'weighted' uses a weighted sum of participant weights.",
       "properties": {
         "type": {
           "type": "string",
