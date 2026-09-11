@@ -5,7 +5,11 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# MACP_ROOT lets the mutation proofs in the acceptance criteria run against a
+# throwaway tree. Without it every check resolves from BASH_SOURCE and therefore
+# always scans the real repository, which makes "prove it by mutating a copy"
+# impossible -- including the missing-schema guard below, whose path is absolute.
+PROJECT_ROOT="${MACP_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 
 ENVELOPE_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-envelope.schema.json"
 MANIFEST_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-manifest.schema.json"
@@ -23,6 +27,13 @@ CONFORMANCE_SCHEMA="${CONFORMANCE_DIR}/schema.json"
 INVALID_ENVELOPE_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid"
 INVALID_POLICY_RULES_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-policy-rules"
 DECISION_RULES_SCHEMA="${PROJECT_ROOT}/schemas/json/policy/decision-rules.schema.json"
+POLICY_RULES_SCHEMA_DIR="${PROJECT_ROOT}/schemas/json/policy"
+RULES_EXTRACTOR="${PROJECT_ROOT}/scripts/extract-policy-rules.py"
+# A manifest count, not a convenience. Every silent-loss vector in the extractor --
+# a fence whose info string stops matching, a `mode` key renamed, a file deleted --
+# lowers this number while every remaining instance still passes. Without the pin the
+# run stays green with less coverage than it reports. Bump it when adding a rules object.
+EXPECTED_RULES_INSTANCES=24
 
 echo "Validating JSON examples against schemas..."
 echo ""
@@ -302,6 +313,108 @@ if [ -d "${INVALID_POLICY_RULES_DIR}" ]; then
         fi
     done
 fi
+
+# --- Policy rules objects vs their mode's rule schema (issue #100) ---
+#
+# Until this loop existed, NOTHING validated a `rules` object against the schema
+# that defines it. Both containers treat `rules` as opaque -- macp-policy-descriptor
+# .schema.json and schemas/conformance/schema.json each declare it as a bare
+# {"type": "object"} with no $ref -- so every constraint in every
+# schemas/json/policy/*-rules.schema.json was decorative: a malformed allOf arm
+# that silently never matches would compile clean and pass CI.
+#
+# The extractor also reaches fenced ```json blocks in rfcs/ and docs/, which no
+# other check in this repository reads at all.
+echo "-- Policy rules objects vs mode rule schemas (${POLICY_RULES_SCHEMA_DIR}) --"
+echo ""
+
+if [ ! -f "${RULES_EXTRACTOR}" ]; then
+    echo "[X] Rules extractor not found: ${RULES_EXTRACTOR}"
+    exit 1
+fi
+
+RULES_TMP="$(mktemp -d)"
+# Bash keeps ONE EXIT trap: re-arming it here would silently disarm the transcript
+# loop's cleanup above and leak its directory on every run. Cover both.
+trap 'rm -rf "${TMP_ENV_DIR:-/nonexistent}" "${RULES_TMP:?}"' EXIT
+
+# A failure here is fatal, not skippable: an extractor that silently emitted
+# nothing would leave this whole section vacuously green.
+if ! python3 "${RULES_EXTRACTOR}" "${RULES_TMP}" > "${RULES_TMP}/index.tsv"; then
+    echo "[X] Rules extraction failed"
+    exit 1
+fi
+
+if [ ! -s "${RULES_TMP}/index.tsv" ]; then
+    echo "[X] No policy rules objects found -- the extractor matched nothing."
+    echo "    There are known instances on disk, so this means extraction broke."
+    exit 1
+fi
+
+RULES_FOUND="$(wc -l < "${RULES_TMP}/index.tsv" | tr -d ' ')"
+if [ "${RULES_FOUND}" -ne "${EXPECTED_RULES_INSTANCES}" ]; then
+    echo "[X] Expected ${EXPECTED_RULES_INSTANCES} policy rules objects, found ${RULES_FOUND}."
+    echo "    Fewer means coverage was lost silently -- a renamed 'mode' key, a fence whose"
+    echo "    info string no longer matches, or a deleted file. More means a new rules object"
+    echo "    was added. Either way, confirm the change is intended and update"
+    echo "    EXPECTED_RULES_INSTANCES in $0."
+    exit 1
+fi
+
+while IFS=$'\t' read -r rule_mode rule_file rule_label; do
+    [ -n "${rule_mode}" ] || continue
+
+    # mode "*" is mode-agnostic (the default policy): no rule schema applies.
+    # Logged rather than skipped silently, so the count always reconciles.
+    if [ "${rule_mode}" = "*" ]; then
+        echo "Skipping: ${rule_label}"
+        echo "  [--] mode \"*\" is mode-agnostic; no rule schema applies"
+        echo ""
+        continue
+    fi
+
+    # macp.mode.<name>.v<N> -> <name>-rules.schema.json
+    # Extension modes (ext.*, reverse-domain) are outside the standards-track rule
+    # schemas by design -- CLAUDE.md encourages them and the repo ships
+    # ext.multi_round.v1. Skip them like "*", logged; do NOT fail the build. Only an
+    # unrecognized macp.mode.* identifier is an error.
+    case "${rule_mode}" in
+        macp.mode.*) ;;
+        *)
+            echo "Skipping: ${rule_label}"
+            echo "  [--] extension mode \"${rule_mode}\" has no standards-track rule schema"
+            echo ""
+            continue
+            ;;
+    esac
+
+    rule_short="$(echo "${rule_mode}" | sed -n 's/^macp\.mode\.\([a-z_]*\)\.v[0-9]*$/\1/p')"
+    if [ -z "${rule_short}" ]; then
+        echo "[X] ${rule_label}: malformed mode identifier \"${rule_mode}\""
+        echo "    Expected macp.mode.<name>.v<N>"
+        exit 1
+    fi
+
+    rule_schema="${POLICY_RULES_SCHEMA_DIR}/${rule_short}-rules.schema.json"
+    # Hard-fail rather than skip: a typo'd mode that silently skipped validation
+    # is precisely the failure class this loop exists to close.
+    if [ ! -f "${rule_schema}" ]; then
+        echo "[X] ${rule_label}: no rule schema for mode \"${rule_mode}\""
+        echo "    Expected: ${rule_schema}"
+        exit 1
+    fi
+
+    TOTAL=$((TOTAL + 1))
+    echo "Validating: ${rule_label}  ->  $(basename "${rule_schema}")"
+    if ajv validate -s "${rule_schema}" -d "${rule_file}" --spec=draft2020 --strict=false; then
+        VALIDATED=$((VALIDATED + 1))
+        echo "  [OK] Valid"
+    else
+        echo "  [X] Invalid"
+        exit 1
+    fi
+    echo ""
+done < "${RULES_TMP}/index.tsv"
 
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON example files found"
