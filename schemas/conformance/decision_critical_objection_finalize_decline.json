@@ -10,7 +10,7 @@
   "mode_version": "1.0.0",
   "configuration_version": "cfg-1",
   "policy": {
-    "_comment": "RFC-MACP-0012 Section 4.1 (:102): 'finalize_decline' finalizes the session as a negative outcome. voting.algorithm is 'none' deliberately — with any vote-based algorithm a decline additionally requires an explicit reject vote, which would confound this fixture's discriminator with the vote-gated decline already pinned by decision_negative_outcome.json.",
+    "_comment": "RFC-MACP-0012 Section 4.1, Negative-outcome parameters: 'finalize_decline' finalizes the session as a negative outcome. (Cited by heading, not line number -- the previous ':102' anchor was already stale at HEAD and every edit to Section 4.1 moves it again.) voting.algorithm is 'none' deliberately — with any vote-based algorithm a decline additionally requires an explicit reject vote, which would confound this fixture's discriminator with the vote-gated decline already pinned by decision_negative_outcome.json.",
     "policy_id": "policy.decision.critical-veto-decline",
     "mode": "macp.mode.decision.v1",
     "schema_version": 2,

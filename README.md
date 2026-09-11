@@ -132,6 +132,16 @@ MACP/
       decision_reject_paths.json
       decision_critical_objection_veto.json
       decision_critical_objection_finalize_decline.json
+      decision_empty_tally_binding.json
+      decision_empty_tally_legacy.json
+      decision_weighted_zero_weight.json
+      decision_weighted_zero_weight_v1.json
+      decision_zero_participants.json
+      decision_majority_empty_tally.json
+      decision_supermajority_empty_tally.json
+      decision_none_v3_empty_tally.json
+      decision_legacy_require_vote_quorum.json
+      decision_plurality.json
       proposal_happy_path.json
       proposal_negative_outcome.json
       proposal_reject_paths.json
