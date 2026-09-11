@@ -1,0 +1,10 @@
+{
+  "_invalid_because": "Every value in voting.weights MUST be greater than 0 (RFC-MACP-0012 §4.1). A weight-0 vote is non-decisive, so an explicit 0 silently removes a declared participant from the electorate; a legitimately zero-weighted observer is expressed by omission from the map, not by an explicit 0 (issue #98, item 3).",
+  "voting": {
+    "algorithm": "weighted",
+    "weights": {
+      "agent://a": 1,
+      "agent://b": 0
+    }
+  }
+}

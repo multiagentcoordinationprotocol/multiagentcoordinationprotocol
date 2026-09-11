@@ -115,6 +115,7 @@ MACP/
       macp-policy-descriptor.schema.json
       tests/
         invalid/          # negative envelope fixtures (MUST fail validation)
+        invalid-policy-rules/  # negative policy-rules fixtures (MUST fail validation)
       policy/
         decision-rules.schema.json
         quorum-rules.schema.json
