@@ -117,7 +117,12 @@ Notes:
   `decision_legacy_require_vote_quorum.json` pins the other half of the legacy
   arm — with `commitment.require_vote_quorum` `true`, a `schema_version` 2 policy
   denies the empty tally, which is the remedy RFC-MACP-0012 §4.1 prescribes for
-  pre-v3 policies. `decision_zero_participants.json` pins the
+  pre-v3 policies.
+  `decision_finalize_decline_empty_tally.json` pins the objection-authorized
+  decline channel: under `schema_version` 3 with a non-`none` algorithm, an
+  empty tally, and a standing critical objection, `finalize_decline` still
+  seals the session negatively — the empty-tally rule gates vote-authorized
+  commitments only (RFC-MACP-0007 §6.2; RFC-MACP-0012 §4.1). `decision_zero_participants.json` pins the
   authorization guard that keeps RFC-MACP-0012 §4.1's zero-participant
   `unanimous` clause unreachable at the wire: a zero-participant session
   accepts no `Proposal`, not even from the initiator.

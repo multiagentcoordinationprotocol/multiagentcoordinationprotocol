@@ -51,8 +51,8 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 
 Decision Mode supports six voting algorithms: `none`, `majority`, `supermajority`, `unanimous`, `weighted`, and `plurality`. See [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md) for full details.
 
-`threshold` must be greater than `0` — the schema enforces that unconditionally, for every
-algorithm including those that never consult it — at least `0.5` for `majority`, and greater than `0.5` for
+`threshold` must be greater than `0` — the schema enforces that unconditionally, so `unanimous`
+and `plurality`, which never consult it, still reject an explicit `0` — at least `0.5` for `majority`, and greater than `0.5` for
 `supermajority`. Threshold comparisons are **inclusive** (`ratio >=
 threshold`), so `majority` at the default `0.5` approves an even split. The denominator is the
 **decisive** votes — those cast as approve or reject; abstentions are excluded.

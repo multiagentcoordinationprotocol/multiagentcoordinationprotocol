@@ -34,6 +34,8 @@ Policies are registered with the runtime via:
 - **gRPC `RegisterPolicy` RPC** — dynamic registration at runtime
 - **File loading from `MACP_POLICIES_DIR`** — static loading at startup (implementation-defined)
 
+Both paths are **admission**: the rule-schema validation required by [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) §7 runs when a descriptor is registered or loaded, against the rule schemas the runtime ships — and never again afterwards. Because rule schemas can tighten between releases, a policy file that loaded under an earlier release may fail to load under a later one. Such a failure bars **new** sessions from binding that policy; it MUST NOT affect stored sessions, which replay from the persisted `PolicyDescriptor` without revalidation (RFC-MACP-0012 §8, items 2 and 4), never from `MACP_POLICIES_DIR`.
+
 ## Rule Schemas
 
 Each standard mode defines a normative JSON Schema for its governance rules:

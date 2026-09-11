@@ -140,8 +140,10 @@ MACP/
       decision_majority_empty_tally.json
       decision_supermajority_empty_tally.json
       decision_none_v3_empty_tally.json
+      decision_none_v3_empty_tally_positive.json
       decision_legacy_require_vote_quorum.json
       decision_plurality.json
+      decision_finalize_decline_empty_tally.json
       proposal_happy_path.json
       proposal_negative_outcome.json
       proposal_reject_paths.json

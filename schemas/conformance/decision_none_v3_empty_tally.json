@@ -1,6 +1,6 @@
 {
-  "_comment": "REGRESSION GUARD for the 'none' exemption at schema_version 3. The fail-closed empty-tally rule reaches every algorithm OTHER THAN 'none' (RFC-MACP-0012 4.1), and the decline guard and face-value exception of RFC-MACP-0007 6.2 likewise do not reach it. Before this fixture the only 'none' fixture in the corpus declared schema_version 2, so a runtime that swallowed 'none' into the fail-closed arm passed every fixture in the repository while breaking decision_critical_objection_finalize_decline.json's premise. This fixture fails such a runtime.",
-  "description": "Decision Mode: 'none' is unaffected by the schema_version 3 empty-tally rule -- a positive commitment seals on zero ballots.",
+  "_comment": "REGRESSION GUARD for the 'none' exemption at schema_version 3. The fail-closed empty-tally rule reaches every algorithm OTHER THAN 'none' (RFC-MACP-0012 4.1), and the decline guard and face-value exception of RFC-MACP-0007 6.2 likewise do not reach it. Before this fixture the only 'none' fixture in the corpus declared schema_version 2, so a runtime that swallowed 'none' into the fail-closed arm passed every fixture in the repository while breaking decision_critical_objection_finalize_decline.json's premise. This fixture pins the NEGATIVE direction, which was the bare cell: the only fixture pinning 'none' + empty tally + negative was at schema_version 2. Its sibling decision_none_v3_empty_tally_positive.json pins the positive direction.",
+  "description": "Decision Mode: 'none' is unaffected by the schema_version 3 empty-tally rule -- a NEGATIVE commitment seals on zero ballots, with no decisive REJECT, via RFC-MACP-0007 6.2's face-value exception.",
   "mode": "macp.mode.decision.v1",
   "initiator": "agent://orchestrator",
   "participants": [
@@ -39,16 +39,16 @@
       "expect": "accept"
     },
     {
-      "_comment": "schema_version 3, zero ballots -- and it SEALS. 'none' enforces no voting constraint at any tally, so nothing in the Empty tally paragraph applies to it, and RFC-MACP-0007 6.2's face-value exception takes outcome_positive at face value with no decline guard. Compare decision_empty_tally_binding.json, which is the same empty tally under 'unanimous' at the same schema_version and is DENIED. The difference is the algorithm, not the version.",
+      "_comment": "THE OTHER HALF OF THE EXEMPTION. RFC-MACP-0012 4.1 says the empty-tally rule and the decline guard both do NOT reach voting.algorithm 'none', and RFC-MACP-0007 6.2's face-value exception takes outcome_positive at face value with no decline guard -- in BOTH directions. So a negative commitment also seals here on zero ballots, with no decisive REJECT anywhere in history. Before this message the corpus pinned 'none' + empty tally + NEGATIVE only at schema_version 2 (decision_critical_objection_finalize_decline.json), so a runtime that swallowed the negative direction into the fail-closed arm under schema_version 3 passed every fixture in the repository.",
       "sender": "agent://orchestrator",
       "message_type": "Commitment",
       "payload_type": "macp.v1.CommitmentPayload",
       "payload": {
         "commitment_id": "c0",
-        "outcome_positive": true,
-        "action": "decision.selected",
+        "outcome_positive": false,
+        "action": "decision.rejected",
         "authority_scope": "test",
-        "reason": "initiator-driven commitment under no voting constraint",
+        "reason": "initiator-driven decline under no voting constraint",
         "mode_version": "1.0.0",
         "policy_version": "policy.decision.none-v3",
         "configuration_version": "cfg-1"
@@ -59,10 +59,10 @@
   "expected_final_state": "Resolved",
   "expect_resolution_present": true,
   "expected_resolution": {
-    "action": "decision.selected",
+    "action": "decision.rejected",
     "mode_version": "1.0.0",
     "configuration_version": "cfg-1",
-    "outcome_positive": true
+    "outcome_positive": false
   },
   "expected_mode_state": {
     "phase": "Committed",
