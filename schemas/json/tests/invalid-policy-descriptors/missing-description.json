@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "Omits the required `description` key. RFC-MACP-0012 Section 3 lists five required PolicyDescriptor fields including `description`, and docs/policy.md says the same; macp-policy-descriptor.schema.json required only four until issue #120, so a descriptor with no human-readable description of its governance rules validated clean. The other four required keys are present, `policy_id` is non-empty and `schema_version` is inside the enum, so this fixture isolates the missing `description` alone.",
+  "policy_id": "policy.test.missing-description",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 1,
+  "rules": {}
+}

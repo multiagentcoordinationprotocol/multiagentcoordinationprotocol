@@ -38,23 +38,44 @@ Each fixture carries a top-level `_invalid_because` annotation naming the
 constraint it violates. The descriptor schema sets no `additionalProperties`
 at the root, so the annotation never causes the rejection.
 
-**Each fixture MUST isolate exactly one constraint.** Removing that one keyword
-from the schema should make exactly that fixture validate and leave the others
-rejected — a perfect diagonal:
+**Each fixture MUST isolate exactly one constraint.** Removing that one
+constraint from the schema — see the granularity note below for what counts as
+one — should make exactly that fixture validate and leave the others rejected:
 
-| mutation | missing-rules | policy-id-empty | schema-version-out-of-range |
-|---|---|---|---|
-| *intact* | reject | reject | reject |
-| drop `required` | **PASS** | reject | reject |
-| drop `policy_id.minLength` | reject | **PASS** | reject |
-| drop `schema_version.enum` | reject | reject | **PASS** |
+| mutation | missing-description | missing-rules | policy-id-empty | schema-version-out-of-range |
+|---|---|---|---|---|
+| *intact* | reject | reject | reject | reject |
+| drop `required."rules"` | reject | **PASS** | reject | reject |
+| drop `required."description"` | **PASS** | reject | reject | reject |
+| drop `policy_id.minLength` | reject | reject | **PASS** | reject |
+| drop `schema_version.enum` | reject | reject | reject | **PASS** |
 
-`missing-rules.json` therefore keeps `policy_id`, `mode` and `schema_version`
-populated: a fixture omitting several required keys at once would fail for three
-reasons and isolate none of them. `policy-id-empty.json` likewise supplies all
-four required keys so that only `minLength` stands between it and validity, and
-`schema-version-out-of-range.json` supplies all four with a non-empty
-`policy_id` so that only the `enum` does.
+**The granularity here is one `required` MEMBER, not one keyword.** Two fixtures
+now key on `required`, so a single "drop `required`" row would flip both and read
+as a violation of the one-constraint rule when nothing is wrong. `remove "rules"
+from required` and `remove "description" from required` are two distinct
+mutations of two distinct constraints that happen to share a keyword. Do not
+"simplify" the two rows back into one.
+
+`missing-rules.json` therefore keeps `policy_id`, `mode`, `schema_version` and
+`description` populated: a fixture omitting several required keys at once would
+fail for several reasons and isolate none of them. `policy-id-empty.json`
+likewise supplies all five required keys so that only `minLength` stands between
+it and validity, `schema-version-out-of-range.json` supplies all five with a
+non-empty `policy_id` so that only the `enum` does, and
+`missing-description.json` supplies the other four with a non-empty `policy_id`
+and an in-range `schema_version` so that only the missing `description` does.
+
+`missing-description.json` is the fixture for issue #120, and adding it is what
+forced the other three to grow a `description` key in the same commit. RFC-MACP-0012
+§3 and `docs/policy.md` had always listed five required descriptor fields; the
+schema required four. Making the schema agree gave every pre-existing fixture a
+**second** reason to fail — all three, not some — and `make json-validate` would
+have stayed green throughout, because a fixture that fails twice is still
+rejected. The whole directory's coverage would have quietly become decorative:
+no mutation would have flipped any fixture. That is the concrete form of the
+warning below, and it is worth re-reading before adding any constraint to
+`required`.
 
 `schema-version-out-of-range.json` is the fixture for issue #115. Until that
 issue was fixed the schema said only `minimum: 1`, so a descriptor declaring

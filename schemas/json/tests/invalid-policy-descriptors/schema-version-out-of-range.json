@@ -1,7 +1,8 @@
 {
-  "_invalid_because": "`schema_version` is 99, outside the legal set. RFC-MACP-0012 defines schema versions 1, 2 and 3, and `lint_fixtures.py`'s VALID_POLICY_SCHEMA_VERSIONS is the machine-readable source of truth. Before issue #115 the schema said only `minimum: 1`, so this document validated clean and a runtime had no schema-level reason to refuse a policy it cannot evaluate. All four required keys are present and `policy_id` is non-empty so this fixture isolates the enum alone.",
+  "_invalid_because": "`schema_version` is 99, outside the legal set. RFC-MACP-0012 defines schema versions 1, 2 and 3, and `lint_fixtures.py`'s VALID_POLICY_SCHEMA_VERSIONS is the machine-readable source of truth. Before issue #115 the schema said only `minimum: 1`, so this document validated clean and a runtime had no schema-level reason to refuse a policy it cannot evaluate. All five required keys are present and `policy_id` is non-empty so this fixture isolates the enum alone.",
   "policy_id": "policy.test.schema-version-out-of-range",
   "mode": "macp.mode.decision.v1",
+  "description": "Test fixture for the out-of-range schema_version negative case.",
   "schema_version": 99,
   "rules": {}
 }
