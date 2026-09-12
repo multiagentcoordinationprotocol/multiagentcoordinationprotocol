@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "Omits the required `rules` key. RFC-MACP-0012 Section 3 makes `rules` mandatory on a PolicyDescriptor, and macp-policy-descriptor.schema.json lists it in `required`. The other three required keys are present so this fixture isolates exactly one missing key.",
+  "policy_id": "policy.test.missing-rules",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 1
+}

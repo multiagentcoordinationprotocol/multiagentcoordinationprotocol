@@ -340,6 +340,79 @@ for pair in "${INVALID_RULES_PAIRS[@]}"; do
 done
 
 
+# --- Negative policy-descriptor tests ---
+#
+# Sibling of the rule-schema loop above, kept as its OWN table because these
+# schemas live in schemas/json/ rather than schemas/json/policy/ and bind a
+# whole document rather than a `rules` object. A future descriptor-family
+# schema is one row here.
+#
+# Until this loop existed, macp-policy-descriptor.schema.json had NO negative
+# coverage of any kind: every descriptor on disk is a positive example, so
+# neither its `required` list nor policy_id's `minLength` had ever been proved
+# to fire. Deleting either keyword left the whole repository green.
+#
+# The two guards below are NOT symmetric with the rules loop's, and the
+# difference is worth stating so nobody reads more into them than holds:
+#
+#   - The empty/missing-directory guard is first-consumer here exactly as it is
+#     there. A deleted directory drops the coverage silently otherwise.
+#   - The missing-schema guard is SHADOWED. Unlike the rule schemas -- whose
+#     positive consumer, the rules-instance loop, runs AFTER their negative
+#     loop -- this schema is already validated positively against
+#     examples/discovery/policy_descriptor*.json earlier in this script, so a
+#     deleted or corrupt schema fails there first and never reaches this loop.
+#     It is kept as defense in depth for the checkout that lacks those
+#     examples, where that positive block silently no-ops on its -f test and
+#     this guard becomes the only thing standing between a missing schema and
+#     a run of cheerful "Correctly rejected" lines.
+INVALID_DESCRIPTOR_PAIRS=(
+    "invalid-policy-descriptors:macp-policy-descriptor.schema.json:policy-descriptor"
+)
+
+for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
+    id_dir="${PROJECT_ROOT}/schemas/json/tests/${pair%%:*}"
+    id_rest="${pair#*:}"
+    id_schema="${PROJECT_ROOT}/schemas/json/${id_rest%%:*}"
+    id_label="${id_rest#*:}"
+
+    echo "-- Negative ${id_label} tests (${id_dir}/*.json) --"
+    echo "Schema: ${id_schema}"
+    echo "Each fixture MUST FAIL validation."
+    echo ""
+
+    if [ ! -f "${id_schema}" ]; then
+        echo "[X] ${id_label} schema not found: ${id_schema}"
+        exit 1
+    fi
+    # A deleted directory would otherwise drop this schema's entire coverage.
+    if [ ! -d "${id_dir}" ]; then
+        echo "[X] ${id_label} negative-fixture directory not found: ${id_dir}"
+        exit 1
+    fi
+
+    id_count=0
+    for f in "${id_dir}"/*.json; do
+        [ -f "$f" ] || continue
+        id_count=$((id_count + 1))
+        TOTAL=$((TOTAL + 1))
+        echo "Checking (expect rejection): $(basename "$f")"
+        if ajv validate -s "${id_schema}" -d "${f}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+            echo "  [X] Fixture unexpectedly PASSED -- ${id_label} schema no longer rejects this case"
+            exit 1
+        fi
+        VALIDATED=$((VALIDATED + 1))
+        echo "  [OK] Correctly rejected"
+        echo ""
+    done
+
+    if [ "${id_count}" -eq 0 ]; then
+        echo "[X] ${id_dir} contains no fixtures -- an empty directory is not coverage."
+        exit 1
+    fi
+done
+
+
 # --- Policy rules objects vs their mode's rule schema (issue #100) ---
 #
 # Until this loop existed, NOTHING validated a `rules` object against the schema
