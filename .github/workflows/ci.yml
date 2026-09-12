@@ -50,7 +50,7 @@ jobs:
           chmod +x scripts/check-indexes.sh
           ./scripts/check-indexes.sh
 
-      - name: Check RFC prose against artifacts (line anchors, schema_version, xrefs, census)
+      - name: Check RFC prose against artifacts
         run: |
           echo "Checking RFC prose against the artifacts that implement it..."
           python3 scripts/check-prose.py
