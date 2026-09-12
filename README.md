@@ -20,7 +20,7 @@ MACP is maintained by a single maintainer on a best-effort basis. Changes land w
 
 **What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI and crates.io, to GitHub Packages for the npm, Java, Kotlin, and C# artifacts, and as a Go module resolved from the tag itself. They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
 
-**What is not frozen:** the RFC text. All thirteen RFCs are drafts — eight at `**Version:** 1.0.0-draft`, RFC-MACP-0002 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0007 at `1.3.0-draft`, RFC-MACP-0012 at `1.5.0-draft`, and RFC-MACP-0006 at `1.4.0-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
+**What is not frozen:** the RFC text. All thirteen RFCs are drafts — eight at `**Version:** 1.0.0-draft`, RFC-MACP-0002 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0007 at `1.3.0-draft`, RFC-MACP-0012 at `1.6.0-draft`, and RFC-MACP-0006 at `1.4.0-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
 
 **There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
 
