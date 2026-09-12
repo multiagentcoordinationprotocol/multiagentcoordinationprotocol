@@ -19,7 +19,7 @@ no `additionalProperties: false` at the root, so the annotation itself never
 causes the rejection.
 
 Every fixture isolates exactly **one** constraint: removing that one keyword from
-the schema makes exactly that fixture validate and leaves the other four
+the schema makes exactly that fixture validate and leaves the other six
 rejected. A fixture that fails for the wrong reason would silently stop testing
 anything, so preserve that property when adding cases.
 
@@ -30,6 +30,8 @@ anything, so preserve that property when adding cases.
 | `threshold-below-half-majority.json` | Under `majority`, `voting.threshold` MUST be at least 0.5 — the `majority` `allOf` arm (RFC-MACP-0012 §4.1) |
 | `weights-empty-map.json` | `voting.weights` MUST be non-empty — `minProperties: 1` (RFC-MACP-0012 §4.1; issue #98 item 3) |
 | `weights-explicit-zero.json` | Every `voting.weights` value MUST be greater than 0 — per-weight `exclusiveMinimum: 0` (RFC-MACP-0012 §4.1; issue #98 item 3) |
+| `designated-role-without-roles.json` | Under `authority: "designated_role"`, `commitment.designated_roles` is REQUIRED — the commitment `allOf` arm's `required` (RFC-MACP-0012 §4; issue #116). Decision has enforced this since it was written but was the only mode with no fixture proving its own arm fires |
+| `designated-roles-empty.json` | Under `authority: "designated_role"`, `commitment.designated_roles` MUST name at least one role — the same arm's `minItems: 1` (RFC-MACP-0012 §4; issue #116). Separable from the row above: the key IS present, so `required` is satisfied and cannot be the cause |
 
 `threshold-zero-weighted.json` deliberately uses `weighted` rather than
 `supermajority`: `supermajority` with `threshold: 0` already fails via the

@@ -64,5 +64,29 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "$comment": "Ported verbatim from decision-rules.schema.json, which has enforced this since it was written. `authority: \"designated_role\"` with no `designated_roles` declares that only designated roles may commit and then names none -- an unsatisfiable authority rule that either bricks the session or fails open depending on the runtime (issue #116). minItems 1 is part of the constraint: an empty array names no one either.",
+      "if": {
+        "properties": {
+          "commitment": {
+            "properties": { "authority": { "const": "designated_role" } },
+            "required": ["authority"]
+          }
+        },
+        "required": ["commitment"]
+      },
+      "then": {
+        "properties": {
+          "commitment": {
+            "required": ["designated_roles"],
+            "properties": {
+              "designated_roles": { "minItems": 1 }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "commitment.designated_roles is present but empty while authority is 'designated_role' (RFC-MACP-0010 \u00a76, RFC-MACP-0012 \u00a74). An empty list names no role, so the authority rule is exactly as unsatisfiable as omitting the key -- which is why the arm carries `minItems: 1` and not merely `required`. Isolates `minItems`: the key IS present, so the arm's `required` keyword is satisfied and cannot be the cause.",
+  "commitment": { "authority": "designated_role", "designated_roles": [] }
+}

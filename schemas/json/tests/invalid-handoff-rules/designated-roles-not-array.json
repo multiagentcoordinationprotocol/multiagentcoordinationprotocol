@@ -1,4 +1,4 @@
 {
-  "_invalid_because": "commitment.designated_roles is typed array (RFC-MACP-0010 §6). A bare string is the natural single-role shorthand a policy author would reach for, and JSON Schema will not coerce it. Isolates the type keyword -- deliberately NOT paired with authority 'designated_role', because handoff-rules.schema.json has no conditional arm requiring the field, so adding one would not change the rejection and would blur which keyword fires.",
+  "_invalid_because": "commitment.designated_roles is typed array (RFC-MACP-0010 §6). A bare string is the natural single-role shorthand a policy author would reach for, and JSON Schema will not coerce it. Isolates the type keyword -- deliberately NOT paired with authority 'designated_role', so that the conditional arm added by issue #116 never fires and `type` remains the sole cause of rejection. Pairing them would make this fixture and designated-role-without-roles.json overlap and break the diagonal.",
   "commitment": { "designated_roles": "agent://ops" }
 }
