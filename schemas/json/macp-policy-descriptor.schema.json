@@ -32,5 +32,5 @@
       "description": "Unix epoch milliseconds when registered. Set by runtime."
     }
   },
-  "required": ["policy_id", "mode", "schema_version", "rules"]
+  "required": ["policy_id", "mode", "schema_version", "rules", "description"]
 }

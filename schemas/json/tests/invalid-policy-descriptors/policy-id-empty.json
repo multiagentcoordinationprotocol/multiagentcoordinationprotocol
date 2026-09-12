@@ -1,7 +1,8 @@
 {
-  "_invalid_because": "`policy_id` is the empty string. macp-policy-descriptor.schema.json sets minLength 1 on policy_id because an empty identifier cannot address a registered policy. All four required keys are present so this fixture isolates the minLength constraint alone.",
+  "_invalid_because": "`policy_id` is the empty string. macp-policy-descriptor.schema.json sets minLength 1 on policy_id because an empty identifier cannot address a registered policy. All five required keys are present so this fixture isolates the minLength constraint alone.",
   "policy_id": "",
   "mode": "macp.mode.decision.v1",
+  "description": "Test fixture for the empty-policy_id negative case.",
   "schema_version": 1,
   "rules": {}
 }
