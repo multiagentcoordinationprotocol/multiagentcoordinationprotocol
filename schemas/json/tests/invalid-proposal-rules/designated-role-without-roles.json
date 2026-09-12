@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "commitment.authority is 'designated_role' but commitment.designated_roles is absent (RFC-MACP-0008 \u00a76, RFC-MACP-0012 \u00a74). The policy declares that only designated roles may commit and then names none, so no sender can ever satisfy it -- the session either bricks or fails open depending on the runtime. decision-rules.schema.json has rejected this since it was written; proposal-rules.schema.json did not until issue #116. Isolates the conditional arm's `required` keyword: omitting the key entirely rather than passing an empty array, which `minItems` would catch instead.",
+  "commitment": { "authority": "designated_role" }
+}

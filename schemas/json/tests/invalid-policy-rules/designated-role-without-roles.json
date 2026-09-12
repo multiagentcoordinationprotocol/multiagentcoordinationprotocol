@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "commitment.authority is 'designated_role' but commitment.designated_roles is absent (RFC-MACP-0007 \u00a76, RFC-MACP-0012 \u00a74). decision-rules.schema.json has enforced this since it was written and is the schema the other four were ported FROM in issue #116 -- but it was the only mode with no fixture proving its own arm fires, so deleting that arm broke nothing. Isolates the conditional arm's `required` keyword.",
+  "commitment": { "authority": "designated_role" }
+}

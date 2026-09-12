@@ -11,10 +11,13 @@ rejected" by the wrong schema, silently and forever.
 
 ## Honest scope
 
-`handoff-rules.schema.json` carries only enum, type, and `minimum` constraints — no
-`additionalProperties: false`, no top-level `required`. An empty `rules` object
-validates against it. So these fixtures can only exercise off-enum values and wrong
-types, and that is genuinely thin coverage.
+`handoff-rules.schema.json` carries enum, type and `minimum` constraints, and — since
+issue #116 — one conditional arm with real semantic content: `commitment.authority:
+"designated_role"` now requires a non-empty `commitment.designated_roles`. That arm is
+the first constraint here that encodes a rule about the policy rather than a rule about
+a field's shape. Everything else is still off-enum values and wrong types, and there is
+no `additionalProperties: false` and no top-level `required`, so an empty `rules` object
+still validates.
 
 They exist anyway because the alternative was **zero**: before this directory,
 nothing in the repository had ever validated a Handoff Mode `rules` object against
@@ -27,6 +30,21 @@ Each fixture carries `_invalid_because` naming the one constraint it violates an
 the RFC section defining it. **One constraint per fixture:** removing that keyword
 from the schema must make exactly that fixture validate and leave the others
 rejected. A fixture that fails for the wrong reason silently stops testing anything.
+
+The two `designated-role*` fixtures split the conditional arm's two keywords, and
+they are genuinely separable — proved, not assumed:
+
+| mutation | without-roles | roles-empty |
+|---|---|---|
+| *intact* | reject | reject |
+| drop arm's `required` | **PASS** | reject |
+| drop arm's `minItems` | reject | **PASS** |
+
+`designated-role-without-roles.json` omits the key entirely; `designated-roles-empty.json`
+supplies `[]`, so the arm's `required` is satisfied and only `minItems` can fire.
+Both proofs were run across all five rule directories at once, not just this one —
+the arm is shared vocabulary, so a mutation in one schema must not move a fixture
+in another.
 
 These fixtures are **not** vendored by the downstream SDK or runtime repositories —
 only `schemas/conformance/` is — so adding one costs those repos nothing.

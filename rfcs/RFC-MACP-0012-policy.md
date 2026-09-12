@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Governance Policy Framework
 
 **Document:** RFC-MACP-0012
-**Version:** 1.2.0-draft
+**Version:** 1.3.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0002, RFC-MACP-0003
 
+> **Changelog — 1.3.0-draft:** `commitment.authority` is shared vocabulary across all five standard modes, but only Decision Mode's schema enforced its one structural obligation. A policy selecting `designated_role` while naming no `designated_roles` declares that only designated roles may commit and then names none — an authority rule no sender can satisfy, which either bricks the session or fails open depending on the runtime. §4 gains one normative sentence stating the requirement **once**, for all five modes, and the four sibling schemas (`quorum`, `proposal`, `task`, `handoff`) gain the conditional arm `decision-rules.schema.json` has carried since it was written (issue #116). The §4.2–§4.5 `commitment` rows are corrected to name `designated_roles`, which all four schemas have defined all along while their tables listed only `authority`. This is an admission-time schema tightening under §7 and §8 item 4: no stored descriptor is revalidated, no `schema_version` bump, and no descriptor on disk or in any conformant stored session is affected — the rejected shape is unsatisfiable by construction, so nothing conformant could have depended on it.
+>
 > **Changelog — 1.2.0-draft:** Quorum Mode threshold vocabulary (§4.2, `quorum-rules.schema.json`). (1) The `weighted` threshold type is **removed** and its identifier reserved: it was enum-legal but had no weights vocabulary, no electorate rule, and no termination arithmetic ([RFC-MACP-0011](RFC-MACP-0011-quorum-mode.md) §5 rules 2, 4, and 4a are count-only), so no conformant evaluation of it ever existed and §8 had nothing to pin. Removal is an admission-time schema tightening under §8 item 4 and changes the evaluation of no admissible descriptor; no `schema_version` bump. (2) The `percentage` ceiling rule — effective threshold `ceil(value × declared_participant_count / 100)`, fixed at `SessionStart` — is promoted from the §5.2 rationale into normative §4.2 text. It completes previously undefined behavior and is normative at **every** `schema_version`; see the completion note in §8. (3) `threshold.value` gains `exclusiveMinimum: 0`, aligning the schema with RFC-MACP-0011 §5 rule 2 — the quorum-side twin of the Decision-side floor tightening in 1.1.0-draft. (4) The `count` alias used by one implementation for `n_of_m` is confirmed **not** part of the vocabulary; the enum is `["n_of_m", "percentage"]` and closed (issue #98 item 4).
 >
 > Also in 1.2.0-draft, in Decision Mode: `voting.threshold` becomes **required** under `supermajority` (§4.1) — the arm constrained the value without requiring the key, so the field's own `0.5` default supplied a value that same arm forbids (issue #101). The asymmetry with `majority`, which constrains without requiring, is deliberate and preserved. §4.1's Denominator paragraph now cites [RFC-MACP-0007](RFC-MACP-0007-decision-mode.md) §4 for abstention handling instead of RFC-MACP-0004, which never mentions abstentions (issue #103). And the `unanimous` bullet's closing clause is corrected: escaping the empty-tally arm is necessary but **not** sufficient for a zero-participant session to resolve positively — RFC-MACP-0007 §5 rule 5 blocks it under every algorithm, including `none` (issue #106).
@@ -92,6 +94,8 @@ The canonical wire format is defined in `schemas/proto/macp/v1/policy.proto`. Th
 
 Each standard mode defines a normative JSON Schema for its governance rules. Any runtime implementation MUST interpret these rules identically given identical inputs.
 
+`commitment.authority` is shared vocabulary: every standard mode's rule schema defines it over the same three values (`initiator_only`, `any_participant`, `designated_role`). A policy that selects `designated_role` MUST also supply `commitment.designated_roles` naming at least one role; a runtime MUST reject at admission a descriptor that selects `designated_role` without it, or with an empty list. Such a rule authorizes no sender and is therefore unsatisfiable — it cannot be evaluated, only guessed at. This requirement is stated here once rather than repeated per mode, and every mode's rule schema enforces it.
+
 ### 4.1 Decision Mode Rules
 
 Canonical schema: `schemas/json/policy/decision-rules.schema.json`
@@ -101,7 +105,7 @@ Canonical schema: `schemas/json/policy/decision-rules.schema.json`
 | `voting` | `algorithm`, `threshold`, `quorum`, `weights` | Voting algorithm and quorum requirements |
 | `objection_handling` | `critical_severity_vetoes`, `veto_threshold`, `critical_objection_action` | How critical-severity objections affect commitment eligibility |
 | `evaluation` | `minimum_confidence`, `required_before_voting` | Evaluation constraints |
-| `commitment` | `authority`, `designated_roles`, `require_vote_quorum`, `allow_decline_over_approval` | Who can commit and under what conditions |
+| `commitment` | `authority`, `designated_roles`, `require_vote_quorum`, `allow_decline_over_approval` | Who can commit and under what conditions; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
 **Voting algorithms:**
 
@@ -156,7 +160,7 @@ Canonical schema: `schemas/json/policy/quorum-rules.schema.json`
 |------------|-----------|-------------|
 | `threshold` | `type`, `value` | Override the `required_approvals` from `ApprovalRequest` |
 | `abstention` | `counts_toward_quorum`, `interpretation` | How abstentions affect quorum calculation |
-| `commitment` | `authority` | Who can emit the terminal `Commitment` |
+| `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
 `threshold` is the **approval bar** — the number (or percentage) of approvals required for a positive outcome — and it is the **only gate** defined in schema_version ≤ 3. There is no separate *participation quorum* (a minimum number of ballots cast regardless of direction); implementations MUST NOT reinterpret `threshold` as one. If a participation quorum is desired, it requires a distinct rule field in a future schema version. The `percentage` threshold type is an **integer percentage (1–100)** of the participant count declared at `SessionStart`. The effective approval threshold is `ceil(value × declared_participant_count / 100)` — the product is rounded **up**, so a fractional product never lowers the bar: `value: 50` over 3 declared participants requires 2 approvals, not 1. Implementations MUST compute this threshold with exact integer arithmetic (equivalently, integer division `(value × declared_participant_count + 99) div 100`) and MUST NOT use floating-point division. The declared participant count is fixed at `SessionStart`; the effective threshold does not change as ballots, including abstentions, are cast. This rounding rule completes previously undefined behavior — earlier text of this section stated no rounding direction — and is therefore normative at **every** `schema_version` (see the completion note in Section 8). `threshold.value` MUST be greater than zero, matching [RFC-MACP-0011](RFC-MACP-0011-quorum-mode.md) Section 5, rule 2; the rule schema enforces this at admission (`exclusiveMinimum: 0`). The `weighted` threshold type is **removed as of 1.2.0-draft** and its identifier reserved: it appeared in the rule schema's enum without any defined weights vocabulary, electorate rule, or termination arithmetic, so no conformant evaluation of it ever existed. A future weighted threshold, if standardized, MUST arrive with complete semantics under a new rule field or a reinstated identifier carrying its original meaning, and the identifier MUST NOT be reused with a different meaning.
 
@@ -169,7 +173,7 @@ Canonical schema: `schemas/json/policy/proposal-rules.schema.json`
 | `acceptance` | `criterion` | `all_parties`, `counterparty`, or `initiator` |
 | `counter_proposal` | `max_rounds` | Maximum negotiation rounds (0 = unlimited) |
 | `rejection` | `terminal_on_any_reject` | Whether any rejection terminates the session |
-| `commitment` | `authority` | Who can emit the terminal `Commitment` |
+| `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
 ### 4.4 Task Mode Rules
 
@@ -179,7 +183,7 @@ Canonical schema: `schemas/json/policy/task-rules.schema.json`
 |------------|-----------|-------------|
 | `assignment` | `allow_reassignment_on_reject` | Whether rejected tasks can be reassigned |
 | `completion` | `require_output` | Whether `TaskComplete` must include output |
-| `commitment` | `authority` | Who can emit the terminal `Commitment` |
+| `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
 ### 4.5 Handoff Mode Rules
 
@@ -188,7 +192,7 @@ Canonical schema: `schemas/json/policy/handoff-rules.schema.json`
 | Rule Group | Parameters | Description |
 |------------|-----------|-------------|
 | `acceptance` | `implicit_accept_timeout_ms` | Auto-accept after timeout (0 = no implicit accept) |
-| `commitment` | `authority` | Who can emit the terminal `Commitment` |
+| `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
 **Determinism note:** `implicit_accept_timeout_ms` is **not** evaluated by the policy evaluator at commitment time. It is a declarative parameter consumed by the runtime's synthetic-accept mechanism, whose full normative contract — timing source (the offer's recorded acceptance time on the session timeline, excluding suspended time), lazy-at-the-latest emission into accepted history before commitment evaluation, runtime-emitted envelope convention (`sender` = target, `HandoffAcceptPayload.implicit = true`, deterministic `message_id`), and race resolution by history order — is defined in RFC-MACP-0010 §5.1. The policy evaluator only sees the resulting accepted message history, preserving the determinism requirement of Section 6.3: the timer is outside the replay boundary, its recorded product is inside.
 

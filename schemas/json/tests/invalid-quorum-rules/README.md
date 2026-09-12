@@ -35,12 +35,20 @@ rejection.
 from the schema should make exactly that fixture validate and leave the others
 rejected — a perfect diagonal:
 
-| mutation | weighted | zero | over100 |
-|---|---|---|---|
-| *intact* | reject | reject | reject |
-| drop `enum` | **PASS** | reject | reject |
-| drop `exclusiveMinimum` | reject | **PASS** | reject |
-| drop percentage `maximum` | reject | reject | **PASS** |
+| mutation | weighted | zero | over100 | no-roles | roles-empty |
+|---|---|---|---|---|---|
+| *intact* | reject | reject | reject | reject | reject |
+| drop `enum` | **PASS** | reject | reject | reject | reject |
+| drop `exclusiveMinimum` | reject | **PASS** | reject | reject | reject |
+| drop percentage `maximum` | reject | reject | **PASS** | reject | reject |
+| drop arm's `required` | reject | reject | reject | **PASS** | reject |
+| drop arm's `minItems` | reject | reject | reject | reject | **PASS** |
+
+Note the last row targets the **root-level** `allOf` added by issue #116, not the
+`allOf` nested inside `threshold`. They are different keywords at different
+depths: the nested one carries the `percentage` ceiling, and putting the
+commitment arm there would have scoped it to `threshold`, where it would have
+silently never fired.
 
 A fixture that fails for the wrong reason silently stops testing anything.
 
