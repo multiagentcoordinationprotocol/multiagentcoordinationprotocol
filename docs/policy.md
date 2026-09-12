@@ -241,7 +241,7 @@ what it should if something on disk is actually rejected by it.
 implement it. `make validate` never did: it verifies that JSON matches schemas and that protos
 compile, but not that a normative sentence is true, and not that two RFCs agree.
 
-Five checks, chosen because they are mechanical:
+Six checks, chosen because they are mechanical:
 
 - **No line-number anchors.** A citation that pins a source line — an open paren, a colon, a
   line number, a close paren — drifts the moment anything above it is edited. Cite the heading
@@ -263,9 +263,17 @@ Five checks, chosen because they are mechanical:
   the abstention citation that pointed at an RFC containing the word zero times.
 - **The README version census matches.** `README.md` hand-maintains a per-RFC version roll-call
   that nothing verified; it went stale twice during this work alone.
+- **The check count agrees with the prose describing it.** This document, `README.md` and
+  `check-prose.py`'s own docstring each state how many checks run, and nothing held them in
+  step — `README.md` said four while this file said five and five ran. The canonical number is
+  read from `main()`'s abstract syntax tree, not from a regex over the source, for the same
+  reason the `schema_version` check reads JSON: a regex would match the check names in
+  docstrings and comments too. The check counts itself. The docstring's numbered list is held to the
+  count as well, but *these two enumerations* are not: keeping them as long as the number
+  says remains a human job.
 
 **What it still does not check:** whether a paragraph is *true*. Nothing here would have caught
-an RFC asserting a constraint its schema does not impose, beyond the five narrow classes above.
+an RFC asserting a constraint its schema does not impose, beyond the six narrow classes above.
 That remains a human job.
 
 ## Error Codes

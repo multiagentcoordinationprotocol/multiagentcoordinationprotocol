@@ -8,7 +8,7 @@ stayed green while RFC-MACP-0012 made four false claims about its own canonical
 schemas, while two RFCs gave opposite answers about the same tally, and while a
 justification rested on a section that does not exist.
 
-"Is this paragraph true?" is not a lint rule. These five checks are the fraction
+"Is this paragraph true?" is not a lint rule. These six checks are the fraction
 that is mechanical:
 
   1. line-number anchors   -- `(:102)`-style citations drift on every edit above
@@ -31,10 +31,17 @@ that is mechanical:
   5. RFC version census    -- README hand-maintains a per-RFC version roll-call
                               that nothing verifies. #99 had to correct it by hand,
                               and the quorum/error-code work invalidated it twice more.
+  6. own check count       -- two documents and this docstring each claim how many
+                              checks run here -- five claims across three files --
+                              and nothing held them in step: README said four while
+                              docs/policy.md said five and five ran (#119). The count
+                              is derived from main()'s AST, so it cannot go stale.
+                              This check counts itself.
 
 Reporting follows check-indexes.sh: accumulate every failure and report them all,
 rather than dying on the first. One run should surface the whole list.
 """
+import ast
 import json
 import os
 import re
@@ -46,6 +53,12 @@ ROOT = os.environ.get("MACP_ROOT") or os.path.dirname(
 
 FAILURES = []
 CHECKS = 0
+
+# Spelled number words, for prose that writes counts as words. Module scope
+# because check_version_census and check_check_count both read it.
+WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
+         7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven",
+         12: "twelve", 13: "thirteen", 14: "fourteen"}
 
 
 def fail(msg):
@@ -388,9 +401,6 @@ def check_version_census():
             fail("README.md census pairs %s with %s but its header says %s"
                  % (name, vm.group(1) if vm else "no version", ver))
     n_base = sum(1 for v in actual.values() if v == baseline)
-    WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
-             7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven",
-             12: "twelve", 13: "thirteen", 14: "fourteen"}
     word = WORDS.get(n_base)
     if word and not re.search(r"\b%s at\b" % word, sentence):
         problems += 1
@@ -474,6 +484,168 @@ def check_cited_terms():
           else "  [X] %d of %d cited term(s) missing" % (len(CITED_TERMS) - ok, len(CITED_TERMS)))
 
 
+def _word_to_int(word):
+    """Reverse WORDS. Case-insensitive; None for anything unmapped."""
+    lowered = word.lower()
+    for n, w in WORDS.items():
+        if w == lowered:
+            return n
+    return None
+
+
+def check_check_count():
+    """Assert that every prose claim about HOW MANY checks this file runs is true.
+
+    Canonical value: the number of `check_*()` calls in `main()`, read from the
+    AST. Structural, not textual -- the same reasoning as check_schema_versions,
+    which `json.load`s the descriptor schema rather than regexing its `enum`. A
+    regex over the source would have to tell a call apart from the six `def`
+    lines and from the bare check names in this file's comments and docstrings;
+    the AST sees only calls.
+
+    THIS CHECK COUNTS ITSELF. Adding it moved the canonical value from five to
+    six, and every prose site with it. That is deliberate: excluding itself would
+    make main() print one number while the documents said another -- precisely
+    the drift this check exists to catch (issue #119). It is not circular: the
+    canonical value is a fact about the file's AST, computed before any
+    comparison, that merely happens to count this function too.
+
+    ENFORCED -- five claims across three files: the four count words (README.md
+    x1, docs/policy.md x2, this MODULE's docstring x1), and the number of items
+    in the MODULE docstring's numbered list. Note that is the module docstring at
+    the top of this file, not the one you are reading.
+
+    NOT ENFORCED, and therefore a human obligation: the LENGTH of the two
+    enumerations in the documents -- README.md's comma-separated clause and
+    docs/policy.md's bullet list -- and, at every site including the module
+    docstring, whether the items truthfully describe the checks that run. Adding
+    a check means growing those two lists by hand. Neither is checked here, for
+    different reasons: docs/policy.md's bullet list is cleanly countable and is
+    simply not checked, while README's clause has no per-item marker to anchor
+    on -- counting it needs a regex pinned to that one sentence, and that breaks
+    the first time an item contains a comma. Do not read a green run as evidence
+    that either list is complete or accurate.
+    """
+    global CHECKS
+    CHECKS += 1
+    print("-- check-prose.py's own check count --")
+    src_path = os.path.join(ROOT, "scripts", "check-prose.py")
+    try:
+        tree = ast.parse(open(src_path, encoding="utf-8").read())
+    except (OSError, SyntaxError) as exc:
+        fail("check-prose.py could not be read or parsed, so its own check "
+             "count is unknown: %s" % exc)
+        print("  [X] scripts/check-prose.py unreadable or unparseable")
+        return
+
+    main_fn = next((n for n in tree.body
+                    if isinstance(n, ast.FunctionDef) and n.name == "main"), None)
+    if main_fn is None:
+        fail("check-prose.py has no top-level main(), so its own check count "
+             "cannot be derived")
+        print("  [X] no top-level main() found")
+        return
+
+    called = [n.func.id for n in ast.walk(main_fn)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+              and n.func.id.startswith("check_")]
+    canonical = len(called)
+    if canonical == 0:
+        fail("check-prose.py's main() calls no check_*() function -- a canonical "
+             "count of 0 is never right, and would make every prose site "
+             "'disagree' with nonsense")
+        print("  [X] main() calls no check_*()")
+        return
+
+    problems = 0
+
+    # Every check_* function must reach `CHECKS += 1`, or the summary line
+    # under-counts and this check blames the documents for a code bug.
+    # Assert EXISTENCE per function, never a total: check_schema_versions
+    # carries two such AugAssigns, one per return path, so summing across the
+    # module yields one more than the canonical count and fails on correct code.
+    #
+    # Two residual holes, both known and both bounded. Neither is worth more
+    # machinery than this comment.
+    #
+    # (1) EXISTENCE cannot see PARTIAL coverage: a function that bumps on one
+    # return path but not another passes here. NO function has that shape today
+    # -- audited by AST, every check_* either bumps unconditionally before any
+    # return, or has no return at all, and check_schema_versions bumps on both
+    # of its paths (inside the `canonical is None` arm and again on the normal
+    # one). So the hole is a class with no current members, not a live defect.
+    # It would bite a future check that returns early without bumping.
+    #
+    # (2) A check_*() call in unreachable code inside main() -- `if False: ...`
+    # -- inflates the canonical count. It then fails every site loudly rather
+    # than passing silently, which is the safe direction.
+    for node in tree.body:
+        if not (isinstance(node, ast.FunctionDef)
+                and node.name.startswith("check_")):
+            continue
+        if not any(isinstance(a, ast.AugAssign)
+                   and isinstance(a.target, ast.Name)
+                   and a.target.id == "CHECKS"
+                   for a in ast.walk(node)):
+            problems += 1
+            fail("check-prose.py: %s() never does `CHECKS += 1`, so the summary "
+                 "line will under-count the checks that actually ran"
+                 % node.name)
+
+    doc = ast.get_docstring(tree) or ""
+    # Read the docstring via the AST rather than by slicing the file, so the
+    # numbered-item regex below cannot wander into a numbered list elsewhere
+    # in the module.
+    sites = [
+        ("README.md",
+         "README.md", r"(\w+) mechanical propert"),
+        ('docs/policy.md ("checks, chosen because they are mechanical")',
+         "docs/policy.md", r"(\w+) checks, chosen because they are mechanical"),
+        ('docs/policy.md ("narrow classes above")',
+         "docs/policy.md", r"(\w+) narrow classes"),
+        ("scripts/check-prose.py module docstring (count word)",
+         None, r"These (\w+) checks are the fraction"),
+    ]
+    for label, relpath, pattern in sites:
+        if relpath is None:
+            text = doc
+        else:
+            try:
+                text = open(os.path.join(ROOT, relpath), encoding="utf-8").read()
+            except OSError as exc:
+                problems += 1
+                fail("%s could not be read to check its count claim: %s"
+                     % (label, exc))
+                continue
+        m = re.search(pattern, text)
+        if not m:
+            problems += 1
+            fail("%s: no check-count claim matched /%s/ -- the sentence was "
+                 "reworded or removed, so nothing holds it to %d"
+                 % (label, pattern, canonical))
+            continue
+        found = _word_to_int(m.group(1))
+        if found is None:
+            problems += 1
+            fail("%s claims %r checks, which is not a number word this script "
+                 "knows; main() calls %d" % (label, m.group(1), canonical))
+        elif found != canonical:
+            problems += 1
+            fail("%s says %s (%d) checks, but main() calls %d: %s"
+                 % (label, m.group(1), found, canonical, ", ".join(called)))
+
+    items = re.findall(r"^\s{2,}(\d+)\.\s", doc, re.M)
+    if len(items) != canonical:
+        problems += 1
+        fail("scripts/check-prose.py module docstring (numbered list) has %d "
+             "item(s), but main() calls %d check_*(): %s"
+             % (len(items), canonical, ", ".join(called)))
+
+    print("  [OK] %d check(s) in main(), and all %d prose site(s) agree"
+          % (canonical, len(sites) + 1) if not problems
+          else "  [X] %d check-count problem(s)" % problems)
+
+
 def main():
     print("Checking RFC prose against the artifacts that implement it...")
     print("")
@@ -482,6 +654,7 @@ def main():
     check_xrefs()
     check_cited_terms()
     check_version_census()
+    check_check_count()
     print("")
     print("-------------------------------------")
     if FAILURES:
