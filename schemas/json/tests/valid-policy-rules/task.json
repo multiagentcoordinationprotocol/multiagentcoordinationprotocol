@@ -1,0 +1,18 @@
+{
+  "$comment": "Maximal valid Task Mode rules object. This schema is the thinnest of the five, which is exactly why a positive fixture matters: a schema that rejected everything would have passed every check in this repository before this directory existed.",
+  "assignment": {
+    "allow_reassignment_on_reject": true,
+    "_note": "both assignment and completion are boolean-only objects; the fixture sets them explicitly rather than relying on absence."
+  },
+  "completion": {
+    "require_output": true,
+    "_note": "boolean-only object, set explicitly rather than relying on absence."
+  },
+  "commitment": {
+    "authority": "designated_role",
+    "designated_roles": [
+      "agent://worker-pool"
+    ],
+    "_note": "the SATISFIED case of the designated_role arm."
+  }
+}

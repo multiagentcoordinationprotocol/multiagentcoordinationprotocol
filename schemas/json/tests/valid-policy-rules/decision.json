@@ -1,0 +1,34 @@
+{
+  "$comment": "Maximal valid Decision Mode rules object. Every property the schema declares is exercised. The top-level $comment and the nested _note below are load-bearing: they prove the annotation namespace survives, so this fixture must keep both.",
+  "voting": {
+    "algorithm": "majority",
+    "threshold": 0.5,
+    "quorum": {
+      "type": "count",
+      "value": 2,
+      "_note": "a real participation floor, not the 0 sentinel -- 0 would be legal but would not prove the bound accepts ordinary values."
+    },
+    "_note": "threshold is set explicitly at the inclusive floor the majority arm allows; the arm constrains the value without requiring the key, so both the present and absent forms are legal here."
+  },
+  "objection_handling": {
+    "critical_severity_vetoes": true,
+    "veto_threshold": 1,
+    "critical_objection_action": "finalize_decline",
+    "_note": "all three properties set explicitly, including the finalize_decline action that is only expressible from schema_version 2."
+  },
+  "evaluation": {
+    "minimum_confidence": 0.7,
+    "required_before_voting": true,
+    "_note": "minimum_confidence at a real floor rather than the 0 sentinel."
+  },
+  "commitment": {
+    "authority": "designated_role",
+    "designated_roles": [
+      "agent://ops",
+      "agent://release-manager"
+    ],
+    "require_vote_quorum": true,
+    "allow_decline_over_approval": false,
+    "_note": "the SATISFIED case of the designated_role arm -- the invalid-*-rules corpora pin the two ways it rejects, this pins the way it accepts."
+  }
+}
