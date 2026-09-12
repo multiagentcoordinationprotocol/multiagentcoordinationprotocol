@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "`threshold.vlaue` is not a declared property (RFC-MACP-0011 §5). The schema closes every object level with `additionalProperties: false`, so an unknown key is rejected instead of being silently ignored (issue #114). This is a transposed `value`, which would have left the threshold at its default while the policy author believed they had set 3. Isolates the closure at the `threshold` level: no `algorithm`/`type` key is set, so no conditional arm fires and nothing else can be the cause. The `_invalid_because` key you are reading is itself the proof the `^[_$]` annotation escape works -- it is an unknown key too, and it does NOT cause the rejection.",
+  "threshold": {
+    "vlaue": 3
+  }
+}

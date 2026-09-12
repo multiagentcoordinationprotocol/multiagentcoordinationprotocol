@@ -14,12 +14,24 @@ being well-formed JSON Schema, never exercised against an instance. These
 fixtures are the only thing that proves the constraints fire.
 
 Each fixture carries a top-level `_invalid_because` annotation stating the
-constraint it violates and the RFC section that defines it. The rule schema sets
-no `additionalProperties: false` at the root, so the annotation itself never
-causes the rejection.
+constraint it violates and the RFC section that defines it. The rule schema closes every object level with
+`additionalProperties: false` (issue #114), but reserves keys matching `^[_$]` as
+an annotation namespace, so the annotation itself never causes the rejection —
+and each fixture is now standing proof that the escape works.
+
+**The mutation unit for `unknown-key.json` is the whole schema, not one keyword.**
+Every other fixture here isolates a single keyword. The closure is different: it
+appears once per object level, so *which* occurrence rejects a given fixture
+depends on where that fixture puts its unknown key — this one is rejected by the
+closure at exactly one level, but a sibling fixture placing its typo elsewhere
+would be rejected by a different occurrence of the same keyword. Issue #114
+frames the unit accordingly: removing `additionalProperties: false` from *one
+schema* must flip exactly that schema's one unknown-key fixture. That is also why
+there is exactly **one** such fixture per directory — a second would flip
+alongside it under the same whole-schema mutation and break the diagonal.
 
 Every fixture isolates exactly **one** constraint: removing that one keyword from
-the schema makes exactly that fixture validate and leaves the other six
+the schema makes exactly that fixture validate and leaves the other seven
 rejected. A fixture that fails for the wrong reason would silently stop testing
 anything, so preserve that property when adding cases.
 
@@ -31,7 +43,8 @@ anything, so preserve that property when adding cases.
 | `weights-empty-map.json` | `voting.weights` MUST be non-empty — `minProperties: 1` (RFC-MACP-0012 §4.1; issue #98 item 3) |
 | `weights-explicit-zero.json` | Every `voting.weights` value MUST be greater than 0 — per-weight `exclusiveMinimum: 0` (RFC-MACP-0012 §4.1; issue #98 item 3) |
 | `designated-role-without-roles.json` | Under `authority: "designated_role"`, `commitment.designated_roles` is REQUIRED — the commitment `allOf` arm's `required` (RFC-MACP-0012 §4; issue #116). Decision has enforced this since it was written but was the only mode with no fixture proving its own arm fires |
-| `designated-roles-empty.json` | Under `authority: "designated_role"`, `commitment.designated_roles` MUST name at least one role — the same arm's `minItems: 1` (RFC-MACP-0012 §4; issue #116). Separable from the row above: the key IS present, so `required` is satisfied and cannot be the cause |
+| `designated-roles-empty.json` | Under `authority: "designated_role"`, `commitment.designated_roles` MUST name at least one role — the same arm's `minItems: 1` (RFC-MACP-0012 §4; issue #116). Separable from `designated-role-without-roles.json`: the key IS present, so `required` is satisfied and cannot be the cause |
+| `unknown-key.json` | `voting.thresold` is not a declared property — the `voting`-level `additionalProperties: false` (RFC-MACP-0012 §4; issue #114). Mutation unit is the whole schema, not one keyword; see the note above |
 
 `threshold-zero-weighted.json` deliberately uses `weighted` rather than
 `supermajority`: `supermajority` with `threshold: 0` already fails via the

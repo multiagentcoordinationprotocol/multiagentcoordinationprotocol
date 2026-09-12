@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "`completion.require_outputs` is not a declared property (RFC-MACP-0012 §4.4). The schema closes every object level with `additionalProperties: false`, so an unknown key is rejected instead of being silently ignored (issue #114). This is a spurious plural, which would have left require_output false while the author believed they had demanded an output. Isolates the closure at the `completion` level: no `algorithm`/`type` key is set, so no conditional arm fires and nothing else can be the cause. The `_invalid_because` key you are reading is itself the proof the `^[_$]` annotation escape works -- it is an unknown key too, and it does NOT cause the rejection.",
+  "completion": {
+    "require_outputs": true
+  }
+}

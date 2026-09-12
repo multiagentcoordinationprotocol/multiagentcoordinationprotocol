@@ -49,6 +49,26 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 | Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority |
 | Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority |
 
+**Rule objects are closed.** Every object level in every rule schema above sets
+`additionalProperties: false`, so a key the schema does not define is rejected when the
+policy is registered rather than quietly ignored. This matters more than it sounds: a
+misspelled parameter used to validate clean and leave the real parameter at its default, so a
+session ran under a policy nobody wrote and nothing reported an error. Two concrete cases —
+`objection_handling.veto_threshhold: 3` left `veto_threshold` at `1`, so one blocking objection
+vetoed a commitment whose author required three; and under `majority`,
+`voting.thresold: 0.67` left `threshold` at `0.5`, turning a two-thirds bar into a bare
+majority.
+
+Keys beginning with `_` or `$` are a reserved **annotation namespace**. They are legal at
+every nesting level, carry no governance semantics, and evaluators must ignore them, so
+documentation and tooling metadata can travel with a policy without widening its governance
+surface. Two `rules` objects that differ only in annotation keys are equivalent everywhere,
+including for replay.
+
+One deliberate exception: Decision Mode's `voting.weights` is *not* closed. Its keys are
+participant identifiers, and its `additionalProperties` types the map's values rather than
+closing the object. It is constrained instead by `minProperties: 1` and a per-value floor.
+
 Decision Mode supports six voting algorithms: `none`, `majority`, `supermajority`, `unanimous`, `weighted`, and `plurality`. See [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md) for full details.
 
 Quorum Mode expresses its bar through `threshold`, which takes one of **two** types: `n_of_m`

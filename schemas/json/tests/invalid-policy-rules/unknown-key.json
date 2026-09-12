@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "`voting.thresold` is not a declared property (RFC-MACP-0012 §4.1). The schema closes every object level with `additionalProperties: false`, so an unknown key is rejected instead of being silently ignored (issue #114). Note this fixture omits `algorithm` deliberately, so no conditional arm fires and the closure at the `voting` level is provably the sole cause. That also means it is NOT the scenario #114's opening paragraph describes: with `algorithm: \"supermajority\"` present the object was already rejected by the `required` arm of issue #112, and with the algorithm absent the default is `none`, so no voting constraint applies either way. The real hazard this closure removes is the silent default -- see `objection_handling.veto_threshhold` in the RFC-MACP-0012 1.4.0-draft changelog. The `_invalid_because` key you are reading is itself the proof the `^[_$]` escape works: it is an unknown key too, and it does NOT cause the rejection.",
+  "voting": {
+    "thresold": 0.67
+  }
+}
