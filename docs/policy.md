@@ -128,8 +128,17 @@ negatively on an empty tally, at every `schema_version` from `2` onward: if the 
 `objection_handling.critical_objection_action` to `finalize_decline` and a critical `Objection` is
 standing, the decline is **objection-authorized** — the objection is itself the attributable
 dissent the decline guard exists to require, so neither the guard nor the empty-tally rule applies.
+The guard is waived **whole**: its `commitment.require_vote_quorum` conjunct goes with it, as do the
+`evaluation.*` prerequisites, because all three gate outcomes that derive their authority from the
+voting result and this decline derives none. A runtime that keeps the quorum applying here
+reconstructs the stuck state `finalize_decline` exists to remove — no commitment acceptable in
+either direction, and no committed outcome reachable at all.
 Without that channel a session with a bound algorithm, no votes, and a standing critical objection
-could only ever end by expiring.
+could reach no committed outcome at all — it would end only by cancellation or expiry, neither of
+which records one. ("Only by expiring" overstates it: the initiator can always submit the
+`CancelSession` RPC — the `SessionCancel` envelope is emitted by the runtime, not the initiator —
+and a single `ABSTAIN` clears a count-1 participation floor. What is unreachable is a
+*committed* outcome, not termination.)
 
 The `1`/`2` behavior is fail-open: a policy that looks restrictive approves when nobody votes, and
 adding one approving ballot could convert an allowed commitment into a denied one. It is retained

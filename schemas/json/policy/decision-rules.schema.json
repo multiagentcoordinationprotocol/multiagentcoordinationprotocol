@@ -149,7 +149,7 @@
         "require_vote_quorum": {
           "type": "boolean",
           "default": false,
-          "description": "If true, commitment is only allowed after vote quorum is met."
+          "description": "If true, a VOTE-AUTHORIZED commitment is only allowed after the vote quorum is met. This does not gate an objection-authorized decline, which derives its authority from a recorded critical Objection rather than from the voting result (RFC-MACP-0007 Section 6.2). Under schema_version 1 and 2 this flag has a second, independent role: it also decides whether an empty tally blocks a POSITIVE commitment, which is why RFC-MACP-0012 Section 4.1 requires it of any legacy policy intending a binding algorithm."
         },
         "allow_decline_over_approval": {
           "type": "boolean",

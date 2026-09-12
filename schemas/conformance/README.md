@@ -124,7 +124,16 @@ Notes:
   decline channel: under `schema_version` 3 with a non-`none` algorithm, an
   empty tally, and a standing critical objection, `finalize_decline` still
   seals the session negatively — the empty-tally rule gates vote-authorized
-  commitments only (RFC-MACP-0007 §6.2; RFC-MACP-0012 §4.1). `decision_zero_participants.json` pins the
+  commitments only (RFC-MACP-0007 §6.2; RFC-MACP-0012 §4.1).
+  `decision_finalize_decline_quorum_waiver.json` is its discriminating companion:
+  the same shape but with a participation floor and `require_vote_quorum` set, so
+  it pins the half of the waiver that neither
+  `decision_finalize_decline_empty_tally.json` nor
+  `decision_critical_objection_finalize_decline.json` could distinguish, because
+  neither sets `require_vote_quorum` —
+  the decline guard is waived **whole**, its `require_vote_quorum` conjunct
+  included, and an objection-authorized decline MUST NOT be denied for an unmet
+  voting quorum (issue #117). `decision_zero_participants.json` pins the
   authorization guard that keeps RFC-MACP-0012 §4.1's zero-participant
   `unanimous` clause unreachable at the wire: a zero-participant session
   accepts no `Proposal`, not even from the initiator.
