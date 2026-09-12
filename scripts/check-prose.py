@@ -521,16 +521,26 @@ def check_check_count():
     in the MODULE docstring's numbered list. Note that is the module docstring at
     the top of this file, not the one you are reading.
 
-    NOT ENFORCED, and therefore a human obligation: the LENGTH of the two
-    enumerations in the documents -- README.md's comma-separated clause and
-    docs/policy.md's bullet list -- and, at every site including the module
-    docstring, whether the items truthfully describe the checks that run. Adding
-    a check means growing those two lists by hand. Neither is checked here, for
-    different reasons: docs/policy.md's bullet list is cleanly countable and is
-    simply not checked, while README's clause has no per-item marker to anchor
-    on -- counting it needs a regex pinned to that one sentence, and that breaks
-    the first time an item contains a comma. Do not read a green run as evidence
-    that either list is complete or accurate.
+    ENFORCED LENGTHS: this module's numbered list and docs/policy.md's bullet
+    list, both held to the canonical count.
+
+    NOT ENFORCED: the length of README.md's inline clause, and -- at EVERY site,
+    including the two whose length is checked -- whether the items truthfully
+    describe the checks that run. Length is not accuracy: a list of the right
+    length naming the wrong checks passes silently. It is a weak proxy that
+    happens to catch the mode that actually occurs, which is omission, because
+    omission shortens.
+
+    README's clause is the one length left to a human, and the reason is
+    structural rather than a choice: it has no per-item marker, so counting it
+    needs a regex pinned to that one sentence and split on its commas -- which
+    already fails. One item reads "...agrees across the schema, the RFC and the
+    fixture linter", so a naive split reports eight segments for seven items.
+    The README failure message therefore carries the obligation in its own text,
+    because that is what a maintainer reads at the moment they edit the sentence;
+    this docstring is not.
+
+    Do not read a green run as evidence that any list is accurate.
     """
     global CHECKS
     CHECKS += 1
@@ -637,8 +647,10 @@ def check_check_count():
                  "knows; main() calls %d" % (label, m.group(1), canonical))
         elif found != canonical:
             problems += 1
-            fail("%s says %s (%d) checks, but main() calls %d: %s"
-                 % (label, m.group(1), found, canonical, ", ".join(called)))
+            extra = ("; the enumeration after it is not length-checked -- "
+                     "grow it by hand" if label == "README.md" else "")
+            fail("%s says %s (%d) checks, but main() calls %d: %s%s"
+                 % (label, m.group(1), found, canonical, ", ".join(called), extra))
 
     items = re.findall(r"^\s{2,}(\d+)\.\s", doc, re.M)
     if len(items) != canonical:
@@ -646,6 +658,40 @@ def check_check_count():
         fail("scripts/check-prose.py module docstring (numbered list) has %d "
              "item(s), but main() calls %d check_*(): %s"
              % (len(items), canonical, ", ".join(called)))
+
+    # docs/policy.md's bullet list. ANCHOR on the introducing sentence and read the
+    # contiguous run beneath it -- do NOT count `- **` globally. It happens to give
+    # the right answer for this file today because these are its only such bullets,
+    # but the same pattern over README.md yields 18 (its RFC index and capability
+    # list). A coincidence must not become load-bearing.
+    dtext = ""
+    try:
+        dtext = open(os.path.join(ROOT, "docs", "policy.md"), encoding="utf-8").read()
+    except OSError as exc:
+        problems += 1
+        fail("docs/policy.md could not be read to count its prose-check bullet "
+             "list: %s" % exc)
+    if dtext:
+        bm = re.search(r"\w+ checks, chosen because they are mechanical:", dtext)
+        if not bm:
+            problems += 1
+            fail("docs/policy.md: could not find the sentence introducing the "
+                 "prose-check bullet list, so its length is unchecked -- update "
+                 "the pattern in scripts/check-prose.py")
+        else:
+            bullets = 0
+            for line in dtext[bm.end():].splitlines():
+                if not line.strip():
+                    if bullets:
+                        break
+                    continue
+                if line.startswith("- **"):
+                    bullets += 1
+            if bullets != canonical:
+                problems += 1
+                fail("docs/policy.md's prose-check bullet list has %d item(s), "
+                     "but main() calls %d check_*(): %s"
+                     % (bullets, canonical, ", ".join(called)))
 
     print("  [OK] %d check(s) in main(), and all %d prose site(s) agree"
           % (canonical, len(sites) + 1) if not problems
