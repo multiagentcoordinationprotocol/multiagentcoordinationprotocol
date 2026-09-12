@@ -268,9 +268,11 @@ Seven checks, chosen because they are mechanical:
   step — `README.md` said four while this file said five and five ran. The canonical number is
   read from `main()`'s abstract syntax tree, not from a regex over the source, for the same
   reason the `schema_version` check reads JSON: a regex would match the check names in
-  docstrings and comments too. The check counts itself. The docstring's numbered list is held to the
-  count as well, but *these two enumerations* are not: keeping them as long as the number
-  says remains a human job.
+  docstrings and comments too. The check counts itself. This document's bullet list and the
+  docstring's numbered list are both held to the count as well; `README.md`'s inline clause
+  is not, because it has no per-item marker to anchor on. Keeping that one as long as the
+  number says remains a human job, and the check says so in its own failure message rather
+  than only in a docstring.
 - **The PolicyDescriptor required-field set agrees.** Four sites are checked against the
   schema's `required` array, which is what actually enforces the set. Three name the fields —
   RFC-MACP-0012 §3's table, the table above, and `lint_fixtures.py`'s own tuple — and the
