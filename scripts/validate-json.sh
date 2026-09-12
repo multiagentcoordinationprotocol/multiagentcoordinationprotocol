@@ -33,7 +33,7 @@ RULES_EXTRACTOR="${PROJECT_ROOT}/scripts/extract-policy-rules.py"
 # a fence whose info string stops matching, a `mode` key renamed, a file deleted --
 # lowers this number while every remaining instance still passes. Without the pin the
 # run stays green with less coverage than it reports. Bump it when adding a rules object.
-EXPECTED_RULES_INSTANCES=25
+EXPECTED_RULES_INSTANCES=26
 INVALID_QUORUM_RULES_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-quorum-rules"
 QUORUM_RULES_SCHEMA="${PROJECT_ROOT}/schemas/json/policy/quorum-rules.schema.json"
 
