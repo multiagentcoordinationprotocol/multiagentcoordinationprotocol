@@ -15,21 +15,35 @@
           "description": "Auto-accept after this many milliseconds. 0 means no implicit accept.",
           "$comment": "The bound is inclusive on purpose and MUST NOT be tightened to exclusiveMinimum. 0 is the documented default and DISABLES implicit accept -- RFC-MACP-0010 Section 5.1 scopes the timer to the non-zero case explicitly -- so rejecting it would reject this field's own default. Audited under issue #116 piece 2."
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     },
     "commitment": {
       "type": "object",
       "properties": {
         "authority": {
           "type": "string",
-          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "enum": [
+            "initiator_only",
+            "any_participant",
+            "designated_role"
+          ],
           "default": "initiator_only"
         },
         "designated_roles": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
@@ -38,22 +52,38 @@
       "if": {
         "properties": {
           "commitment": {
-            "properties": { "authority": { "const": "designated_role" } },
-            "required": ["authority"]
+            "properties": {
+              "authority": {
+                "const": "designated_role"
+              }
+            },
+            "required": [
+              "authority"
+            ]
           }
         },
-        "required": ["commitment"]
+        "required": [
+          "commitment"
+        ]
       },
       "then": {
         "properties": {
           "commitment": {
-            "required": ["designated_roles"],
+            "required": [
+              "designated_roles"
+            ],
             "properties": {
-              "designated_roles": { "minItems": 1 }
+              "designated_roles": {
+                "minItems": 1
+              }
             }
           }
         }
       }
     }
-  ]
+  ],
+  "patternProperties": {
+    "^[_$]": true
+  },
+  "additionalProperties": false
 }

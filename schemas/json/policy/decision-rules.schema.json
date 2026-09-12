@@ -11,7 +11,14 @@
       "properties": {
         "algorithm": {
           "type": "string",
-          "enum": ["none", "majority", "supermajority", "unanimous", "weighted", "plurality"],
+          "enum": [
+            "none",
+            "majority",
+            "supermajority",
+            "unanimous",
+            "weighted",
+            "plurality"
+          ],
           "default": "none",
           "description": "Voting algorithm. 'none' means no voting constraint is enforced."
         },
@@ -29,7 +36,10 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["count", "percentage"],
+              "enum": [
+                "count",
+                "percentage"
+              ],
               "default": "count"
             },
             "value": {
@@ -39,7 +49,11 @@
               "description": "Minimum number of participants that must vote ('count'), or the minimum share of declared participants that must vote as a percentage in 0-100 ('percentage').",
               "$comment": "The bound is inclusive on purpose and MUST NOT be tightened to exclusiveMinimum. 0 is the documented default and means no participation floor, which is meaningful on its own. Audited under issue #116 piece 2. One combination this bound does NOT cover, and it is version-dependent: at schema_version 3 and above, value 0 together with commitment.require_vote_quorum true is a participation gate satisfied by zero voters. At schema_version 1 and 2 the same shape is NOT degenerate -- require_vote_quorum there also decides whether an empty tally blocks a positive commitment, so RFC-MACP-0012 Section 4.1 REQUIRES it of any legacy policy that intends its algorithm to be binding, and examples/discovery/policy_descriptor_decline.json is a legitimate on-disk instance. Any constraint here would therefore have to discriminate on schema_version. That is a cross-object conditional coupling commitment to voting.quorum, not a bound on this field, so it is tracked separately as issue #122."
             }
-          }
+          },
+          "patternProperties": {
+            "^[_$]": true
+          },
+          "additionalProperties": false
         },
         "weights": {
           "type": "object",
@@ -51,7 +65,11 @@
           },
           "$comment": "exclusiveMinimum 0 + minProperties 1: an all-zero or empty weights map yielded 'no votes' on a COMPLETE ballot set (issue #98, item 3). A legitimately zero-weighted observer is expressed by omission from this map, not by an explicit 0, so nothing is lost."
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     },
     "objection_handling": {
       "type": "object",
@@ -70,11 +88,19 @@
         },
         "critical_objection_action": {
           "type": "string",
-          "enum": ["deny", "finalize_decline", "hold"],
+          "enum": [
+            "deny",
+            "finalize_decline",
+            "hold"
+          ],
           "default": "deny",
           "description": "Action when a critical objection would block commitment: deny (reject the commitment), finalize_decline (resolve the session as a negative outcome), or hold (reject the commitment as deny does, annotated as an escalation). deny and hold are observationally identical — both reject with POLICY_DENIED and leave the session OPEN; hold is an operator-facing annotation, not a distinct protocol outcome. See RFC-MACP-0012 §4.1."
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     },
     "evaluation": {
       "type": "object",
@@ -93,7 +119,11 @@
           "default": false,
           "description": "If true, at least one evaluation must exist before votes are counted."
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     },
     "commitment": {
       "type": "object",
@@ -101,13 +131,19 @@
       "properties": {
         "authority": {
           "type": "string",
-          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "enum": [
+            "initiator_only",
+            "any_participant",
+            "designated_role"
+          ],
           "default": "initiator_only",
           "description": "Who is authorized to emit a Commitment."
         },
         "designated_roles": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Participant IDs or roles authorized to commit. Used only with 'designated_role' authority."
         },
         "require_vote_quorum": {
@@ -120,7 +156,11 @@
           "default": false,
           "description": "If true, a negative commitment (outcome_positive=false) is allowed even when the vote passed."
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
@@ -128,15 +168,27 @@
       "if": {
         "properties": {
           "voting": {
-            "properties": { "algorithm": { "const": "weighted" } },
-            "required": ["algorithm"]
+            "properties": {
+              "algorithm": {
+                "const": "weighted"
+              }
+            },
+            "required": [
+              "algorithm"
+            ]
           }
         },
-        "required": ["voting"]
+        "required": [
+          "voting"
+        ]
       },
       "then": {
         "properties": {
-          "voting": { "required": ["weights"] }
+          "voting": {
+            "required": [
+              "weights"
+            ]
+          }
         }
       }
     },
@@ -144,18 +196,30 @@
       "if": {
         "properties": {
           "voting": {
-            "properties": { "algorithm": { "const": "supermajority" } },
-            "required": ["algorithm"]
+            "properties": {
+              "algorithm": {
+                "const": "supermajority"
+              }
+            },
+            "required": [
+              "algorithm"
+            ]
           }
         },
-        "required": ["voting"]
+        "required": [
+          "voting"
+        ]
       },
       "then": {
         "properties": {
           "voting": {
-            "required": ["threshold"],
+            "required": [
+              "threshold"
+            ],
             "properties": {
-              "threshold": { "exclusiveMinimum": 0.5 }
+              "threshold": {
+                "exclusiveMinimum": 0.5
+              }
             }
           }
         }
@@ -167,17 +231,27 @@
       "if": {
         "properties": {
           "voting": {
-            "properties": { "algorithm": { "const": "majority" } },
-            "required": ["algorithm"]
+            "properties": {
+              "algorithm": {
+                "const": "majority"
+              }
+            },
+            "required": [
+              "algorithm"
+            ]
           }
         },
-        "required": ["voting"]
+        "required": [
+          "voting"
+        ]
       },
       "then": {
         "properties": {
           "voting": {
             "properties": {
-              "threshold": { "minimum": 0.5 }
+              "threshold": {
+                "minimum": 0.5
+              }
             }
           }
         }
@@ -187,22 +261,38 @@
       "if": {
         "properties": {
           "commitment": {
-            "properties": { "authority": { "const": "designated_role" } },
-            "required": ["authority"]
+            "properties": {
+              "authority": {
+                "const": "designated_role"
+              }
+            },
+            "required": [
+              "authority"
+            ]
           }
         },
-        "required": ["commitment"]
+        "required": [
+          "commitment"
+        ]
       },
       "then": {
         "properties": {
           "commitment": {
-            "required": ["designated_roles"],
+            "required": [
+              "designated_roles"
+            ],
             "properties": {
-              "designated_roles": { "minItems": 1 }
+              "designated_roles": {
+                "minItems": 1
+              }
             }
           }
         }
       }
     }
-  ]
+  ],
+  "patternProperties": {
+    "^[_$]": true
+  },
+  "additionalProperties": false
 }

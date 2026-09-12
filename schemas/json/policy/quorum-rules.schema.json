@@ -11,7 +11,10 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["n_of_m", "percentage"],
+          "enum": [
+            "n_of_m",
+            "percentage"
+          ],
           "default": "n_of_m"
         },
         "value": {
@@ -24,14 +27,28 @@
       "allOf": [
         {
           "if": {
-            "properties": { "type": { "const": "percentage" } },
-            "required": ["type"]
+            "properties": {
+              "type": {
+                "const": "percentage"
+              }
+            },
+            "required": [
+              "type"
+            ]
           },
           "then": {
-            "properties": { "value": { "maximum": 100 } }
+            "properties": {
+              "value": {
+                "maximum": 100
+              }
+            }
           }
         }
-      ]
+      ],
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     },
     "abstention": {
       "type": "object",
@@ -44,25 +61,43 @@
         },
         "interpretation": {
           "type": "string",
-          "enum": ["neutral", "implicit_reject", "ignored"],
+          "enum": [
+            "neutral",
+            "implicit_reject",
+            "ignored"
+          ],
           "default": "neutral",
           "description": "How abstentions are interpreted for threshold calculation."
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     },
     "commitment": {
       "type": "object",
       "properties": {
         "authority": {
           "type": "string",
-          "enum": ["initiator_only", "any_participant", "designated_role"],
+          "enum": [
+            "initiator_only",
+            "any_participant",
+            "designated_role"
+          ],
           "default": "initiator_only"
         },
         "designated_roles": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "patternProperties": {
+        "^[_$]": true
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
@@ -71,22 +106,38 @@
       "if": {
         "properties": {
           "commitment": {
-            "properties": { "authority": { "const": "designated_role" } },
-            "required": ["authority"]
+            "properties": {
+              "authority": {
+                "const": "designated_role"
+              }
+            },
+            "required": [
+              "authority"
+            ]
           }
         },
-        "required": ["commitment"]
+        "required": [
+          "commitment"
+        ]
       },
       "then": {
         "properties": {
           "commitment": {
-            "required": ["designated_roles"],
+            "required": [
+              "designated_roles"
+            ],
             "properties": {
-              "designated_roles": { "minItems": 1 }
+              "designated_roles": {
+                "minItems": 1
+              }
             }
           }
         }
       }
     }
-  ]
+  ],
+  "patternProperties": {
+    "^[_$]": true
+  },
+  "additionalProperties": false
 }
