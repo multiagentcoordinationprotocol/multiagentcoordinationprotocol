@@ -30,7 +30,7 @@ A policy descriptor has five required fields:
 | `mode` | string | Target mode identifier or `*` for mode-agnostic |
 | `description` | string | Human-readable description |
 | `rules` | object | Mode-specific governance rules (see Rule Schemas) |
-| `schema_version` | uint32 | Version of the rule schema used (`1`, `2`, or `3`). Version `2` adds Decision Mode decline-gating and is **additive**. Version `3` is the first **semantic** bump: it changes how an empty vote tally is evaluated (see [Empty tallies](#empty-tallies-and-schema_version) below). A stored policy is always evaluated under the version it declares, so `1` and `2` policies keep their original behavior forever. |
+| `schema_version` | uint32 | Version of the rule schema used (`1`, `2`, or `3`). Version `2` adds Decision Mode decline-gating and is **additive**. Version `3` is the first **semantic** bump: it changes how an empty vote tally is evaluated (see [Empty tallies](#empty-tallies-and-schema_version) below). A stored policy is always evaluated under the version it declares, so `1` and `2` policies keep their original behavior forever. The set is **enforced**, not merely documented: `macp-policy-descriptor.schema.json` carries it as an `enum`, so adding a version means editing that enum and CI fails until it agrees with `lint_fixtures.py`. |
 
 Canonical proto: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
 JSON Schema: [`schemas/json/macp-policy-descriptor.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/macp-policy-descriptor.schema.json)
@@ -212,24 +212,31 @@ what it should if something on disk is actually rejected by it.
 implement it. `make validate` never did: it verifies that JSON matches schemas and that protos
 compile, but not that a normative sentence is true, and not that two RFCs agree.
 
-Four checks, chosen because they are mechanical:
+Five checks, chosen because they are mechanical:
 
 - **No line-number anchors.** A citation that pins a source line — an open paren, a colon, a
   line number, a close paren — drifts the moment anything above it is edited. Cite the heading
   instead. (The check is self-applying: an earlier draft of this very paragraph used a literal
   example and was rejected by it.)
-- **`schema_version` enumerations agree.** The valid set is spelled out in five places across
-  markdown, JSON Schema, a Python linter, and a `.proto` comment; `lint_fixtures.py` is the
-  source of truth and the rest must match it.
+- **`schema_version` enumerations agree.** The valid set is spelled out in seven places across
+  markdown, `.proto` comments, and JSON Schema. Six of the seven are prose and are matched by
+  regex; the seventh is structural — the policy descriptor schema's own `enum`, read as JSON,
+  which is the artifact that *enforces* the set the other six merely describe. That file is
+  therefore checked twice, on purpose: once for what it says and once for what it does.
+  `lint_fixtures.py` is the source of truth all seven are compared against, and is not itself
+  one of them.
 - **RFC cross-references resolve.** A `§N.M` pointing at a section that does not exist is
   detectable. A bare section number resolves against its own document first and only then
   against the nearest preceding RFC citation, and references to non-MACP standards (IETF RFCs)
   are left alone.
+- **Cited terms appear in the RFC that is cited.** A sentence that attributes a claim to another
+  RFC, where that RFC never mentions the term, is mechanically detectable. This is the shape of
+  the abstention citation that pointed at an RFC containing the word zero times.
 - **The README version census matches.** `README.md` hand-maintains a per-RFC version roll-call
   that nothing verified; it went stale twice during this work alone.
 
 **What it still does not check:** whether a paragraph is *true*. Nothing here would have caught
-an RFC asserting a constraint its schema does not impose, beyond the four narrow classes above.
+an RFC asserting a constraint its schema does not impose, beyond the five narrow classes above.
 That remains a human job.
 
 ## Error Codes

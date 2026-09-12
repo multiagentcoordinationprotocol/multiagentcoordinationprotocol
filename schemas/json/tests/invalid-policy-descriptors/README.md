@@ -42,16 +42,26 @@ at the root, so the annotation never causes the rejection.
 from the schema should make exactly that fixture validate and leave the others
 rejected — a perfect diagonal:
 
-| mutation | missing-rules | policy-id-empty |
-|---|---|---|
-| *intact* | reject | reject |
-| drop `required` | **PASS** | reject |
-| drop `policy_id.minLength` | reject | **PASS** |
+| mutation | missing-rules | policy-id-empty | schema-version-out-of-range |
+|---|---|---|---|
+| *intact* | reject | reject | reject |
+| drop `required` | **PASS** | reject | reject |
+| drop `policy_id.minLength` | reject | **PASS** | reject |
+| drop `schema_version.enum` | reject | reject | **PASS** |
 
 `missing-rules.json` therefore keeps `policy_id`, `mode` and `schema_version`
 populated: a fixture omitting several required keys at once would fail for three
 reasons and isolate none of them. `policy-id-empty.json` likewise supplies all
-four required keys so that only `minLength` stands between it and validity.
+four required keys so that only `minLength` stands between it and validity, and
+`schema-version-out-of-range.json` supplies all four with a non-empty
+`policy_id` so that only the `enum` does.
+
+`schema-version-out-of-range.json` is the fixture for issue #115. Until that
+issue was fixed the schema said only `minimum: 1`, so a descriptor declaring
+`schema_version: 99` validated clean — the legal set was documented in six
+places and enforced in none of them. The enum is now also the seventh site
+checked by `scripts/check-prose.py`, so the schema and the prose cannot drift
+apart again.
 
 A fixture that fails for the wrong reason silently stops testing anything.
 

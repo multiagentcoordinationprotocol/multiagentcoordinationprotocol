@@ -8,17 +8,27 @@ stayed green while RFC-MACP-0012 made four false claims about its own canonical
 schemas, while two RFCs gave opposite answers about the same tally, and while a
 justification rested on a section that does not exist.
 
-"Is this paragraph true?" is not a lint rule. These four checks are the fraction
+"Is this paragraph true?" is not a lint rule. These five checks are the fraction
 that is mechanical:
 
   1. line-number anchors   -- `(:102)`-style citations drift on every edit above
                               them. Cite by heading; headings do not drift.
-  2. schema_version agreement -- the set is enumerated in six places across
-                              markdown, JSON Schema, python and .proto comments.
-                              Nothing kept them in step; #99 fixed all six by hand.
+  2. schema_version agreement -- the set is enumerated in seven places across
+                              markdown, .proto comments, and JSON Schema -- six of
+                              them prose, the seventh the descriptor schema's own
+                              `enum`. lint_fixtures.py is the source of truth they
+                              are all compared against, not one of the seven.
+                              Nothing kept them in step; #99 fixed the first six by
+                              hand. The seventh (#115) is structural rather than
+                              prose: the descriptor schema's own `enum`, which
+                              ENFORCES the set the other six merely describe.
   3. RFC cross-references  -- a `§N.M` pointing at a section that does not exist
                               is mechanically detectable.
-  4. RFC version census    -- README hand-maintains a per-RFC version roll-call
+  4. cited terms present   -- a sentence citing an RFC for a claim, where the cited
+                              RFC never mentions the term, is detectable. That is the
+                              shape of #103: "Abstentions are excluded (RFC-MACP-0004)"
+                              against an RFC containing the word zero times.
+  5. RFC version census    -- README hand-maintains a per-RFC version roll-call
                               that nothing verifies. #99 had to correct it by hand,
                               and the quorum/error-code work invalidated it twice more.
 
@@ -140,6 +150,62 @@ def check_schema_versions():
         if found != canonical:
             fail("%s: enumerates schema_version %s but %s says %s"
                  % (relpath, sorted(found), src, sorted(canonical)))
+    # Seventh site, and the only STRUCTURAL one. The descriptor schema does not
+    # merely describe the legal set in prose -- it is the artifact that ENFORCES
+    # it. Those are two different claims about the same file, so the file is
+    # deliberately checked twice: the regex row above proves the sentence still
+    # reads 1/2/3, and this proves ajv will actually reject a 4. Before #115 the
+    # first held and the second did not.
+    #
+    # Read as JSON rather than by regex: a pattern over `"enum": [1, 2, 3]` is
+    # brittle to whitespace and re-indentation, and would match the same digits
+    # sitting inside a description string.
+    desc_rel = "schemas/json/macp-policy-descriptor.schema.json"
+    desc_path = os.path.join(ROOT, desc_rel)
+    if not os.path.isfile(desc_path):
+        fail("%s: expected to ENFORCE the schema_version set but the file is missing"
+             % desc_rel)
+    else:
+        try:
+            desc = json.load(open(desc_path, encoding="utf-8"))
+        except ValueError as exc:
+            fail("%s: not parseable as JSON, so its schema_version enum cannot be "
+                 "checked (%s)" % (desc_rel, exc))
+            desc = None
+        if desc is not None:
+            enum = desc.get("properties", {}).get("schema_version", {}).get("enum")
+            # Every branch below must FAIL rather than raise. This file's own
+            # discipline is to accumulate failures and report them all (see the
+            # module docstring), and a traceback here would take the remaining
+            # checks down with it.
+            if enum is None:
+                # A dropped enum is precisely the regression this site exists for:
+                # the prose would still read 1/2/3 while the schema accepted 99.
+                fail("%s: properties.schema_version has no `enum` -- the legal set "
+                     "would be described but not enforced, which is the defect #115 "
+                     "fixed" % desc_rel)
+            elif not isinstance(enum, list):
+                # `"enum": "123"` is not valid JSON Schema, but iterating it would
+                # yield the characters 1/2/3 and silently agree with the canonical
+                # set. ajv catches the malformed schema downstream; this site must
+                # not report agreement it did not actually verify.
+                fail("%s: properties.schema_version.enum is %s, not a list"
+                     % (desc_rel, type(enum).__name__))
+            elif not all(isinstance(x, int) and not isinstance(x, bool) for x in enum):
+                # `[1, 2, "3"]` is valid JSON Schema and compiles clean, but paired
+                # with `"type": "integer"` the string member can never match, so the
+                # schema would enforce a smaller set than it advertises.
+                fail("%s: properties.schema_version.enum contains a non-integer "
+                     "member (%r) -- with `type: integer` such a member can never "
+                     "match, so the enforced set is narrower than the declared one"
+                     % (desc_rel, enum))
+            else:
+                checked += 1
+                found = set(enum)
+                if found != canonical:
+                    fail("%s: ENFORCES schema_version %s but %s says %s"
+                         % (desc_rel, sorted(found), src, sorted(canonical)))
+
     CHECKS += 1
     if len(FAILURES) == before_failures:
         print("  [OK] %d site(s) agree on %s" % (checked, sorted(canonical)))
@@ -262,7 +328,9 @@ def check_xrefs():
 
 
 # --------------------------------------------------------------------------
-# 4. README per-RFC version census
+# 5. README per-RFC version census
+#    (Banners are numbered by RUN order, matching main() and the module
+#    docstring. This one is defined before check 4 but runs after it.)
 # --------------------------------------------------------------------------
 VERSION_HDR = re.compile(r"^\*\*Version:\*\*\s*(\S+)", re.M)
 
@@ -339,7 +407,7 @@ def check_version_census():
 
 
 # --------------------------------------------------------------------------
-# 5. Cited-RFC term checks
+# 4. Cited-RFC term checks
 # --------------------------------------------------------------------------
 # The other half of #107's cross-reference item: "a `see RFC-MACP-000X` for a term
 # that RFC never mentions". RFC-MACP-0012 §4.1 cited RFC-MACP-0004 for abstention
