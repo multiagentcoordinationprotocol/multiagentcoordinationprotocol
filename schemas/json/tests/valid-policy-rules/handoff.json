@@ -1,0 +1,14 @@
+{
+  "$comment": "Maximal valid Handoff Mode rules object. Every declared property is exercised, with implicit_accept_timeout_ms at a non-sentinel value.",
+  "acceptance": {
+    "implicit_accept_timeout_ms": 30000,
+    "_note": "30000 rather than 0 on purpose: 0 is the disable sentinel, so a positive value is what proves the timer bound accepts real timeouts."
+  },
+  "commitment": {
+    "authority": "designated_role",
+    "designated_roles": [
+      "agent://oncall"
+    ],
+    "_note": "the SATISFIED case of the designated_role arm."
+  }
+}

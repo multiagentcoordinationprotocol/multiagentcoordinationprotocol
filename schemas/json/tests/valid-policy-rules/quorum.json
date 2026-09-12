@@ -1,0 +1,20 @@
+{
+  "$comment": "Maximal valid Quorum Mode rules object. Before this directory existed, no quorum rules object existed anywhere in the repository, so nothing had ever proved this schema accepts anything at all.",
+  "threshold": {
+    "type": "percentage",
+    "value": 67,
+    "_note": "percentage is the arm carrying the conditional maximum of 100; 67 exercises it without sitting on the boundary."
+  },
+  "abstention": {
+    "counts_toward_quorum": true,
+    "interpretation": "neutral",
+    "_note": "both properties set explicitly rather than relying on absence."
+  },
+  "commitment": {
+    "authority": "designated_role",
+    "designated_roles": [
+      "agent://ops"
+    ],
+    "_note": "the SATISFIED case of the designated_role arm."
+  }
+}

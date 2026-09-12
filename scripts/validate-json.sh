@@ -413,6 +413,188 @@ for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
 done
 
 
+# --- Positive rule fixtures ---
+#
+# The mirror of the negative loops above, and it exists because "json-validate is
+# green" proved almost nothing about four of the five rule schemas. Every one of
+# the EXPECTED_RULES_INSTANCES objects on disk is Decision Mode or mode-agnostic
+# "*", so a quorum/proposal/task/handoff schema that rejected EVERYTHING would
+# have passed every check in this repository. Closing those schemas (issue #114)
+# without positive coverage would have been unfalsifiable.
+#
+# Each fixture does three jobs at once:
+#   1. proves its schema accepts a realistic, maximal rules object;
+#   2. carries a top-level `$comment` and a nested `_note`, proving the annotation
+#      namespace survives -- the guard issue #114's `additionalProperties: false`
+#      needs, and a tripwire if that escape is ever narrowed;
+#   3. sets commitment.authority "designated_role" WITH a non-empty
+#      designated_roles, pinning the satisfied case of the issue-#116 arm.
+#
+# Binding is by explicit filename, never a glob: a typo'd fixture must fail loudly
+# rather than be silently skipped, which is the failure mode the negative loops'
+# empty-directory guard exists to prevent, one level down.
+#
+# These are BARE rules objects with no sibling `mode` key on purpose. The extractor
+# matches any object carrying both `rules` and a string `mode`; it does not walk
+# schemas/json today, but keeping them bare means a future widening cannot
+# double-count them against EXPECTED_RULES_INSTANCES.
+VALID_RULES_DIR="${PROJECT_ROOT}/schemas/json/tests/valid-policy-rules"
+VALID_RULES_PAIRS=(
+    "decision.json:decision-rules.schema.json:Decision"
+    "quorum.json:quorum-rules.schema.json:Quorum"
+    "proposal.json:proposal-rules.schema.json:Proposal"
+    "task.json:task-rules.schema.json:Task"
+    "handoff.json:handoff-rules.schema.json:Handoff"
+)
+
+echo "-- Positive rule fixtures (${VALID_RULES_DIR}/*.json) --"
+echo "Each fixture MUST PASS validation against its mode's rule schema."
+echo ""
+
+if [ ! -d "${VALID_RULES_DIR}" ]; then
+    echo "[X] Positive rule-fixture directory not found: ${VALID_RULES_DIR}"
+    exit 1
+fi
+
+vr_bound=0
+for pair in "${VALID_RULES_PAIRS[@]}"; do
+    vr_file="${VALID_RULES_DIR}/${pair%%:*}"
+    vr_rest="${pair#*:}"
+    vr_schema="${POLICY_RULES_SCHEMA_DIR}/${vr_rest%%:*}"
+    vr_label="${vr_rest#*:}"
+
+    if [ ! -f "${vr_schema}" ]; then
+        echo "[X] ${vr_label} rule schema not found: ${vr_schema}"
+        exit 1
+    fi
+    # Bound by name, so a renamed or missing fixture is an error, never a skip.
+    if [ ! -f "${vr_file}" ]; then
+        echo "[X] ${vr_label} positive fixture not found: ${vr_file}"
+        echo "    Every entry in VALID_RULES_PAIRS must exist. If a fixture was"
+        echo "    renamed, update the table; do not let the binding go slack."
+        exit 1
+    fi
+
+    vr_bound=$((vr_bound + 1))
+    TOTAL=$((TOTAL + 1))
+    echo "Checking (expect pass): $(basename "${vr_file}") -> $(basename "${vr_schema}")"
+    if ajv validate -s "${vr_schema}" -d "${vr_file}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+        # ajv passing is necessary but nowhere near sufficient: an EMPTY object
+        # validates against all five schemas, so without this assertion the whole
+        # corpus could be reduced to `{}` and stay green -- the exact
+        # unfalsifiability this directory exists to end. Assert the content that
+        # makes each fixture do its three jobs.
+        if ! python3 - "${vr_file}" "${vr_schema}" <<'PYCHECK'
+import json, sys
+p, schema_path = sys.argv[1], sys.argv[2]
+try:
+    d = json.load(open(p, encoding="utf-8"))
+except Exception as exc:
+    print("      malformed JSON: %s" % exc); sys.exit(1)
+bad = []
+if not isinstance(d, dict):
+    print("      not a JSON object"); sys.exit(1)
+# job 2a: the root annotation must survive `additionalProperties: false`
+if "$comment" not in d:
+    bad.append("no top-level `$comment` -- the root annotation guard is missing")
+# job 2b: EVERY nested object level, not just one. An escape applied at the root
+# but omitted at a nested level would otherwise sail through this corpus.
+def walk(o, pre=""):
+    for k, v in o.items():
+        if isinstance(v, dict):
+            path = (pre + "." + k) if pre else k
+            if "_note" not in v and "$comment" not in v:
+                bad.append("object level `%s` carries no `_note`/`$comment`" % path)
+            walk(v, path)
+walk(d)
+# job 1: MAXIMALITY, derived from the schema rather than trusted. Checking only the
+# levels a fixture happens to contain is not enough -- deleting a whole level would
+# leave the guard above with nothing to say, and a fixture trimmed to root plus
+# `commitment` would pass while covering almost nothing. Every object level the
+# schema declares must be present, so adding a property to a schema forces the
+# fixture to grow with it.
+try:
+    sch = json.load(open(schema_path, encoding="utf-8"))
+except Exception as exc:
+    print("      cannot read schema %s: %s" % (schema_path, exc)); sys.exit(1)
+def declared(node, pre=""):
+    # An "object level" is a subschema with its own `properties`. `voting.weights`
+    # is deliberately NOT one: it uses `additionalProperties` as a VALUE schema and
+    # declares no properties, so it is out of scope here and covered instead by the
+    # weighted conformance fixtures. See this directory's README.
+    for k, v in (node.get("properties") or {}).items():
+        if isinstance(v, dict) and v.get("properties"):
+            path = (pre + "." + k) if pre else k
+            yield path
+            for sub in declared(v, path):
+                yield sub
+for path in declared(sch):
+    cur, missing = d, False
+    for seg in path.split("."):
+        if not isinstance(cur, dict) or seg not in cur or not isinstance(cur[seg], dict):
+            missing = True
+            break
+        cur = cur[seg]
+    if missing:
+        bad.append("object level `%s` is declared by the schema but absent -- "
+                   "this corpus must be maximal" % path)
+# job 3: the satisfied case of the designated_role arm
+c = d.get("commitment")
+if not isinstance(c, dict):
+    bad.append("no `commitment` object")
+else:
+    if c.get("authority") != "designated_role":
+        bad.append("commitment.authority is not \"designated_role\"")
+    r = c.get("designated_roles")
+    if not isinstance(r, list) or not r:
+        bad.append("commitment.designated_roles is missing or empty")
+if bad:
+    for b in bad:
+        print("      %s" % b)
+    sys.exit(1)
+PYCHECK
+        then
+            echo "  [X] Positive fixture is schema-valid but does not do its job."
+            echo "      See ${VALID_RULES_DIR}/README.md -- each fixture must carry a"
+            echo "      root \`\$comment\`, a \`_note\` at every nested object level, and the"
+            echo "      satisfied case of the designated_role arm."
+            exit 1
+        fi
+        VALIDATED=$((VALIDATED + 1))
+        echo "  [OK] Valid"
+    else
+        echo "  [X] Positive fixture REJECTED. Either ${vr_label}'s rule schema is"
+        echo "      over-tightened, or this fixture is wrong -- the ajv output below says which."
+        echo "      ajv says:"
+        # Surface the offending keyword; a bare "it failed" would send a reviewer hunting.
+        ajv validate -s "${vr_schema}" -d "${vr_file}" --spec=draft2020 --strict=false 2>&1 | sed 's/^/      /'
+        exit 1
+    fi
+    echo ""
+done
+
+# The converse of the per-entry check above: a fixture on disk that no table row
+# claims would otherwise be validated by nothing at all.
+# Count EVERY entry except the README, not just *.json regular files: a directory
+# named `foo.json/`, or a stray `quorum.yaml`, would otherwise be invisible to
+# both this count and the loop above, and sit in the corpus validated by nothing.
+vr_on_disk=0
+for f in "${VALID_RULES_DIR}"/* "${VALID_RULES_DIR}"/.[!.]*; do
+    [ -e "$f" ] || continue
+    [ "$(basename "$f")" = "README.md" ] && continue
+    vr_on_disk=$((vr_on_disk + 1))
+done
+if [ "${vr_on_disk}" -ne "${vr_bound}" ]; then
+    echo "[X] ${VALID_RULES_DIR} holds ${vr_on_disk} fixture(s) but VALID_RULES_PAIRS binds ${vr_bound}."
+    echo "    An unbound fixture is validated against no schema -- add a table row."
+    exit 1
+fi
+if [ "${vr_bound}" -eq 0 ]; then
+    echo "[X] ${VALID_RULES_DIR} contains no fixtures -- an empty directory is not coverage."
+    exit 1
+fi
+
+
 # --- Policy rules objects vs their mode's rule schema (issue #100) ---
 #
 # Until this loop existed, NOTHING validated a `rules` object against the schema

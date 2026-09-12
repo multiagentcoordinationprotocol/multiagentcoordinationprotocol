@@ -1,0 +1,23 @@
+{
+  "$comment": "Maximal valid Proposal Mode rules object. Every declared property is exercised, including max_rounds at a non-sentinel value.",
+  "acceptance": {
+    "criterion": "counterparty",
+    "_note": "criterion set to a non-default enum member so the enum is exercised, not just defaulted."
+  },
+  "counter_proposal": {
+    "max_rounds": 3,
+    "_note": "3 rather than 0 on purpose: 0 is the unlimited sentinel, so a positive value is what proves the bound accepts ordinary caps."
+  },
+  "rejection": {
+    "terminal_on_any_reject": false,
+    "_note": "set explicitly rather than relying on absence."
+  },
+  "commitment": {
+    "authority": "designated_role",
+    "designated_roles": [
+      "agent://buyer",
+      "agent://seller"
+    ],
+    "_note": "the SATISFIED case of the designated_role arm."
+  }
+}
