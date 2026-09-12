@@ -12,7 +12,8 @@
           "type": "integer",
           "minimum": 0,
           "default": 0,
-          "description": "Auto-accept after this many milliseconds. 0 means no implicit accept."
+          "description": "Auto-accept after this many milliseconds. 0 means no implicit accept.",
+          "$comment": "The bound is inclusive on purpose and MUST NOT be tightened to exclusiveMinimum. 0 is the documented default and DISABLES implicit accept -- RFC-MACP-0010 Section 5.1 scopes the timer to the non-zero case explicitly -- so rejecting it would reject this field's own default. Audited under issue #116 piece 2."
         }
       }
     },

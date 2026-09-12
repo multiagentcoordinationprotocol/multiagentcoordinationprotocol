@@ -1,4 +1,4 @@
 {
-  "_invalid_because": "counter_proposal.max_rounds has minimum 0; a negative round cap is meaningless (RFC-MACP-0008 §6). Isolates the minimum keyword. Note 0 IS legal and means no counter-proposals are permitted, so this fixture cannot use 0.",
+  "_invalid_because": "counter_proposal.max_rounds has minimum 0; a negative round cap is meaningless (RFC-MACP-0012 §4.3, which defines the field; RFC-MACP-0008 §6.1 only points at it and never names max_rounds). Isolates the minimum keyword. Note 0 IS legal and means UNLIMITED rounds -- matching the schema description and RFC-MACP-0012 Section 4.3 -- so this fixture cannot use 0. An earlier version of this note claimed 0 meant no counter-proposals were permitted, the exact opposite policy; the schema and the RFC agree with each other and are the normative pair (issue #116 piece 2).",
   "counter_proposal": { "max_rounds": -1 }
 }

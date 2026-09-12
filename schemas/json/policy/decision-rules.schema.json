@@ -36,7 +36,8 @@
               "type": "number",
               "minimum": 0,
               "default": 0,
-              "description": "Minimum number of participants that must vote ('count'), or the minimum share of declared participants that must vote as a percentage in 0-100 ('percentage')."
+              "description": "Minimum number of participants that must vote ('count'), or the minimum share of declared participants that must vote as a percentage in 0-100 ('percentage').",
+              "$comment": "The bound is inclusive on purpose and MUST NOT be tightened to exclusiveMinimum. 0 is the documented default and means no participation floor, which is meaningful on its own. Audited under issue #116 piece 2. One combination this bound does NOT cover, and it is version-dependent: at schema_version 3 and above, value 0 together with commitment.require_vote_quorum true is a participation gate satisfied by zero voters. At schema_version 1 and 2 the same shape is NOT degenerate -- require_vote_quorum there also decides whether an empty tally blocks a positive commitment, so RFC-MACP-0012 Section 4.1 REQUIRES it of any legacy policy that intends its algorithm to be binding, and examples/discovery/policy_descriptor_decline.json is a legitimate on-disk instance. Any constraint here would therefore have to discriminate on schema_version. That is a cross-object conditional coupling commitment to voting.quorum, not a bound on this field, so it is tracked separately as issue #122."
             }
           }
         },
@@ -84,7 +85,8 @@
           "minimum": 0,
           "maximum": 1,
           "default": 0,
-          "description": "Minimum confidence level for evaluations to be considered valid."
+          "description": "Minimum confidence level for evaluations to be considered valid.",
+          "$comment": "The bound is inclusive on purpose and MUST NOT be tightened to exclusiveMinimum. 0 is the documented default and means no confidence floor -- every evaluation qualifies -- so rejecting it would reject this field's own default. Audited under issue #116 piece 2."
         },
         "required_before_voting": {
           "type": "boolean",
