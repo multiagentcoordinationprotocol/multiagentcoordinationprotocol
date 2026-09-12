@@ -241,7 +241,7 @@ what it should if something on disk is actually rejected by it.
 implement it. `make validate` never did: it verifies that JSON matches schemas and that protos
 compile, but not that a normative sentence is true, and not that two RFCs agree.
 
-Six checks, chosen because they are mechanical:
+Seven checks, chosen because they are mechanical:
 
 - **No line-number anchors.** A citation that pins a source line — an open paren, a colon, a
   line number, a close paren — drifts the moment anything above it is edited. Cite the heading
@@ -271,9 +271,16 @@ Six checks, chosen because they are mechanical:
   docstrings and comments too. The check counts itself. The docstring's numbered list is held to the
   count as well, but *these two enumerations* are not: keeping them as long as the number
   says remains a human job.
+- **The PolicyDescriptor required-field set agrees.** Four sites are checked against the
+  schema's `required` array, which is what actually enforces the set. Three name the fields —
+  RFC-MACP-0012 §3's table, the table above, and `lint_fixtures.py`'s own tuple — and the
+  fourth, the sentence introducing the table above, states only how many. Nothing compared
+  them, and they drifted: the RFC listed five while the schema required four, so a descriptor
+  with no `description` validated clean. The schema is read as JSON and the linter's tuple as
+  Python source by AST; the two markdown tables and the count sentence are matched by pattern.
 
 **What it still does not check:** whether a paragraph is *true*. Nothing here would have caught
-an RFC asserting a constraint its schema does not impose, beyond the six narrow classes above.
+an RFC asserting a constraint its schema does not impose, beyond the seven narrow classes above.
 That remains a human job.
 
 ## Error Codes

@@ -68,7 +68,8 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
         if not isinstance(policy, dict):
             errors.append("'policy' must be an object")
         else:
-            for key in ("policy_id", "mode", "schema_version", "rules"):
+            for key in ("policy_id", "mode", "schema_version", "rules",
+                        "description"):
                 if key not in policy:
                     errors.append(f"policy missing required key '{key}'")
             sv = policy.get("schema_version")

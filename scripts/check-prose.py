@@ -8,7 +8,7 @@ stayed green while RFC-MACP-0012 made four false claims about its own canonical
 schemas, while two RFCs gave opposite answers about the same tally, and while a
 justification rested on a section that does not exist.
 
-"Is this paragraph true?" is not a lint rule. These six checks are the fraction
+"Is this paragraph true?" is not a lint rule. These seven checks are the fraction
 that is mechanical:
 
   1. line-number anchors   -- `(:102)`-style citations drift on every edit above
@@ -37,6 +37,12 @@ that is mechanical:
                               docs/policy.md said five and five ran (#119). The count
                               is derived from main()'s AST, so it cannot go stale.
                               This check counts itself.
+  7. descriptor required set -- RFC-MACP-0012 Section 3, docs/policy.md's table,
+                              docs/policy.md's spelled count, and lint_fixtures.py's
+                              own tuple each state which PolicyDescriptor fields are
+                              required. The schema's `required` array is the one that
+                              enforces it, and nothing compared them: the RFC said
+                              five while the schema said four (#120).
 
 Reporting follows check-indexes.sh: accumulate every failure and report them all,
 rather than dying on the first. One run should surface the whole list.
@@ -646,6 +652,211 @@ def check_check_count():
           else "  [X] %d check-count problem(s)" % problems)
 
 
+def check_descriptor_required():
+    """Assert every document that lists PolicyDescriptor's required fields is right.
+
+    Canonical: `required` in macp-policy-descriptor.schema.json, read with
+    json.load. Same principle as check_schema_versions and check_check_count --
+    read the artifact that ENFORCES, compare the documents that DESCRIBE.
+
+    Four sites. Three are prose; the fourth is code. lint_fixtures.py carries its
+    own tuple of required descriptor keys, used to check the inline `policy`
+    blocks in conformance fixtures, and it is read here structurally by AST
+    rather than by regex. lint_fixtures.py is already this script's source of
+    truth for the schema_version set; note the relationship is not the same for
+    the two sets. For schema_version lint_fixtures.py IS canonical, so agreement
+    is definitional. For the required set the schema is canonical and
+    lint_fixtures.py is just another compared site, so agreement is enforced by
+    this check failing rather than guaranteed by construction.
+
+    That fourth site is why this check exists in the shape it does. When
+    `description` became required under issue #120 the schema, the RFC table and
+    docs/policy.md all agreed, and lint_fixtures.py silently did not -- a
+    conformance fixture omitting `description` would have passed every check in
+    the repository while contradicting RFC-MACP-0012 Section 3.
+    """
+    global CHECKS
+    CHECKS += 1
+    print("-- PolicyDescriptor required-field set agrees --")
+    desc_path = os.path.join(ROOT, "schemas", "json",
+                             "macp-policy-descriptor.schema.json")
+    try:
+        canonical = json.load(open(desc_path, encoding="utf-8")).get("required")
+    except (OSError, ValueError) as exc:
+        fail("could not read `required` from macp-policy-descriptor.schema.json, "
+             "which is the source of truth for this check: %s" % exc)
+        print("  [X] canonical required set unreadable")
+        return
+    if not isinstance(canonical, list) or not canonical:
+        fail("macp-policy-descriptor.schema.json has no usable `required` array "
+             "(found %r) -- this check has no canonical set to compare against"
+             % (canonical,))
+        print("  [X] canonical required set missing or malformed")
+        return
+    canon = set(canonical)
+
+    problems = 0
+
+    def compare(label, found, kind="field"):
+        # Report WHICH members differ, never just "they differ" -- the whole
+        # point is that the reader should not have to diff two sets by hand.
+        nonlocal problems
+        if found == canon:
+            return
+        problems += 1
+        missing = sorted(canon - found)
+        extra = sorted(found - canon)
+        bits = []
+        if missing:
+            bits.append("missing %s" % ", ".join(missing))
+        if extra:
+            bits.append("has extra %s" % ", ".join(extra))
+        fail("%s lists %d required %s(s) (%s) but macp-policy-descriptor."
+             "schema.json requires %d (%s) -- %s"
+             % (label, len(found), kind, ", ".join(sorted(found)),
+                len(canon), ", ".join(sorted(canon)), "; ".join(bits)))
+
+    def harvest(path, anchor_re, label):
+        # Take the contiguous run of `| \`field\` | ... |` rows after the
+        # anchoring sentence. Require at least four before believing the parse:
+        # if the table is reworded or the backticks are dropped, the harvest
+        # silently under-counts, and a wrong answer is worse than no answer.
+        nonlocal problems
+        try:
+            text = open(os.path.join(ROOT, path), encoding="utf-8").read()
+        except OSError as exc:
+            problems += 1
+            fail("%s could not be read: %s" % (label, exc))
+            return None
+        m = re.search(anchor_re, text)
+        if not m:
+            problems += 1
+            fail("%s: could not find the required-fields table -- the anchoring "
+                 "sentence matched nothing, so update the pattern in "
+                 "scripts/check-prose.py rather than assuming the table is gone"
+                 % label)
+            return None
+        lines = text[m.end():].splitlines()
+        # Find where the table starts, within a bounded window, then read ONLY
+        # the contiguous block. An unbounded scan is not contiguous: it skips
+        # arbitrary prose until the first backticked row, so dropping the
+        # backticks from this table made the harvest wander into the NEXT table
+        # in the document and report four confident rows from the wrong one.
+        start = None
+        for idx, line in enumerate(lines[:8]):
+            if line.strip().startswith("|"):
+                start = idx
+                break
+        rows = []
+        if start is not None:
+            for line in lines[start:]:
+                stripped = line.strip()
+                if not stripped or not stripped.startswith("|"):
+                    break
+                cell = re.match(r"\|\s*`([^`]+)`\s*\|", stripped)
+                if cell:
+                    rows.append(cell.group(1))
+        if len(rows) < 4:
+            problems += 1
+            fail("%s: harvested only %d field row(s) from the required-fields "
+                 "table (%s) -- too few to trust, so the table format changed "
+                 "and the pattern in scripts/check-prose.py needs updating"
+                 % (label, len(rows), ", ".join(rows) or "none"))
+            return None
+        return set(rows)
+
+    rfc = harvest("rfcs/RFC-MACP-0012-policy.md",
+                  r"structured document with the following required fields",
+                  "RFC-MACP-0012 Section 3")
+    if rfc is not None:
+        compare("RFC-MACP-0012 Section 3's table", rfc)
+
+    docs = harvest("docs/policy.md",
+                   r"A policy descriptor has \w+ required fields",
+                   "docs/policy.md")
+    if docs is not None:
+        compare("docs/policy.md's table", docs)
+
+    # The spelled count word in docs/policy.md is a third claim about the same
+    # set and drifts independently of the table beneath it.
+    try:
+        dtext = open(os.path.join(ROOT, "docs", "policy.md"), encoding="utf-8").read()
+    except OSError:
+        dtext = ""
+    wm = re.search(r"A policy descriptor has (\w+) required fields", dtext)
+    if not wm:
+        problems += 1
+        fail("docs/policy.md: no 'A policy descriptor has N required fields' "
+             "sentence found, so nothing holds its count to %d" % len(canon))
+    else:
+        n = _word_to_int(wm.group(1))
+        if n is None:
+            problems += 1
+            fail("docs/policy.md says %r required fields, which is not a number "
+                 "word this script knows; the schema requires %d"
+                 % (wm.group(1), len(canon)))
+        elif n != len(canon):
+            problems += 1
+            fail("docs/policy.md says %s (%d) required descriptor fields, but "
+                 "macp-policy-descriptor.schema.json requires %d"
+                 % (wm.group(1), n, len(canon)))
+
+    # Fourth site, and the only one that is code: lint_fixtures.py's own tuple.
+    lint_path = os.path.join(ROOT, "schemas", "conformance", "lint_fixtures.py")
+    try:
+        ltree = ast.parse(open(lint_path, encoding="utf-8").read())
+    except (OSError, SyntaxError) as exc:
+        problems += 1
+        fail("schemas/conformance/lint_fixtures.py could not be parsed, so its "
+             "required-key tuple could not be checked: %s" % exc)
+        ltree = None
+    if ltree is not None:
+        keys = None
+        # Anchor on the loop's own error message, NOT on `for key in (...)`:
+        # lint_fixtures.py has more than one such loop; the one over required
+        # ENVELOPE keys sits later in the file but EARLIER in ast.walk order,
+        # which is breadth-first. Matching the first one found
+        # compared the wrong tuple and reported a confident, wrong answer --
+        # caught only because this check ran against a known-good tree first.
+        candidates = []
+        for node in ast.walk(ltree):
+            if not (isinstance(node, ast.For)
+                    and isinstance(node.iter, (ast.Tuple, ast.List))):
+                continue
+            body_str = " ".join(
+                n.value for n in ast.walk(node)
+                if isinstance(n, ast.Constant) and isinstance(n.value, str))
+            if "policy missing required key" not in body_str:
+                continue
+            vals = [e.value for e in node.iter.elts
+                    if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+            if len(vals) == len(node.iter.elts) and vals:
+                candidates.append(node)
+        # Take the INNERMOST candidate. ast.walk is breadth-first, so any
+        # enclosing loop that happens to contain the same message matches
+        # first; taking the first match would then compare the wrapper's
+        # tuple. Same class of bug as matching on `for key in (...)`, which
+        # bound to lint_fixtures.py's ENVELOPE-key loop instead of this one.
+        for node in candidates:
+            inner = [c for c in candidates
+                     if c is not node and c in list(ast.walk(node))]
+            if not inner:
+                keys = {e.value for e in node.iter.elts}
+                break
+        if keys is None:
+            problems += 1
+            fail("schemas/conformance/lint_fixtures.py: could not locate the loop "
+                 "reporting 'policy missing required key' -- it was restructured, "
+                 "so update the pattern in scripts/check-prose.py")
+        else:
+            compare("schemas/conformance/lint_fixtures.py's required-key tuple",
+                    keys, kind="key")
+
+    print("  [OK] 4 site(s) agree on the %d required descriptor field(s)"
+          % len(canon) if not problems
+          else "  [X] %d descriptor required-set disagreement(s)" % problems)
+
+
 def main():
     print("Checking RFC prose against the artifacts that implement it...")
     print("")
@@ -655,6 +866,7 @@ def main():
     check_cited_terms()
     check_version_census()
     check_check_count()
+    check_descriptor_required()
     print("")
     print("-------------------------------------")
     if FAILURES:
