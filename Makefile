@@ -1,4 +1,4 @@
-.PHONY: prose-check help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
+.PHONY: prose-check prose-check-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors check-indexes clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
@@ -19,6 +19,7 @@ help:
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
 	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
+	@echo "  make prose-check-selftest  Prove check-prose.py survives an unreadable file (issue #129)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
 	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
 	@echo ""
@@ -41,7 +42,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors check-indexes prose-check proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -76,6 +77,12 @@ check-indexes:
 prose-check:
 	@echo "Checking RFC prose against artifacts..."
 	@python3 scripts/check-prose.py
+
+# Regression proof (issue #129): an unreadable file must not crash check-prose.py
+# and take the other six checks down with it — stdlib only
+prose-check-selftest:
+	@echo "Checking check-prose.py survives an unreadable file..."
+	@python3 scripts/check-prose-test.py
 
 # Lint protobuf files with buf
 proto-lint:

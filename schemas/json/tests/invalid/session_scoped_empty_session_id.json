@@ -1,7 +1,7 @@
 {
-  "_invalid_because": "Session-scoped messages MUST carry a non-empty mode and session_id (RFC-MACP-0001 §6). This SessionStart has both empty.",
+  "_invalid_because": "Session-scoped messages MUST carry a non-empty session_id (RFC-MACP-0001 §6). mode is correctly non-empty here so this fixture isolates the session_id constraint alone -- see the sibling session_scoped_empty_mode.json for the mode constraint (issue #128: the original fixture violated both at once).",
   "macp_version": "1.0.0",
-  "mode": "",
+  "mode": "macp.mode.decision.v1",
   "message_type": "SessionStart",
   "message_id": "msg-invalid-002",
   "session_id": "",
