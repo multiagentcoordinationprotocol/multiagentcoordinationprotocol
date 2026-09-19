@@ -101,7 +101,13 @@ def check_line_anchors():
     for sub, ext in (("schemas", ".json"), ("schemas", ".md"), ("rfcs", ".md"),
                      ("docs", ".md"), ("registries", ".md")):
         for path in walk(sub, ext):
-            for i, line in enumerate(open(path, encoding="utf-8"), 1):
+            try:
+                lines = open(path, encoding="utf-8")
+            except OSError as exc:
+                fail("%s could not be read for line-number anchors: %s"
+                     % (rel(path), exc))
+                continue
+            for i, line in enumerate(lines, 1):
                 for m in ANCHOR.finditer(line):
                     hits += 1
                     fail("%s:%d: line-number anchor %s -- cite the heading instead; "
@@ -123,11 +129,17 @@ def check_schema_versions():
     src = None
     lint = os.path.join(ROOT, "schemas/conformance/lint_fixtures.py")
     if os.path.isfile(lint):
-        m = re.search(r"VALID_POLICY_SCHEMA_VERSIONS\s*=\s*\{([^}]*)\}",
-                      open(lint, encoding="utf-8").read())
-        if m:
-            canonical = {int(x) for x in re.findall(r"\d+", m.group(1))}
-            src = "lint_fixtures.py"
+        try:
+            lint_text = open(lint, encoding="utf-8").read()
+        except OSError as exc:
+            fail("schemas/conformance/lint_fixtures.py could not be read to find "
+                 "VALID_POLICY_SCHEMA_VERSIONS: %s" % exc)
+            lint_text = None
+        if lint_text is not None:
+            m = re.search(r"VALID_POLICY_SCHEMA_VERSIONS\s*=\s*\{([^}]*)\}", lint_text)
+            if m:
+                canonical = {int(x) for x in re.findall(r"\d+", m.group(1))}
+                src = "lint_fixtures.py"
     if canonical is None:
         fail("could not read VALID_POLICY_SCHEMA_VERSIONS from "
              "schemas/conformance/lint_fixtures.py -- it is the machine-readable "
@@ -157,7 +169,12 @@ def check_schema_versions():
             fail("%s: expected to enumerate schema_version but the file is missing"
                  % relpath)
             continue
-        text = open(path, encoding="utf-8").read()
+        try:
+            text = open(path, encoding="utf-8").read()
+        except OSError as exc:
+            fail("%s could not be read to check its schema_version enumeration: %s"
+                 % (relpath, exc))
+            continue
         m = re.search(pattern, text)
         if not m:
             fail("%s: no schema_version enumeration found. Either the wording "
@@ -187,6 +204,10 @@ def check_schema_versions():
     else:
         try:
             desc = json.load(open(desc_path, encoding="utf-8"))
+        except OSError as exc:
+            fail("%s could not be read, so its schema_version enum cannot be "
+                 "checked (%s)" % (desc_rel, exc))
+            desc = None
         except ValueError as exc:
             fail("%s: not parseable as JSON, so its schema_version enum cannot be "
                  "checked (%s)" % (desc_rel, exc))
@@ -255,7 +276,12 @@ def rfc_sections():
         if not m:
             continue
         num = m.group(1)
-        text = open(path, encoding="utf-8").read()
+        try:
+            text = open(path, encoding="utf-8").read()
+        except OSError as exc:
+            fail("%s could not be read to harvest its section headings: %s"
+                 % (rel(path), exc))
+            continue
         secs = set(HEADING.findall(text))
         # An index file (RFC-MACP-0001.md) has no numbered sections; the real
         # spec is RFC-MACP-0001-core.md. Merge rather than let one clobber the other.
@@ -275,7 +301,13 @@ def check_xrefs():
             m = re.search(r"RFC-MACP-(\d{4})", os.path.basename(path))
             if m:
                 self_num = m.group(1)
-            for i, line in enumerate(open(path, encoding="utf-8"), 1):
+            try:
+                lines = open(path, encoding="utf-8")
+            except OSError as exc:
+                fail("%s could not be read for cross-reference resolution: %s"
+                     % (rel(path), exc))
+                continue
+            for i, line in enumerate(lines, 1):
                 for ref in SECTION_REF.finditer(line):
                     scanned += 1
                     sec = ref.group(1)
@@ -362,12 +394,25 @@ def check_version_census():
         m = re.search(r"RFC-MACP-(\d{4})", os.path.basename(path))
         if not m:
             continue
-        v = VERSION_HDR.search(open(path, encoding="utf-8").read())
+        try:
+            rfc_text = open(path, encoding="utf-8").read()
+        except OSError as exc:
+            fail("%s could not be read to check its version header: %s"
+                 % (rel(path), exc))
+            continue
+        v = VERSION_HDR.search(rfc_text)
         if v:
             # .strip() matters: two RFC headers carry trailing whitespace.
             actual["RFC-MACP-" + m.group(1)] = v.group(1).strip()
     readme = os.path.join(ROOT, "README.md")
-    text = open(readme, encoding="utf-8").read()
+    try:
+        text = open(readme, encoding="utf-8").read()
+    except OSError as exc:
+        fail("README.md could not be read, so the per-RFC version census cannot "
+             "be checked: %s" % exc)
+        CHECKS += 1
+        print("  [X] README.md unreadable")
+        return
     CHECKS += 1
     if not actual:
         fail("no RFC **Version:** headers found -- the census cannot be checked")
@@ -456,7 +501,12 @@ def check_cited_terms():
         if not os.path.isfile(citing_path):
             fail("%s: cited-term row names a file that does not exist" % citing)
             continue
-        citing_text = open(citing_path, encoding="utf-8").read()
+        try:
+            citing_text = open(citing_path, encoding="utf-8").read()
+        except OSError as exc:
+            fail("%s could not be read to check its cited terms: %s"
+                 % (citing, exc))
+            continue
         if anchor not in citing_text:
             fail("%s: cited-term row anchors on %r, which is no longer present -- "
                  "update the row in scripts/check-prose.py" % (citing, anchor))
@@ -478,7 +528,14 @@ def check_cited_terms():
         if not matches:
             fail("%s: cites RFC-MACP-%s, which has no file" % (citing, cited_num))
             continue
-        body = "".join(open(m, encoding="utf-8").read().lower() for m in matches)
+        bodies = []
+        for match_path in matches:
+            try:
+                bodies.append(open(match_path, encoding="utf-8").read().lower())
+            except OSError as exc:
+                fail("%s could not be read to verify the term '%s' cited by %s: %s"
+                     % (rel(match_path), term, citing, exc))
+        body = "".join(bodies)
         if term.lower() not in body:
             fail("%s cites RFC-MACP-%s for '%s', but RFC-MACP-%s never mentions it "
                  "-- a citation that does not resolve is a defect in a specification"

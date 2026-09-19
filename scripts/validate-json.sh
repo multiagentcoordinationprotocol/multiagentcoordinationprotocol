@@ -255,6 +255,115 @@ if [ -f "${CONFORMANCE_SCHEMA}" ]; then
     done
 fi
 
+# --- Fixture-isolation guard for negative fixtures (issue #128) -----------
+#
+# CLAUDE.md's rule for every negative fixture: it must isolate exactly ONE
+# schema constraint, so that removing that one keyword is the only thing that
+# flips the fixture to valid. Every loop below already asserts REJECTION, but
+# rejection alone does not prove isolation -- a fixture rejected for TWO
+# reasons is still "correctly rejected", and the constraint it exists to guard
+# can silently stop being tested while the suite stays green throughout. That
+# is not hypothetical: issue #120 made `description` required on
+# macp-policy-descriptor.schema.json, and all three pre-existing fixtures in
+# invalid-policy-descriptors/ (none of which carried `description`) started
+# failing for a second, unintended reason -- caught only by a by-hand mutation
+# sweep, not by this script.
+#
+# ajv's --all-errors collects every violation instead of stopping at the
+# first, and --errors=json prints them as one JSON array. That array is mixed
+# on the combined stdout/stderr stream with a "<file> invalid" banner line and,
+# for schemas ajv-formats doesn't cover, "unknown format ... ignored" warnings
+# ahead of it -- so the array is located by its own `[` line rather than by a
+# fixed line offset. Takes the schema and fixture path already used for the
+# caller's own rejection check; assumes the caller has confirmed the fixture
+# is rejected at all.
+#
+# A raw error COUNT is the wrong measure and was proven wrong empirically
+# against every fixture on disk before landing on this: several schemas here
+# express one conditional rule via `if`/`then` or an XOR via `oneOf`/`anyOf`,
+# and ajv's --all-errors reports EVERY layer of that machinery as its own
+# error, not just the one keyword a human would point to.
+#   - `if` always co-occurs with a `then`/`else` failure and adds no
+#     information beyond "the conditional applied" -- dropped outright.
+#   - `oneOf`/`anyOf` report the wrapper's own failure AND, separately, each
+#     failing branch's leaf error(s) (e.g. two `required` errors, one per
+#     branch of a payload-xor-payload_b64 `oneOf`, plus the `oneOf` itself).
+#     Those branch-level errors are collapsed into their `oneOf`/`anyOf`
+#     ancestor: rejecting neither/both branches of an XOR is ONE violated
+#     constraint, however many leaf errors ajv attributes it to.
+# What is deliberately NOT collapsed: two leaf errors that do not share a
+# oneOf/anyOf ancestor (e.g. `mode` and `session_id` each independently
+# required non-empty under the same `then`) count as two, because they ARE
+# two -- a fixture that violates both at once is genuinely unisolated. This
+# is exactly how issue #128 itself was found: auditing every fixture in the
+# repo against this reduction surfaced two pre-existing compound fixtures
+# (signal_with_session_id.json, session_scoped_empty_session_id.json), each
+# violating `mode` and `session_id` together; both were split into isolated
+# pairs (see schemas/json/tests/invalid/README.md) rather than the check
+# being loosened to tolerate them.
+# Written to TMP_ENV_DIR (created above, cleaned up by the one EXIT trap this
+# script allows itself) as its own file rather than inlined as a `python3 -c`
+# argument or piped via `python3 - <<PYCHECK`: bash 3.2 (macOS's /bin/bash,
+# and the only bash this script can assume) has a lexer bug where a heredoc
+# nested inside a `$(...)` command substitution can misparse the heredoc's
+# own literal body -- reproduced here with a body line ending `...)?$")`, i.e.
+# a regex `$` anchor immediately before the closing Python string quote. Per
+# POSIX a quoted heredoc delimiter (`<<'PYCHECK'`) should make the body 100%
+# literal, and it is on every other shell tested; bash 3.2 alone breaks on it.
+# A real file sidesteps the whole class of bug: no command substitution, no
+# heredoc-in-heredoc, just the same `python3 file.py args < pipe` shape
+# already used for RULES_EXTRACTOR below.
+ASSERT_FIXTURE_ISOLATED_PY="${TMP_ENV_DIR}/assert-fixture-isolated.py"
+cat > "${ASSERT_FIXTURE_ISOLATED_PY}" <<'PYCHECK'
+import json, re, sys
+path = sys.argv[1]
+lines = sys.stdin.read().splitlines()
+start = next((i for i, l in enumerate(lines) if l.strip() == "["), None)
+if start is None:
+    print("  [X] %s: no --all-errors JSON array in ajv's output -- its "
+          "--errors=json format changed; update scripts/validate-json.sh" % path)
+    sys.exit(1)
+try:
+    errors = json.loads("\n".join(lines[start:]))
+except ValueError as exc:
+    print("  [X] %s: could not parse ajv's --all-errors output as JSON: %s"
+          % (path, exc))
+    sys.exit(1)
+
+# See the shell comment above this file's own write-out for why `if` is
+# dropped and oneOf/anyOf branches are collapsed to their wrapper's schemaPath.
+BRANCH = re.compile(r"^(.*/(?:oneOf|anyOf))/\d+(?:/.*)?$")
+reasons = {}
+for e in errors:
+    if e.get("keyword") == "if":
+        continue
+    schema_path = e.get("schemaPath", "")
+    m = BRANCH.match(schema_path)
+    group = m.group(1) if m else schema_path
+    reasons.setdefault(group, e)
+
+if len(reasons) != 1:
+    detail = ", ".join(
+        "%s at %s" % (e.get("keyword", "?"), e.get("instancePath") or "/")
+        for e in reasons.values()
+    )
+    print("  [X] %s is rejected for %d reason(s), not exactly one (%s) -- "
+          "isolation is lost (issue #128): a negative fixture must isolate "
+          "exactly one schema constraint" % (path, len(reasons), detail))
+    sys.exit(1)
+sys.exit(0)
+PYCHECK
+
+assert_fixture_isolated() {
+    if ! ajv validate -s "$1" -d "$2" --spec=draft2020 --strict=false \
+        --all-errors --errors=json 2>&1 | python3 "${ASSERT_FIXTURE_ISOLATED_PY}" "$2"
+    then
+        return 1
+    fi
+    echo "  [OK] Isolated to exactly one rejection reason"
+    return 0
+}
+
 # Negative tests: envelopes that MUST be rejected by the envelope schema.
 # If one of these validates, a schema change has loosened a constraint.
 if [ -d "${INVALID_ENVELOPE_DIR}" ]; then
@@ -273,6 +382,9 @@ if [ -d "${INVALID_ENVELOPE_DIR}" ]; then
             else
                 VALIDATED=$((VALIDATED + 1))
                 echo "  [OK] Correctly rejected"
+                if ! assert_fixture_isolated "${ENVELOPE_SCHEMA}" "${invalid_file}"; then
+                    exit 1
+                fi
             fi
             echo ""
         fi
@@ -330,6 +442,9 @@ for pair in "${INVALID_RULES_PAIRS[@]}"; do
         fi
         VALIDATED=$((VALIDATED + 1))
         echo "  [OK] Correctly rejected"
+        if ! assert_fixture_isolated "${ir_schema}" "${f}"; then
+            exit 1
+        fi
         echo ""
     done
 
@@ -403,6 +518,9 @@ for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
         fi
         VALIDATED=$((VALIDATED + 1))
         echo "  [OK] Correctly rejected"
+        if ! assert_fixture_isolated "${id_schema}" "${f}"; then
+            exit 1
+        fi
         echo ""
     done
 

@@ -1,7 +1,7 @@
 {
-  "_invalid_because": "Signals are ambient-plane messages: mode and session_id MUST be empty (RFC-MACP-0001 §6). This Signal carries a mode and a session_id.",
+  "_invalid_because": "Signals are ambient-plane messages: session_id MUST be empty (RFC-MACP-0001 §6). mode is correctly empty here so this fixture isolates the session_id constraint alone -- see the sibling signal_with_mode.json for the mode constraint (issue #128: the original fixture violated both at once).",
   "macp_version": "1.0.0",
-  "mode": "macp.mode.decision.v1",
+  "mode": "",
   "message_type": "Signal",
   "message_id": "msg-invalid-001",
   "session_id": "sess-abc123",

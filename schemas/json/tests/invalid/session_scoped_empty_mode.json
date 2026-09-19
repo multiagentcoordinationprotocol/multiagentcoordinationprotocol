@@ -1,0 +1,17 @@
+{
+  "_invalid_because": "Session-scoped messages MUST carry a non-empty mode (RFC-MACP-0001 §6). session_id is correctly non-empty here so this fixture isolates the mode constraint alone -- see the sibling session_scoped_empty_session_id.json for the session_id constraint.",
+  "macp_version": "1.0.0",
+  "mode": "",
+  "message_type": "SessionStart",
+  "message_id": "msg-invalid-008",
+  "session_id": "sess-ghi789",
+  "sender": "agent://initiator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "intent": "decide deployment",
+    "participants": ["agent://initiator", "agent://peer"],
+    "ttl_ms": 60000,
+    "mode_version": "1.0.0",
+    "configuration_version": "config.default"
+  }
+}
