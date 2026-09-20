@@ -44,6 +44,11 @@ jobs:
           echo "Checking canonical commitment-hash vectors..."
           python3 scripts/check-cmt-hash-vectors.py
 
+      - name: Check parity-contract manifest (issue #134)
+        run: |
+          echo "Checking cross-implementation parity-contract manifest..."
+          python3 scripts/check-parity-contract.py
+
       - name: Check index sync (RFCs, registries, fixtures)
         run: |
           echo "Checking hand-maintained indexes against files on disk..."

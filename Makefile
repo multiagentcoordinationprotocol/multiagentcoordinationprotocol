@@ -1,5 +1,5 @@
 .PHONY: prose-check prose-check-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
-	conformance-lint cmt-hash-vectors check-indexes clean install-tools \
+	conformance-lint cmt-hash-vectors parity-contract check-indexes clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
 PROTO_SRC := schemas/proto
@@ -18,6 +18,7 @@ help:
 	@echo "  make json-validate         Validate JSON examples against schema"
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
+	@echo "  make parity-contract       Check the cross-implementation parity-contract manifest (issue #134)"
 	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
 	@echo "  make prose-check-selftest  Prove check-prose.py survives an unreadable file (issue #129)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
@@ -42,7 +43,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors parity-contract check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -67,6 +68,12 @@ conformance-lint:
 cmt-hash-vectors:
 	@echo "Checking commitment-hash vectors..."
 	@python3 scripts/check-cmt-hash-vectors.py
+
+# Check the cross-implementation parity-contract manifest against its in-repo
+# sources (issue #134) — stdlib only, no third-party imports
+parity-contract:
+	@echo "Checking parity-contract manifest..."
+	@python3 scripts/check-parity-contract.py
 
 # Check the hand-maintained RFC/registry/fixture indexes against files on disk
 check-indexes:

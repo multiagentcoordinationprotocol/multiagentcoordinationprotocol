@@ -472,17 +472,28 @@ done
 #
 #   - The empty/missing-directory guard is first-consumer here exactly as it is
 #     there. A deleted directory drops the coverage silently otherwise.
-#   - The missing-schema guard is SHADOWED. Unlike the rule schemas -- whose
-#     positive consumer, the rules-instance loop, runs AFTER their negative
-#     loop -- this schema is already validated positively against
-#     examples/discovery/policy_descriptor*.json earlier in this script, so a
-#     deleted or corrupt schema fails there first and never reaches this loop.
-#     It is kept as defense in depth for the checkout that lacks those
-#     examples, where that positive block silently no-ops on its -f test and
-#     this guard becomes the only thing standing between a missing schema and
-#     a run of cheerful "Correctly rejected" lines.
+#   - The missing-schema guard's shadowing status now DIFFERS by row, and that
+#     is worth stating explicitly rather than letting a two-row table imply a
+#     single shared property:
+#       - macp-policy-descriptor.schema.json's guard IS SHADOWED. Unlike the
+#         rule schemas -- whose positive consumer, the rules-instance loop,
+#         runs AFTER their negative loop -- this schema is already validated
+#         positively against examples/discovery/policy_descriptor*.json
+#         earlier in this script, so a deleted or corrupt schema fails there
+#         first and never reaches this loop. It is kept as defense in depth
+#         for the checkout that lacks those examples, where that positive
+#         block silently no-ops on its -f test and this guard becomes the
+#         only thing standing between a missing schema and a run of cheerful
+#         "Correctly rejected" lines.
+#       - macp-parity-contract.schema.json's guard is NOT shadowed. Its only
+#         positive consumer is the dedicated schemas/parity/contract.json
+#         check immediately below this loop, which runs AFTER it -- so this
+#         loop's missing-schema guard is that schema's first line of defense,
+#         same as the invalid-*-rules/ loops' guards are for their rule
+#         schemas (see the comment above INVALID_RULES_PAIRS).
 INVALID_DESCRIPTOR_PAIRS=(
     "invalid-policy-descriptors:macp-policy-descriptor.schema.json:policy-descriptor"
+    "invalid-parity-contract:macp-parity-contract.schema.json:parity-contract"
 )
 
 for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
@@ -529,6 +540,50 @@ for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
         exit 1
     fi
 done
+
+
+# --- Parity-contract manifest (issue #134) ---
+#
+# schemas/parity/contract.json is a single always-present file, not a
+# directory of interchangeable fixtures, so unlike VALID_RULES_PAIRS below
+# this binds by one absolute filename rather than through a table plus an
+# on-disk/bound reconciliation loop -- there is nothing to reconcile against
+# when there is exactly one file. The hard-fail discipline is the same:
+# modeled on VALID_RULES_PAIRS's missing-file and missing-schema guards
+# (both `exit 1`, never a silent skip), not on the descriptor-schema
+# positive block's `[ -f ]`-guarded no-op earlier in this script -- that
+# block's silence is acceptable only because a second, later positive check
+# already covers its target; nothing else in this repository validates this
+# manifest, so silence here would make the whole file decorative.
+PARITY_CONTRACT_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-parity-contract.schema.json"
+PARITY_CONTRACT_FILE="${PROJECT_ROOT}/schemas/parity/contract.json"
+
+echo "-- Parity-contract manifest (${PARITY_CONTRACT_FILE}) --"
+echo "Schema: ${PARITY_CONTRACT_SCHEMA}"
+echo ""
+
+if [ ! -f "${PARITY_CONTRACT_SCHEMA}" ]; then
+    echo "[X] Parity-contract schema not found: ${PARITY_CONTRACT_SCHEMA}"
+    exit 1
+fi
+if [ ! -f "${PARITY_CONTRACT_FILE}" ]; then
+    echo "[X] Parity-contract manifest not found: ${PARITY_CONTRACT_FILE}"
+    exit 1
+fi
+
+TOTAL=$((TOTAL + 1))
+echo "Checking (expect pass): $(basename "${PARITY_CONTRACT_FILE}") -> $(basename "${PARITY_CONTRACT_SCHEMA}")"
+if ajv validate -s "${PARITY_CONTRACT_SCHEMA}" -d "${PARITY_CONTRACT_FILE}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+    VALIDATED=$((VALIDATED + 1))
+    echo "  [OK] Valid"
+else
+    echo "  [X] Parity-contract manifest REJECTED. Either the schema is"
+    echo "      over-tightened, or the manifest is wrong -- the ajv output below says which."
+    echo "      ajv says:"
+    ajv validate -s "${PARITY_CONTRACT_SCHEMA}" -d "${PARITY_CONTRACT_FILE}" --spec=draft2020 --strict=false 2>&1 | sed 's/^/      /'
+    exit 1
+fi
+echo ""
 
 
 # --- Positive rule fixtures ---

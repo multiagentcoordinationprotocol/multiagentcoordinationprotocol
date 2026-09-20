@@ -24,7 +24,7 @@ MACP is maintained by a single maintainer on a best-effort basis. Changes land w
 
 **There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
 
-What *is* mechanically enforced is narrower and real: `make validate` compiles the canonical Protobuf schemas, validates every example and conformance fixture against its JSON Schema, and checks that the indexes in this file match the files on disk. The RFC-MACP-0013 commitment-hash vectors additionally reproduce byte-for-byte in `macp-runtime` and in both SDKs. Enforcement covers the schemas and fixtures, and — as of `make prose-check` — seven mechanical properties of the normative prose: no line-number anchors, `schema_version` enumerations that agree across every site, RFC cross-references that resolve, cited RFCs that actually discuss the term they are cited for, a README version census that matches the RFC headers, a check count that agrees with every document stating it, and a PolicyDescriptor required-field set that agrees across the schema, the RFC and the fixture linter. Whether a paragraph is *true* remains unenforced.
+What *is* mechanically enforced is narrower and real: `make validate` compiles the canonical Protobuf schemas, validates every example and conformance fixture against its JSON Schema, checks that the indexes in this file match the files on disk, and holds the cross-implementation parity-contract manifest (`schemas/parity/contract.json`) to those same in-repo sources. The RFC-MACP-0013 commitment-hash vectors additionally reproduce byte-for-byte in `macp-runtime` and in both SDKs. Enforcement covers the schemas and fixtures, and — as of `make prose-check` — seven mechanical properties of the normative prose: no line-number anchors, `schema_version` enumerations that agree across every site, RFC cross-references that resolve, cited RFCs that actually discuss the term they are cited for, a README version census that matches the RFC headers, a check count that agrees with every document stating it, and a PolicyDescriptor required-field set that agrees across the schema, the RFC and the fixture linter. Whether a paragraph is *true* remains unenforced.
 
 ## What this repository contains
 
@@ -113,6 +113,7 @@ MACP/
       macp-ack.schema.json
       macp-error.schema.json
       macp-policy-descriptor.schema.json
+      macp-parity-contract.schema.json
       tests/
         invalid/          # negative envelope fixtures (MUST fail validation)
         invalid-policy-rules/  # negative Decision-rules fixtures (MUST fail validation)
@@ -121,6 +122,7 @@ MACP/
         invalid-task-rules/    # negative Task-rules fixtures (MUST fail validation)
         invalid-handoff-rules/ # negative Handoff-rules fixtures (MUST fail validation)
         invalid-policy-descriptors/ # negative PolicyDescriptor fixtures (MUST fail validation)
+        invalid-parity-contract/ # negative parity-contract fixtures (MUST fail validation)
         valid-policy-rules/    # maximal positive rules fixtures (MUST validate)
       policy/
         decision-rules.schema.json
@@ -166,6 +168,9 @@ MACP/
       quorum_reject_paths.json
       multi_round_happy_path.json
       multi_round_reject_paths.json
+    parity/
+      contract.json        # cross-implementation parity-contract manifest (issue #134)
+      README.md
 
   examples/
     decision-mode-session.json
@@ -299,7 +304,7 @@ See `CONTRIBUTING.md` for the release workflow.
 make validate
 ```
 
-`make validate` meta-validates all JSON Schemas, validates every example and conformance fixture against its schema, asserts the negative envelope fixtures are rejected, lints conformance fixtures for internal consistency, lints and compiles all versioned Protobuf definitions, and verifies the raw-proto packages match the canonical schemas. Run `make help` for individual targets; `make install-tools` installs `ajv-cli`, `protoc`, and `buf`.
+`make validate` meta-validates all JSON Schemas, validates every example and conformance fixture against its schema, asserts the negative envelope fixtures are rejected, lints conformance fixtures for internal consistency, checks the cross-implementation parity-contract manifest against its in-repo sources, lints and compiles all versioned Protobuf definitions, and verifies the raw-proto packages match the canonical schemas. Run `make help` for individual targets; `make install-tools` installs `ajv-cli`, `protoc`, and `buf`.
 
 ## License
 
