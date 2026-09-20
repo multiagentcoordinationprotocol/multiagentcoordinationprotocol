@@ -16,7 +16,9 @@ vendors byte-identical copies under `tests/conformance/` for hermetic local
 runs, and its CI oracle job (a) byte-compares the vendored copies against this
 directory and (b) re-runs its conformance suite directly against these files —
 so the spec and the runtime cannot drift silently. Fixture changes land HERE
-first, then sync downstream.
+first, then sync downstream. This directory is not the only tree downstream consumers
+vendor from — `schemas/parity/` is a sibling non-fixture pack pinning cross-implementation
+values (see `schemas/parity/README.md`).
 
 `schema.json` is the JSON Schema (draft 2020-12) for the fixture format —
 payload-type names are fully-qualified proto names

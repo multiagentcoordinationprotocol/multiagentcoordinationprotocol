@@ -35,6 +35,7 @@ Every official MACP SDK MUST provide:
 ### Retry
 - `RetryPolicy` with configurable max retries, backoff base/max, retryable error codes
 - `retrySend()` / `retry_send()` with exponential backoff
+- Defaults are pinned in `schemas/parity/contract.json`'s `retry` section (see "Parity-Contract Manifest Sync" below)
 
 ### Convenience Methods
 - `sendSignal()` / `send_signal()` — Ambient Signal emission
@@ -72,6 +73,28 @@ Optional features that enhance the SDK but are not required for conformance:
 2. Publish to BSR
 3. Each SDK runs `make sync-protos` → implements the new RPC/mode → adds tests
 4. If the change affects projections, add a conformance fixture and run `make sync-fixtures` downstream
+
+### Parity-Contract Manifest Sync
+- **Source of truth**: `schemas/parity/contract.json` in this RFC repo pins values that
+  already agree — with matching values but no shared source of truth — across
+  `macp-runtime`, `macp-sdk-python`, and `macp-sdk-typescript` (error codes, retry
+  defaults, mode/version constants, the commitment-hash format, `Contribute` payload byte
+  vectors, and `ProjectionAnomaly`'s shape). It is non-normative: where a value has an
+  actual normative home, the manifest's `source` field names it — e.g. `policy_version`
+  traces to RFC-MACP-0012 Section 5.1, and the commitment-hash format traces to
+  RFC-MACP-0013 Section 7 — and the manifest MUST NOT itself be cited as that home.
+- **`applies_to` semantics**: each section names which of `macp-runtime` /
+  `macp-sdk-python` / `macp-sdk-typescript` MUST assert it. Adding a consumer to a
+  section's `applies_to` is a MINOR manifest bump and is expected to turn that consumer's
+  CI red at its next pin bump until it wires the corresponding assertion.
+- **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
+  value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
+  manifest that isn't backed by a matching upstream change fails before it can land.
+- **SDK wiring is a follow-up, not part of this manifest's initial landing**: as of this
+  writing, `macp-runtime` is the only consumer with a proof-of-concept parity check against
+  this manifest; wiring `macp-sdk-python` and `macp-sdk-typescript` to assert against it is
+  tracked as a separate follow-up issue per SDK. See `schemas/parity/README.md` for the
+  full section list and versioning rules.
 
 ## Conformance Test Suite
 

@@ -54,6 +54,7 @@ To propose a new RFC:
 - Backward compatibility MUST be addressed explicitly.
 - Mode extensions MUST NOT violate MACP Core invariants.
 - Index lists MUST stay in sync with the files on disk (`make check-indexes`).
+- A cross-implementation frozen value's source of truth (registry, RFC, or proto) MUST be changed first, with `schemas/parity/contract.json` updated second via `make parity-contract`.
 
 ## Proto Package Publishing
 
