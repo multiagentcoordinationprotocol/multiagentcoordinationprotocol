@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,19 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.1.0-draft:** §6 gains a normative statement of the MACP Core protocol
+> version this specification defines: `1.0`. Every Envelope example in this repository, and
+> every known implementation, has sent `macp_version: "1.0"` since before this RFC existed,
+> but the value was never stated as a requirement anywhere — `schemas/parity/contract.json`
+> could only record it as `"source": "convention"`, not as a citation (issue #137). §6 now
+> requires it: a Core-only `Initialize` exchange (§4.1) MUST negotiate
+> `selected_protocol_version` to `1.0`, and every Envelope's `macp_version` field MUST equal
+> `1.0` for the duration of that negotiated version. This is independent of this document's
+> own `**Version:**` header above, which tracks revisions to the RFC *text* (and which this
+> changelog entry is itself an instance of) — not the wire protocol version the text defines.
+> No behavior changes: this pins, for the first time, the value every conformant
+> implementation already sends.
 
 ---
 
@@ -176,6 +189,8 @@ For Mode-defined payloads, `message_type` is interpreted relative to the Envelop
 The `cancelled_by` field in `SessionCancelPayload` is set by the runtime and MUST match the authenticated `sender` of the originating `CancelSession` RPC. It is not a self-asserted claim.
 
 Unknown fields MUST be ignored for forward compatibility.
+
+The MACP Core protocol version defined by this specification is `1.0`. A Core-only `Initialize` exchange (§4.1) MUST negotiate `selected_protocol_version` to `1.0`, and every Envelope's `macp_version` field MUST equal `1.0` for the duration of that negotiated version, per §4.1's match requirement. This wire protocol version is distinct from this document's own `**Version:**` header above, which tracks revisions to the RFC text, not the protocol it defines. A future breaking revision of MACP Core defines its own `macp_version` literal under the versioning model in §14; this pin is scoped to the protocol as currently specified by this RFC.
 
 ---
 
