@@ -48,10 +48,10 @@ VALUE that has an in-repo source to that source:
     from what the vectors actually encode is caught inside this one file
 
 That list is what this script holds to a source. retry.* (besides the recomputed
-schedule) and projection_anomaly.* have NO in-repo source at all -- they live
-only in macp-sdk-python and macp-sdk-typescript, neither of which is this repo --
-so this script does not, and cannot, check them further. The manifest marks them
-"convention" instead of inventing a citation, and schemas/parity/README.md
+schedule and the three values it is recomputed from) and projection_anomaly.* are
+not held to one: what they pin is a choice made in macp-sdk-python and
+macp-sdk-typescript, not a value this repo states anywhere. The manifest marks
+them "convention" instead of inventing a citation, and schemas/parity/README.md
 explains why that is preferred to a fabricated source.
 
 Do not read coverage off this docstring, in either direction. Five review rounds
@@ -395,8 +395,8 @@ def check_first_byte_markers(cp: dict) -> list[str]:
     already-red run, not a second opinion.
 
     Do not read these markers as a proof about protobuf, and do not reach for a
-    wire-format argument to make them one -- three attempts at one in this
-    docstring's history were each wrong in a different way, because whether a
+    wire-format argument to make them one -- every previous attempt at one in
+    this docstring's history was wrong, each in a different way, because whether a
     `{`-leading byte string parses, and whether it then round-trips, depend on
     the group's termination and on the runtime's unknown-field handling. That
     argument belongs in the consumers' decode paths, where all three make it

@@ -89,7 +89,7 @@ Optional features that enhance the SDK but are not required for conformance:
   CI red until it wires the corresponding assertion — at its next pin bump if it pins a spec
   revision, or on its next CI run if it tracks the default branch (see the next bullet).
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
-  value in the manifest to its registry/RFC/schema/fixture source, so an edit to the
+  value in the manifest to its registry/RFC/schema/corpus source, so an edit to the
   manifest that isn't backed by a matching upstream change fails before it can land. It does
   **not** cover everything: a value whose `source` declares it a convention with no in-repo home
   often has nothing to check it against, and can be given a wrong value without turning CI red

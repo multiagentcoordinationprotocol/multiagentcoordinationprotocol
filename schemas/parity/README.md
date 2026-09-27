@@ -6,7 +6,7 @@ This directory holds `contract.json`, a small, hand-maintained manifest pinning 
 today already agree — with matching values but no shared source of truth — across this
 repo (where applicable), `macp-runtime`, `macp-sdk-python`, and `macp-sdk-typescript`.
 `scripts/check-parity-contract.py` holds every value that has an in-repo source (a
-registry, an RFC prose block, a JSON Schema, or the conformance fixture corpus) to that
+registry, an RFC prose block, a JSON Schema, or the example/conformance corpora) to that
 source, so this file is never itself an unverified third copy of anything. It does not cover
 everything: a value whose `source` declares it a convention with no in-repo home often has
 nothing to hold it to. Some are held to other values inside this manifest instead — among them
