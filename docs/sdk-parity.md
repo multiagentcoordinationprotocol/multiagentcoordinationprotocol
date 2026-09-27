@@ -90,11 +90,17 @@ Optional features that enhance the SDK but are not required for conformance:
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
   value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
   manifest that isn't backed by a matching upstream change fails before it can land.
-- **SDK wiring is a follow-up, not part of this manifest's initial landing**: as of this
-  writing, `macp-runtime` is the only consumer with a proof-of-concept parity check against
-  this manifest; wiring `macp-sdk-python` and `macp-sdk-typescript` to assert against it is
-  tracked as a separate follow-up issue per SDK. See `schemas/parity/README.md` for the
-  full section list and versioning rules.
+- **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
+  `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
+  against it in CI. `macp-sdk-python` does not vendor it yet; wiring it is tracked as its own
+  follow-up issue. The two existing copies pin the spec repo differently, which is what decides
+  who notices a manifest change and when: `macp-runtime` checks this repo out at an explicit
+  pinned revision, so it stays green until its maintainers bump that revision deliberately,
+  whereas `macp-sdk-typescript` checks out the default branch, so a merged manifest change
+  reaches its drift check on that repo's next CI run without anyone opting in. A manifest
+  change that adds a vector or a section therefore needs a re-vendor issue filed against each
+  consumer, and the unpinned one is the time-sensitive half. See `schemas/parity/README.md` for
+  the full section list and versioning rules.
 
 ## Conformance Test Suite
 

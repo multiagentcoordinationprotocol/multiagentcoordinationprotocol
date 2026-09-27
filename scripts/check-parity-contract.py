@@ -35,7 +35,10 @@ VALUE that has an in-repo source to that source:
     via re.fullmatch
   - contribute_payload.vectors[*]           <- re-derived from each vector's
     plaintext `value` with a 6-line stdlib protobuf-tag encoder and
-    json.dumps
+    json.dumps; the collision_* vectors additionally have the proto/JSON
+    collision they exist to pin asserted directly (their protobuf_hex bytes
+    must still parse as a JSON object), since re-derivation alone would
+    stay green on a `value` edited to something that no longer collides
 
 retry.* (besides the recomputed schedule) and projection_anomaly.* have NO
 in-repo source at all -- they live only in macp-sdk-python and
@@ -82,6 +85,15 @@ EXPECTED_SECTION_COUNT = 9
 EXPECTED_VECTOR_COUNT = 8
 EXPECTED_ACCEPT_COUNT = 1
 EXPECTED_REJECT_COUNT = 11
+
+# The collision_* vectors exist to pin the byte-lengths at which a canonical
+# proto ContributePayload ALSO parses as JSON. Re-deriving their hex from
+# their `value` (below) proves only that the pair is self-consistent -- it
+# would stay green if a `value` were edited to something that no longer
+# collides, leaving a vector that tests nothing. So the collision itself is
+# asserted, and counted.
+EXPECTED_COLLISION_COUNT = 4
+COLLISION_PREFIX = "collision_"
 
 ERROR_CODE_ROW_RE = re.compile(
     r"^\|\s*([A-Z][A-Z0-9_]*)\s*\|.*\|\s*(permanent|deprecated)\s*\|", re.MULTILINE
@@ -321,6 +333,60 @@ def check_contribute_payload(sections: dict) -> list[str]:
                     "the re-derived encoding %r of value %r"
                     % (name, actual_json, expected_json, v["value"])
                 )
+    errors.extend(check_collision_vectors(vectors))
+    return errors
+
+
+def check_collision_vectors(vectors: list) -> list[str]:
+    """Assert every collision_* vector actually collides.
+
+    The point of these vectors is that the canonical proto encoding of `value`
+    is ALSO parseable as JSON, because the field-1 tag byte and the length
+    varint are themselves insignificant JSON whitespace (or, at value length
+    123, the literal `{`). That property lives in the bytes, not in the
+    manifest's shape, so nothing above would notice if it were lost.
+    """
+    errors = []
+    collisions = [v for v in vectors if v.get("name", "").startswith(COLLISION_PREFIX)]
+
+    if len(collisions) != EXPECTED_COLLISION_COUNT:
+        errors.append(
+            "expected %d %s* vectors, found %d -- a collision vector may have been "
+            "removed or renamed" % (EXPECTED_COLLISION_COUNT, COLLISION_PREFIX, len(collisions))
+        )
+
+    without_value_key = []
+    for v in collisions:
+        name = v.get("name", "<unnamed>")
+        try:
+            decoded = json.loads(bytes.fromhex(v["protobuf_hex"]).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError) as exc:
+            errors.append(
+                "contribute_payload vector %r: its protobuf_hex bytes do not parse as JSON "
+                "(%s), so the proto/JSON collision this vector exists to pin no longer "
+                "holds -- the vector is decorative" % (name, exc)
+            )
+            continue
+        if not isinstance(decoded, dict):
+            errors.append(
+                "contribute_payload vector %r: its protobuf_hex bytes parse as JSON %r, not "
+                "an object -- the collision this vector pins is with a legacy-JSON *object*"
+                % (name, decoded)
+            )
+            continue
+        if "value" not in decoded:
+            without_value_key.append(name)
+
+    # Exactly one collision vector reads as an object with no `value` key. That
+    # is a distinct decoder branch -- the value is lost entirely rather than
+    # returned wrong -- and it is the reason the length-10 vector is pinned
+    # separately from the other three.
+    if collisions and len(without_value_key) != 1:
+        errors.append(
+            "expected exactly 1 %s* vector whose JSON reading has no `value` key (the "
+            "total-data-loss branch), found %d: %s"
+            % (COLLISION_PREFIX, len(without_value_key), sorted(without_value_key))
+        )
     return errors
 
 
