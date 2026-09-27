@@ -19,7 +19,7 @@ help:
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
 	@echo "  make parity-contract       Check the cross-implementation parity-contract manifest (issue #134)"
-	@echo "  make parity-contract-selftest  Prove the parity-contract collision assertions reject what they promise"
+	@echo "  make parity-contract-selftest  Prove the parity-contract vector assertions reject what they promise"
 	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
 	@echo "  make prose-check-selftest  Prove check-prose.py survives an unreadable file (issue #129)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
@@ -77,7 +77,7 @@ parity-contract:
 	@python3 scripts/check-parity-contract.py
 
 parity-contract-selftest:
-	@echo "Checking the parity-contract collision assertions actually bite..."
+	@echo "Checking the parity-contract vector assertions actually bite..."
 	@python3 scripts/check-parity-contract-test.py
 
 # Check the hand-maintained RFC/registry/fixture indexes against files on disk

@@ -40,6 +40,11 @@ VALUE that has an in-repo source to that source:
     bytes must still parse as JSON, and at least one of them must still
     read as something carrying no `value` key -- since re-derivation alone
     would stay green on a `value` edited to no longer collide
+  - contribute_payload.first_byte              <- held to the vectors it
+    describes: every protobuf_hex must lead with the pinned proto marker and
+    every legacy_json_hex with the pinned JSON one. Nothing else checks these
+    two frozen bytes, and a decode_only vector's legacy_json_hex is checked by
+    nothing else at all
 
 retry.* (besides the recomputed schedule) and projection_anomaly.* have NO
 in-repo source at all -- they live only in macp-sdk-python and
@@ -314,12 +319,14 @@ def check_commitment_hash(sections: dict) -> list[str]:
 
 def check_contribute_payload(sections: dict) -> list[str]:
     errors = []
-    vectors = sections["contribute_payload"]["vectors"]
+    cp = sections["contribute_payload"]
+    vectors = cp["vectors"]
     if len(vectors) != EXPECTED_VECTOR_COUNT:
         errors.append(
             "expected %d contribute_payload.vectors, found %d"
             % (EXPECTED_VECTOR_COUNT, len(vectors))
         )
+    errors.extend(check_first_byte_markers(cp))
     for v in vectors:
         name = v.get("name", "<unnamed>")
         expected_proto = proto_contribute(v["value"]).hex()
@@ -339,6 +346,55 @@ def check_contribute_payload(sections: dict) -> list[str]:
                     % (name, actual_json, expected_json, v["value"])
                 )
     errors.extend(check_collision_vectors(vectors))
+    return errors
+
+
+def check_first_byte_markers(cp: dict) -> list[str]:
+    """Hold contribute_payload.first_byte to the vectors it describes.
+
+    `first_byte` pins the two discriminator bytes a decoder keys on -- 0x0a for
+    canonical proto (field 1, wire type 2) and 0x7b for legacy JSON (`{`). Both
+    are frozen values with no in-repo source of their own, so the vectors are
+    the only thing that can hold them honest, and until this ran nothing did.
+
+    This is also what keeps the manifest from publishing a legacy_json_hex that
+    a proto-first reading could claim. Re-derivation above is NOT sufficient for
+    that: it skips legacy_json_hex entirely on a `decode_only` vector
+    (`if not v.get("decode_only")`), and the schema permits `decode_only: true`
+    alongside a hand-written legacy_json_hex, so such a field is otherwise never
+    checked against anything. Setting it to that vector's own protobuf_hex --
+    the likeliest way this goes wrong, since the two fields sit adjacent --
+    leaves bytes that round-trip byte-identically through the canonical proto
+    encoding, exactly the ambiguity the decode_order tie-break assumes away.
+    The 0x7b marker forecloses it: a leading `{` is field 15, wire type 3
+    (start-group), which ContributePayload does not define and proto3 removed.
+
+    macp-runtime asserts this same property against its vendored copy
+    (tests/parity_contract.rs, `contribute_payload_first_byte_markers_match_vectors`),
+    ungated by decode_only. Asserting it here too is what stops this repo from
+    shipping green a manifest that turns its reference consumer red.
+
+    Shape is not re-validated here. macp-parity-contract.schema.json requires
+    first_byte with both keys present and each matching `^0x[0-9a-f]{2}$`, and
+    scripts/validate-json.sh validates the manifest against that schema before
+    this script runs, so a defensive branch for a malformed marker would be one
+    no manifest edit could reach -- unreachable code nobody would notice
+    deleting. Bare subscripts here, matching the rest of this file.
+    """
+    errors = []
+    for key, hex_field in (("protobuf", "protobuf_hex"), ("legacy_json", "legacy_json_hex")):
+        marker = cp["first_byte"][key]
+        for v in cp["vectors"]:
+            actual = v.get(hex_field)
+            if actual is None:
+                continue  # a decode_only vector legitimately carries no legacy_json_hex
+            if not actual.startswith(marker[2:]):
+                errors.append(
+                    "contribute_payload vector %r: %s starts with %r, but "
+                    "first_byte.%s pins %s -- the vector and the pinned discriminator "
+                    "byte disagree"
+                    % (v.get("name", "<unnamed>"), hex_field, actual[:2], key, marker)
+                )
     return errors
 
 
@@ -366,15 +422,10 @@ def check_collision_vectors(vectors: list) -> list[str]:
     such length later is a legitimate edit, not a regression.
 
     The mirror-image property -- that a legacy_json_hex can never be misread as
-    canonical proto -- is deliberately NOT asserted here, and its absence is not
-    an oversight. It is a theorem about the two encoders rather than a fact about
-    the data: legacy_json_bytes() always emits a leading `{` (0x7b) and
-    proto_contribute() always emits a leading tag 0x0a, so no value whatsoever
-    can make the two byte strings coincide, and re-derivation above already ties
-    every legacy_json_hex to legacy_json_bytes(). An assertion on it could
-    therefore never fail for any manifest edit -- decorative by construction.
-    The collision in the other direction is asserted precisely because it IS
-    data-dependent: it holds only at particular value byte-lengths.
+    canonical proto -- is asserted too, but in check_first_byte_markers() rather
+    than here, because it is a property of every vector and not just the
+    colliding ones. See that function for why re-derivation does not already
+    cover it.
     """
     errors = []
     collisions = [v for v in vectors if v.get("name", "").startswith(COLLISION_PREFIX)]

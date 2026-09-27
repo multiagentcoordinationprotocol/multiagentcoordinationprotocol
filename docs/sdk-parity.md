@@ -90,7 +90,11 @@ Optional features that enhance the SDK but are not required for conformance:
   revision, or on its next CI run if it tracks the default branch (see the next bullet).
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
   value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
-  manifest that isn't backed by a matching upstream change fails before it can land.
+  manifest that isn't backed by a matching upstream change fails before it can land. Values
+  with no in-repo source are held to the manifest's own vectors where that is possible —
+  `contribute_payload.first_byte`'s two discriminator bytes are asserted against the bytes
+  every vector leads with, the same property `macp-runtime` asserts against its vendored
+  copy, so this repo cannot ship green a manifest that reddens that consumer.
 - **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
   `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
   against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Regression proof that check-parity-contract.py's collision assertions bite.
+"""Regression proof that check-parity-contract.py's contribute_payload
+assertions bite -- the ones re-derivation alone cannot make.
 
 `contribute_payload`'s `collision_*` vectors pin the value byte-lengths at
 which a canonical proto `ContributePayload` also parses as JSON. Re-deriving
@@ -9,6 +10,14 @@ edited to something that no longer collides, leaving a vector that asserts
 nothing while CI reports success. `check_collision_vectors()` exists to close
 that, and this script is what keeps `check_collision_vectors()` honest: without
 it, deleting one of its `errors.append` calls would not fail any build.
+
+`check_first_byte_markers()` is covered for the same reason and a sharper one.
+Re-derivation is gated on `not decode_only`, so a `decode_only` vector's
+`legacy_json_hex` -- which the manifest schema permits -- is validated by
+nothing else in the file. Its two assertions are the only thing holding
+`first_byte`'s pinned discriminator bytes to the vectors they describe, and the
+only thing stopping the manifest from publishing a `legacy_json_hex` that a
+proto-first reading could claim.
 
 Same shape as scripts/check-prose-test.py (issue #129): copy the tree, mutate
 the COPY, run the real unmodified scripts/check-parity-contract.py against it
@@ -145,6 +154,44 @@ def mutate_protobuf_hex_undecodable(data: dict) -> str:
     raise SystemExit("FAIL: collision_leading_brace_13 not found -- mutation is stale")
 
 
+def mutate_first_byte_proto_marker_drifts(data: dict) -> str:
+    """`first_byte.protobuf` edited away from the byte the vectors actually lead
+    with. Nothing re-derives `first_byte` from anything, so the vectors are the
+    only thing that can catch it -- and 0x0b is deliberately a near-miss of 0x0a,
+    the shape a typo takes."""
+    fb = data["sections"]["contribute_payload"]["first_byte"]
+    if fb.get("protobuf") != "0x0a":
+        raise SystemExit("FAIL: first_byte.protobuf is not 0x0a -- mutation is stale")
+    fb["protobuf"] = "0x0b"
+    return "first_byte.protobuf"
+
+
+def mutate_decode_only_legacy_hex_smuggled(data: dict) -> str:
+    """A `decode_only` vector given a `legacy_json_hex` equal to its own
+    `protobuf_hex`.
+
+    This is the one edit that reaches a legacy_json_hex nothing else validates:
+    the checker's re-derivation is gated on `not decode_only`, and the manifest
+    schema permits `decode_only: true` alongside `legacy_json_hex`, so the field
+    is otherwise dead data. Copying the adjacent field is the likeliest way it
+    happens, and it is the worst possible content -- bytes that round-trip
+    byte-identically through the canonical proto encoding, which is precisely
+    the ambiguity `decode_order`'s tie-break assumes cannot arise on the legacy
+    side. Only the legacy first-byte marker stands between the manifest and
+    publishing it.
+    """
+    for v in data["sections"]["contribute_payload"]["vectors"]:
+        if v["name"] == "one_byte_varint_boundary":
+            if not v.get("decode_only") or "legacy_json_hex" in v:
+                raise SystemExit(
+                    "FAIL: one_byte_varint_boundary is no longer a decode_only vector "
+                    "without a legacy_json_hex -- mutation is stale"
+                )
+            v["legacy_json_hex"] = v["protobuf_hex"]
+            return "one_byte_varint_boundary"
+    raise SystemExit("FAIL: one_byte_varint_boundary not found -- mutation is stale")
+
+
 MUTATIONS = (
     (
         "a collision vector's value no longer collides",
@@ -165,6 +212,16 @@ MUTATIONS = (
         "a collision vector's protobuf_hex is not decodable hex",
         mutate_protobuf_hex_undecodable,
         "is not decodable hex",
+    ),
+    (
+        "the pinned proto first-byte marker drifted from the vectors",
+        mutate_first_byte_proto_marker_drifts,
+        "first_byte.protobuf pins",
+    ),
+    (
+        "a decode_only vector smuggled in a legacy_json_hex holding canonical proto",
+        mutate_decode_only_legacy_hex_smuggled,
+        "first_byte.legacy_json pins",
     ),
 )
 
@@ -198,7 +255,7 @@ def main() -> int:
             if code == 0:
                 failures.append(
                     "%s: checker PASSED a manifest it should have rejected -- the "
-                    "corresponding assertion in check_collision_vectors() is decorative" % label
+                    "corresponding assertion in check-parity-contract.py is decorative" % label
                 )
             elif expect not in out:
                 failures.append(
@@ -215,12 +272,12 @@ def main() -> int:
     if failures:
         for f in failures:
             print("FAIL %s" % f, file=sys.stderr)
-        print("\n%d of %d collision assertions are not doing their job."
+        print("\n%d of %d contribute_payload assertions are not doing their job."
               % (len(failures), len(MUTATIONS)), file=sys.stderr)
         return 1
 
-    print("[OK] all %d collision assertions reject what they promise to reject, for the "
-          "stated reason" % len(MUTATIONS))
+    print("[OK] all %d contribute_payload assertions reject what they promise to reject, for "
+          "the stated reason" % len(MUTATIONS))
     return 0
 
 

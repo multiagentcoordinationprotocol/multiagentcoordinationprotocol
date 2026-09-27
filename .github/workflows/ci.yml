@@ -51,7 +51,7 @@ jobs:
 
       - name: Prove the parity-contract collision assertions bite (issue #149)
         run: |
-          echo "Checking the collision_* vector assertions reject what they promise..."
+          echo "Checking the contribute_payload vector assertions reject what they promise..."
           python3 scripts/check-parity-contract-test.py
 
       - name: Check index sync (RFCs, registries, fixtures)
