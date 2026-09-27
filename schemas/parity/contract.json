@@ -183,7 +183,7 @@
       "applies_to": [
         "macp-runtime"
       ],
-      "source": "convention -- macp-runtime rejects an empty Contribute payload; this is not yet a confirmed cross-SDK agreement (see schemas/parity/README.md Open items and the follow-up issue tracked in Open Questions)",
+      "source": "convention -- macp-runtime is the sole acceptance gate for this mode and rejects an empty Contribute payload (crates/macp-modes/src/mode/multi_round.rs, parse_contribute_value). applies_to names it alone deliberately and permanently, not pending confirmation: macp-sdk-python and macp-sdk-typescript have each decided NOT to gate an empty payload at decode time, and neither raises -- macp-sdk-python returns None, its documented \"nothing decodable\" sentinel, and macp-sdk-typescript decodes zero bytes to {} under proto3 defaults, its decode layer being observational rather than an acceptance gate. Neither could distinguish the two cases anyway: canonical proto3 gives ContributePayload.value no field presence, so an explicitly-empty value and an absent payload are the same zero bytes. That shared non-gating IS the cross-SDK agreement here -- it settles the question rather than leaving it open, and it is not the kind of agreement that would ever add an SDK to this section's applies_to.",
       "empty_payload": "reject"
     }
   }

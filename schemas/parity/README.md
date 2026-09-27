@@ -13,7 +13,7 @@ source, so this file is never itself an unverified third copy of anything.
 one exists — is named in that section's own `source` field. `contract.json` MUST NOT
 itself be cited as a normative source anywhere in this repo's docs or RFCs; cite the named
 RFC section, registry, or proto file instead. Several values pinned here have **no**
-normative home at all today (see "Open items" below) — the manifest says so explicitly
+normative home at all today (their own `source` fields say so) — the manifest says so explicitly
 rather than inventing a citation, and pinning the value here does not create one.
 
 ## Sections
@@ -28,7 +28,7 @@ rather than inventing a citation, and pinning the value here does not create one
 | `projection_anomaly` | both SDKs | The `ProjectionAnomaly` field set, field order, the two anomaly-kind strings, and the snake_case→lowerCamelCase naming transform a lowerCamelCase consumer follows |
 | `commitment_hash` | runtime, both SDKs | The commitment-hash format, pinned as an accept/reject behavior table (not a shared regex string, since `macp-runtime` implements this as a hand-written byte check, not a regex) |
 | `contribute_payload` | runtime, both SDKs | The `Contribute` payload's proto vs. legacy-JSON byte disambiguation: decode order, first-byte facts, and generated round-trip vectors |
-| `contribute_acceptance` | runtime only | Behavior not yet confirmed across all three implementations (see "Open items") |
+| `contribute_acceptance` | runtime only | Whether an empty `Contribute` payload is rejected — a runtime-only acceptance gate by design, not an unconfirmed value: both SDKs deliberately decode without raising instead of gating (see the section's own `source`) |
 
 Every section carries:
 - `applies_to` — which of `macp-runtime` / `macp-sdk-python` / `macp-sdk-typescript` MUST
@@ -65,10 +65,6 @@ patched over here:
   whitespace, a non-string `value`, an empty payload) the three implementations already
   disagree — seeding a value the implementations don't actually agree on would poison this
   mechanism's credibility on day one. Tracked as a follow-up issue per SDK.
-- **`contribute_acceptance.empty_payload` is `macp-runtime`-only.** Whether both SDKs
-  should reject an empty `Contribute` payload the same way is an open cross-SDK question,
-  tracked as a follow-up issue; only once both SDKs agree does the corresponding value get
-  added to `contribute_acceptance.applies_to` (a MINOR bump).
 - **`projection_anomaly.kind`'s static contract width differs by SDK.** Python types
   `kind` as a plain `str`; TypeScript types it as a closed 2-value union. The two SDKs
   agree on every runtime value produced today, but this manifest cannot itself make
