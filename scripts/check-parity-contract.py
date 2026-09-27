@@ -354,8 +354,8 @@ def check_collision_vectors(vectors: list) -> list[str]:
     Two things are asserted. (1) Every collision_* vector's proto bytes still
     parse as JSON -- any JSON value, deliberately not only an object: the
     collision band includes lengths whose JSON reading is a bare number or
-    string (see contribute_payload.source), and requiring an object here would
-    reject a legitimate future vector at one of those lengths. (2) At least one
+    string (each SDK's own 1-127 sweep enumerates them), and requiring an
+    object here would reject a legitimate future vector at such a length. (2) At least one
     collision_* vector's JSON reading carries no `value` key at all, which is
     the most destructive reading of the class -- a decoder extracting `value`
     from it gets nothing rather than something wrong. That is the property

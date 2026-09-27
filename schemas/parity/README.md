@@ -68,8 +68,10 @@ patched over:
   (see `contribute_acceptance`'s own `source`). What remains open is what a decoder
   does with valid legacy JSON whose `value` is not a string: `macp-sdk-typescript`
   coerces it (`String(parsed.value ?? '')`), `macp-sdk-python` passes it through
-  uninterpreted. Both are deliberate, and they are not the same behavior — so no value is
-  seeded here until they converge. Tracked as its own follow-up issue.
+  uninterpreted, and `macp-runtime` declines it outright (its legacy-JSON reader types
+  `value` as a required string, so a non-string fails to deserialize). All three are
+  deliberate, and no two of them agree — so no value is seeded here until they converge.
+  Tracked as its own follow-up issue.
 - **`projection_anomaly.kind`'s static contract width differs by SDK.** Python types
   `kind` as a plain `str`; TypeScript types it as a closed 2-value union. The two SDKs
   agree on every runtime value produced today, but this manifest cannot itself make
