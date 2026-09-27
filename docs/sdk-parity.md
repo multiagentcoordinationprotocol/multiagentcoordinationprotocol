@@ -89,17 +89,16 @@ Optional features that enhance the SDK but are not required for conformance:
   CI red until it wires the corresponding assertion — at its next pin bump if it pins a spec
   revision, or on its next CI run if it tracks the default branch (see the next bullet).
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
-  value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
+  value in the manifest to its registry/RFC/schema/fixture source, so an edit to the
   manifest that isn't backed by a matching upstream change fails before it can land. It does
   **not** cover everything: a value whose `source` declares it a convention with no in-repo home
-  usually has nothing to check it against, and can be given a wrong value without turning CI red
-  — which is what those `source` fields are warning you about. Two such values are held to other
-  values inside the manifest instead: `retry.backoff_schedule_seconds`, recomputed from the
-  `retry` fields it derives from, and `contribute_payload.first_byte`'s two discriminator bytes,
-  asserted against the bytes every vector leads with. `macp-runtime` asserts those same two
-  markers against its vendored copy, so that drift is now caught here rather than downstream.
-  `scripts/check-parity-contract.py`'s module docstring is the authoritative list of what is and
-  is not held to a source; read it rather than assuming a section is covered.
+  often has nothing to check it against, and can be given a wrong value without turning CI red
+  — which is what those `source` fields are warning you about. Some are held to other values
+  inside the manifest instead, among them `contribute_payload.first_byte`'s two discriminator
+  bytes, asserted against the bytes every vector leads with; `macp-runtime` asserts those same
+  two markers against its vendored copy, so that drift is now caught here rather than
+  downstream. Read `scripts/check-parity-contract.py` rather than any summary of it before
+  assuming a section is covered.
 - **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
   `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
   against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it

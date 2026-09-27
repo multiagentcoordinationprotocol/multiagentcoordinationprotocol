@@ -47,20 +47,18 @@ VALUE that has an in-repo source to that source:
     every legacy_json_hex with the pinned JSON one, so a marker edited away
     from what the vectors actually encode is caught inside this one file
 
-Everything above is the complete list of what this script holds to a source (the
-fixed-count guards below are the other thing it enforces). Every other value in
-the manifest it does NOT check, and mostly cannot: retry.* besides the
-recomputed schedule, and projection_anomaly.*, live only in macp-sdk-python and
-macp-sdk-typescript, neither of which is this repo. defaults.mode_version,
-defaults.configuration_version, contribute_acceptance.empty_payload and
-contribute_payload.decode_order have no in-repo source either -- their shape is
-constrained by macp-parity-contract.schema.json, but a wrong value inside that
-shape passes. Nor are applies_to or contract_version checked against anything.
-The manifest marks these "convention" rather than inventing a citation, and
-schemas/parity/README.md explains why that is preferred to a fabricated source.
-Two no-source values ARE held to something -- the recomputed backoff schedule
-and contribute_payload.first_byte -- but to other values in this same manifest,
-not to an upstream source, and both are listed above as such.
+That list is what this script holds to a source. retry.* (besides the recomputed
+schedule) and projection_anomaly.* have NO in-repo source at all -- they live
+only in macp-sdk-python and macp-sdk-typescript, neither of which is this repo --
+so this script does not, and cannot, check them further. The manifest marks them
+"convention" instead of inventing a citation, and schemas/parity/README.md
+explains why that is preferred to a fabricated source.
+
+Do not read coverage off this docstring, in either direction. Five review rounds
+on this file each caught a summary of what is and is not checked drifting from
+what CHECKS actually does, in one direction or the other; the code below is the
+only description of that which cannot go stale. Read it before relying on a
+value being guarded.
 
 Every failure is accumulated and reported before exiting non-zero (this
 repo's check-prose.py / check-indexes.sh convention) -- one bad value must
@@ -397,15 +395,15 @@ def check_first_byte_markers(cp: dict) -> list[str]:
     already-red run, not a second opinion.
 
     Do not read these markers as a proof about protobuf, and do not reach for a
-    wire-format argument to make them one. That reasoning is subtler than it
-    looks: a leading 0x7b opens an unknown group, which a decoder SKIPS rather
-    than rejects, so such bytes parse fine -- and whether they then round-trip
-    depends on whether the decoder preserves or discards unknown fields, which
-    differs by runtime. The consumers' own decode paths are where that argument
-    belongs and all three make it; macp-runtime's parse_contribute_value
-    docstring and macp-sdk-python's DiscardUnknownFields comment are the two
-    clearest. What this function asserts is narrower and entirely local: the
-    pinned marker bytes agree with the bytes the vectors themselves encode.
+    wire-format argument to make them one -- three attempts at one in this
+    docstring's history were each wrong in a different way, because whether a
+    `{`-leading byte string parses, and whether it then round-trips, depend on
+    the group's termination and on the runtime's unknown-field handling. That
+    argument belongs in the consumers' decode paths, where all three make it
+    carefully; macp-runtime's parse_contribute_value docstring and
+    macp-sdk-python's DiscardUnknownFields comment are the two clearest. What
+    this function asserts is narrower and entirely local: the pinned marker
+    bytes agree with the bytes the vectors themselves encode.
 
     macp-runtime asserts these same two markers against its vendored copy
     (tests/parity_contract.rs, `contribute_payload_first_byte_markers_match_vectors`),
