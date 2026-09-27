@@ -33,8 +33,10 @@ rather than inventing a citation, and pinning the value here does not create one
 Every section carries:
 - `applies_to` — which of `macp-runtime` / `macp-sdk-python` / `macp-sdk-typescript` MUST
   assert this section. Adding a consumer to a section's `applies_to` is a MINOR version
-  bump (see Versioning) and is expected to turn that consumer's CI red at its next pin
-  bump until it actually wires the assertion — that is the mechanism working as designed.
+  bump (see Versioning) and is expected to turn that consumer's CI red until it actually
+  wires the assertion — at its next pin bump if it pins a spec revision, or on its next CI
+  run if it tracks this repo's default branch instead. That is the mechanism working as
+  designed.
 - `source` — where the value actually comes from. Honest about the absence of a normative
   home where one doesn't exist, rather than inventing a citation.
 

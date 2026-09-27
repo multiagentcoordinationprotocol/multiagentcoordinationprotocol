@@ -86,7 +86,8 @@ Optional features that enhance the SDK but are not required for conformance:
 - **`applies_to` semantics**: each section names which of `macp-runtime` /
   `macp-sdk-python` / `macp-sdk-typescript` MUST assert it. Adding a consumer to a
   section's `applies_to` is a MINOR manifest bump and is expected to turn that consumer's
-  CI red at its next pin bump until it wires the corresponding assertion.
+  CI red until it wires the corresponding assertion — at its next pin bump if it pins a spec
+  revision, or on its next CI run if it tracks the default branch (see the next bullet).
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
   value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
   manifest that isn't backed by a matching upstream change fails before it can land.
