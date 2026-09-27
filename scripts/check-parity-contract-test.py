@@ -96,12 +96,19 @@ def mutate_stops_colliding(data: dict) -> str:
 
 def mutate_value_key_branch_lost(data: dict) -> str:
     """Every collision vector reads as an object WITH a `value` key, so the
-    lose-the-value-entirely branch stops being pinned."""
+    lose-the-value-entirely branch stops being pinned.
+
+    The replacement must still COLLIDE, or this would merely re-exercise the
+    mutation above and never reach the floor assertion. 13 bytes: the length
+    varint is 0x0d (CR), which is insignificant JSON whitespace, so the proto
+    bytes parse as {"value": "y"} -- legacy-shaped, hence a `value` key. Note a
+    10-byte replacement cannot work here: the shortest legacy-shaped object is
+    `{"value":""}` at 12 bytes, which is why length 10 is structurally
+    value-less and worth pinning in the first place.
+    """
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == "collision_foreign_key_10":
-            # 10 bytes, still collides (0x0a length byte is JSON whitespace),
-            # but now legacy-shaped, so it carries a `value` key.
-            reencode(v, '{"value":1}')
+            reencode(v, '{"value":"y"}')
             return "collision_foreign_key_10"
     raise SystemExit("FAIL: collision_foreign_key_10 not found -- mutation is stale")
 
@@ -112,6 +119,21 @@ def mutate_collision_vector_removed(data: dict) -> str:
         v for v in vectors if v["name"] != "collision_leading_brace_32"
     ]
     return "collision_leading_brace_32"
+
+
+def mutate_protobuf_hex_undecodable(data: dict) -> str:
+    """A collision vector whose protobuf_hex is not decodable hex at all.
+
+    Unreachable through the schema (whose hex `pattern` forbids it), so this
+    mutation writes the manifest directly. Covered anyway so that every
+    errors.append in check_collision_vectors() has a test proving it fires --
+    an uncovered branch is one nobody would notice deleting.
+    """
+    for v in data["sections"]["contribute_payload"]["vectors"]:
+        if v["name"] == "collision_leading_brace_13":
+            v["protobuf_hex"] = "zz" + v["protobuf_hex"][2:]
+            return "collision_leading_brace_13"
+    raise SystemExit("FAIL: collision_leading_brace_13 not found -- mutation is stale")
 
 
 MUTATIONS = (
@@ -129,6 +151,11 @@ MUTATIONS = (
         "a collision vector was removed",
         mutate_collision_vector_removed,
         "collision_* vectors, found",
+    ),
+    (
+        "a collision vector's protobuf_hex is not decodable hex",
+        mutate_protobuf_hex_undecodable,
+        "is not decodable hex",
     ),
 )
 
@@ -183,7 +210,8 @@ def main() -> int:
               % (len(failures), len(MUTATIONS)), file=sys.stderr)
         return 1
 
-    print("[OK] all %d collision assertions reject what they promise to reject" % len(MUTATIONS))
+    print("[OK] all %d collision assertions reject what they promise to reject, for the "
+          "stated reason" % len(MUTATIONS))
     return 0
 
 

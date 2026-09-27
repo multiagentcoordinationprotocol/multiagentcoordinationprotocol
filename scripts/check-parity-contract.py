@@ -36,9 +36,10 @@ VALUE that has an in-repo source to that source:
   - contribute_payload.vectors[*]           <- re-derived from each vector's
     plaintext `value` with a 6-line stdlib protobuf-tag encoder and
     json.dumps; the collision_* vectors additionally have the proto/JSON
-    collision they exist to pin asserted directly (their protobuf_hex bytes
-    must still parse as a JSON object), since re-derivation alone would
-    stay green on a `value` edited to something that no longer collides
+    collision they exist to pin asserted directly -- their protobuf_hex
+    bytes must still parse as JSON, and at least one of them must still
+    read as something carrying no `value` key -- since re-derivation alone
+    would stay green on a `value` edited to no longer collide
 
 retry.* (besides the recomputed schedule) and projection_anomaly.* have NO
 in-repo source at all -- they live only in macp-sdk-python and
