@@ -90,14 +90,16 @@ Optional features that enhance the SDK but are not required for conformance:
   revision, or on its next CI run if it tracks the default branch (see the next bullet).
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
   value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
-  manifest that isn't backed by a matching upstream change fails before it can land. Values with
-  no in-repo source are, with one exception, **not** checked here at all — `retry`,
-  `projection_anomaly`, `decode_order`, `contribute_acceptance.empty_payload` and the two
-  `defaults` versions can each be edited to nonsense and still pass, which is what their
-  `source` fields are warning you about. The exception is
-  `contribute_payload.first_byte`'s two discriminator bytes, asserted against the bytes every
-  vector leads with; `macp-runtime` asserts those same two markers against its vendored copy,
-  so that one drift is now caught here rather than downstream.
+  manifest that isn't backed by a matching upstream change fails before it can land. It does
+  **not** cover everything: a value whose `source` declares it a convention with no in-repo home
+  usually has nothing to check it against, and can be given a wrong value without turning CI red
+  — which is what those `source` fields are warning you about. Two such values are held to other
+  values inside the manifest instead: `retry.backoff_schedule_seconds`, recomputed from the
+  `retry` fields it derives from, and `contribute_payload.first_byte`'s two discriminator bytes,
+  asserted against the bytes every vector leads with. `macp-runtime` asserts those same two
+  markers against its vendored copy, so that drift is now caught here rather than downstream.
+  `scripts/check-parity-contract.py`'s module docstring is the authoritative list of what is and
+  is not held to a source; read it rather than assuming a section is covered.
 - **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
   `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
   against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it
