@@ -94,7 +94,9 @@ EXPECTED_REJECT_COUNT = 11
 # would stay green if a `value` were edited to something that no longer
 # collides, leaving a vector that tests nothing. So the collision itself is
 # asserted, and counted. Bump this when a collision length is legitimately
-# added; the collision band is wider than the four pinned here.
+# added; the collision band is wider than the four pinned here. Bumping it also
+# means editing prose: contribute_payload.source says "four" in three places,
+# and no check holds that word to this number.
 EXPECTED_COLLISION_COUNT = 4
 COLLISION_PREFIX = "collision_"
 
@@ -362,6 +364,17 @@ def check_collision_vectors(vectors: list) -> list[str]:
     justifying a vector at length 10 alongside the legacy-shaped ones, so it is
     held rather than left to prose. A floor, not an equality: pinning a second
     such length later is a legitimate edit, not a regression.
+
+    The mirror-image property -- that a legacy_json_hex can never be misread as
+    canonical proto -- is deliberately NOT asserted here, and its absence is not
+    an oversight. It is a theorem about the two encoders rather than a fact about
+    the data: legacy_json_bytes() always emits a leading `{` (0x7b) and
+    proto_contribute() always emits a leading tag 0x0a, so no value whatsoever
+    can make the two byte strings coincide, and re-derivation above already ties
+    every legacy_json_hex to legacy_json_bytes(). An assertion on it could
+    therefore never fail for any manifest edit -- decorative by construction.
+    The collision in the other direction is asserted precisely because it IS
+    data-dependent: it holds only at particular value byte-lengths.
     """
     errors = []
     collisions = [v for v in vectors if v.get("name", "").startswith(COLLISION_PREFIX)]

@@ -93,8 +93,9 @@ Optional features that enhance the SDK but are not required for conformance:
   manifest that isn't backed by a matching upstream change fails before it can land.
 - **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
   `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
-  against it in CI. `macp-sdk-python` does not vendor it yet; wiring it is tracked as its own
-  follow-up issue. The two existing copies pin the spec repo differently, which is what decides
+  against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it
+  up — so a manifest change reaches that SDK only when a human carries it there. The two
+  existing copies pin the spec repo differently, which is what decides
   who notices a manifest change and when: `macp-runtime` checks this repo out at an explicit
   pinned revision, so it stays green until its maintainers bump that revision deliberately,
   whereas `macp-sdk-typescript` checks out the default branch, so a merged manifest change

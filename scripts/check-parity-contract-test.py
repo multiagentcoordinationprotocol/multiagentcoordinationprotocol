@@ -114,10 +114,19 @@ def mutate_value_key_branch_lost(data: dict) -> str:
 
 
 def mutate_collision_vector_removed(data: dict) -> str:
+    """One collision vector deleted, so the count guard must notice.
+
+    The staleness guard matters more here than in the other three: a rename
+    would make the comprehension remove nothing, the checker would (correctly)
+    pass an unmutated manifest, and this script would then report "the
+    corresponding assertion is decorative" -- a loud failure with the wrong
+    diagnosis, which is the same trap as a fixture failing for the wrong reason.
+    """
     vectors = data["sections"]["contribute_payload"]["vectors"]
-    data["sections"]["contribute_payload"]["vectors"] = [
-        v for v in vectors if v["name"] != "collision_leading_brace_32"
-    ]
+    kept = [v for v in vectors if v["name"] != "collision_leading_brace_32"]
+    if len(kept) == len(vectors):
+        raise SystemExit("FAIL: collision_leading_brace_32 not found -- mutation is stale")
+    data["sections"]["contribute_payload"]["vectors"] = kept
     return "collision_leading_brace_32"
 
 
