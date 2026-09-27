@@ -65,9 +65,6 @@ patched over here:
   whitespace, a non-string `value`, an empty payload) the three implementations already
   disagree — seeding a value the implementations don't actually agree on would poison this
   mechanism's credibility on day one. Tracked as a follow-up issue per SDK.
-- **`macp_version` `"1.0"` has no normative literal in any RFC.** A candidate
-  one-sentence RFC-MACP-0001 amendment is tracked as its own future RFC PR, not folded into
-  this manifest.
 - **`contribute_acceptance.empty_payload` is `macp-runtime`-only.** Whether both SDKs
   should reject an empty `Contribute` payload the same way is an open cross-SDK question,
   tracked as a follow-up issue; only once both SDKs agree does the corresponding value get

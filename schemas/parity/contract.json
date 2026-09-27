@@ -1,6 +1,6 @@
 {
   "$comment": "This file is NON-NORMATIVE: it projects values whose actual normative homes (where one exists) are named per-section via that section's `source` field. This manifest MUST NOT itself be cited as a normative source -- cite the named RFC/registry/proto file instead. See schemas/parity/README.md for full context, the applies_to/source semantics, and the versioning rules.",
-  "contract_version": "1.0.0",
+  "contract_version": "1.0.1",
   "sections": {
     "protocol": {
       "applies_to": [
@@ -8,7 +8,7 @@
         "macp-sdk-python",
         "macp-sdk-typescript"
       ],
-      "source": "convention -- no RFC states this literal; examples/json/*.json use \"1.0\" consistently (in-repo consensus, not a normative citation)",
+      "source": "RFC-MACP-0001 Section 6 -- \"The MACP Core protocol version defined by this specification is 1.0\"; every examples/json/*.json envelope agrees, and scripts/check-parity-contract.py holds this value to that corpus",
       "macp_version": "1.0"
     },
     "modes": {

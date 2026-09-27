@@ -20,8 +20,9 @@ VALUE that has an in-repo source to that source:
     `mode` fields (the only in-repo enumeration containing
     ext.multi_round.v1 -- registries/modes.md defines only the ext.*
     namespace convention, not that specific id; see schemas/parity/README.md)
-  - protocol.macp_version                   <- examples/json/*.json (in-repo
-    consensus; no RFC states this literal -- see the manifest's own D7 note)
+  - protocol.macp_version                   <- examples/json/*.json (the
+    literal's normative home is RFC-MACP-0001 Section 6; this check holds
+    the examples corpus to it, it does not parse the RFC)
   - defaults.policy_version                 <- RFC-MACP-0012 Section 5.1's
     fenced JSON block, cross-checked against registries/policies.md
   - defaults.policy_builder_schema_version  <- schemas/json/
