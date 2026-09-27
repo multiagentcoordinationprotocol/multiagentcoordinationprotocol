@@ -343,8 +343,10 @@ def check_contribute_payload(sections: dict) -> list[str]:
         # was re-derived against nothing and could hold arbitrary bytes --
         # including bytes that round-trip byte-identically through the canonical
         # proto encoding, the one thing decode_order's tie-break assumes cannot
-        # happen on the legacy side. `decode_only` now means only what it says:
-        # this vector deliberately has no legacy form to state.
+        # happen on the legacy side. `decode_only` is now read as permission to
+        # omit the legacy form rather than as an exemption from checking it: a
+        # decode_only vector may still carry one, and it is re-derived like any
+        # other.
         actual_json = v.get("legacy_json_hex")
         if actual_json is None:
             if not v.get("decode_only"):
@@ -369,27 +371,34 @@ def check_first_byte_markers(cp: dict) -> list[str]:
     """Hold contribute_payload.first_byte to the vectors it describes.
 
     `first_byte` pins the two discriminator bytes a decoder keys on: 0x0a for
-    canonical proto and 0x7b for legacy JSON. The proto byte does have an in-repo
-    source -- multi_round.proto declares `value` as field 1, which fixes the tag
-    -- but neither byte was held to anything before this ran, and the JSON one
-    has no source at all. What catches drift either way is the vectors: every
-    hex in the manifest is re-derived from its plaintext `value` above, so a
-    marker edited away from the byte the vectors actually lead with is a
-    contradiction inside one file.
+    canonical proto and 0x7b for legacy JSON. Both are traceable to
+    multi_round.proto -- `value` as field 1 fixes the proto tag, and the comment
+    naming the legacy form `{"value": ""}` fixes the JSON one -- but only as
+    prose no script parses, and neither byte was held to anything before this
+    ran. What catches drift is the vectors: every hex in the manifest is
+    re-derived from its plaintext `value` above, so a marker edited away from the
+    byte the vectors actually lead with is a contradiction inside one file.
 
     That division of labour matters, because this function is NOT what makes a
     legacy_json_hex trustworthy -- the re-derivation above is, now that it keys
     on the field being present rather than on `decode_only` being absent. A
-    re-derived legacy form always leads with `{`, so this check can only fire on
-    a drifted marker, which is exactly what it is for.
+    re-derived legacy form always leads with `{`, so on a manifest whose hexes
+    all re-derive, the only thing left for this check to catch is a drifted
+    marker -- which is exactly what it is for. On a manifest that is already
+    failing re-derivation it will add its own complaint too; that is noise on an
+    already-red run, not a second opinion.
 
     Do not reach for a wire-format argument here. A leading 0x7b does decode as
     field 15, wire type 3 (start-group), which ContributePayload does not
-    define -- but an unknown group is SKIPPED, not rejected, so bytes as short
-    as `{|` both parse as a ContributePayload and re-serialize byte-identically
-    under a decoder that drops unknown fields. macp-runtime documents the same
-    trap from the other side. The marker bytes are a manifest-consistency
-    invariant, not a proof about protobuf.
+    define -- but an unknown group is SKIPPED, not rejected, so bytes as short as
+    `{|` parse cleanly as a ContributePayload. What they cannot do is round-trip:
+    re-encoding drops the unknown group, and a canonical ContributePayload is
+    either zero bytes or 0x0a-led, so no 0x7b-leading buffer can ever equal its
+    own re-encoding. Parseability is not canonicality, and the round-trip is what
+    every consumer's tie-break actually tests -- macp-runtime documents both
+    halves, the group trap in parse_contribute_value's docstring and the dropped
+    unknown field in its own test for it. The marker bytes here are a
+    manifest-consistency invariant, not a proof about protobuf.
 
     macp-runtime asserts these same two markers against its vendored copy
     (tests/parity_contract.rs, `contribute_payload_first_byte_markers_match_vectors`),

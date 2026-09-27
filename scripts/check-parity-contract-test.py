@@ -150,11 +150,13 @@ def mutate_protobuf_hex_undecodable(data: dict) -> str:
     errors.append in check_collision_vectors() has a test proving it fires --
     an uncovered branch is one nobody would notice deleting.
 
-    The only mutation here that cannot isolate its target, and unavoidably so:
-    bytes that fail `bytes.fromhex` also fail the re-derivation and the
-    first-byte marker, since a re-derived hex is by construction valid and
-    0x0a-leading. Three assertions fire. The `expect` substring is what proves
-    the intended one is among them.
+    Fires three assertions, not one, and unavoidably: bytes that fail
+    `bytes.fromhex` also fail the re-derivation and the first-byte marker, since
+    a re-derived hex is by construction valid and 0x0a-leading. Four of the ten
+    mutations here trip more than one assertion for similar reasons -- perfect
+    isolation is not available when the manifest's fields are derived from each
+    other. The `expect` substring is what proves the intended assertion is among
+    the ones that fired.
     """
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == "collision_leading_brace_13":
@@ -325,10 +327,14 @@ def main() -> int:
         print("[OK] baseline: unmutated copy passes under MACP_ROOT")
 
         for label, mutate, expect in MUTATIONS:
-            # A tuple means every substring must appear. Two assertions share one
-            # message template ("... does not match the re-derived encoding ..."),
-            # so a single substring could not tell the protobuf_hex branch from
-            # the legacy_json_hex one and a mis-aimed mutation would look caught.
+            # A tuple means every substring must appear somewhere in the output.
+            # Two assertions share one message template ("... does not match the
+            # re-derived encoding ..."), so a single substring could not tell the
+            # protobuf_hex branch from the legacy_json_hex one and a mis-aimed
+            # mutation would look caught. This proves the intended assertion is
+            # among those that fired, not that it was the only one -- see
+            # mutate_protobuf_hex_undecodable for why that is the most this can
+            # promise.
             wanted = (expect,) if isinstance(expect, str) else expect
             data = json.loads(pristine)
             mutate(data)
