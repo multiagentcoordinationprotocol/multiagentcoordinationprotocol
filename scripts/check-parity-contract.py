@@ -79,7 +79,7 @@ CMT_HASH_VECTOR_SCHEMA = ROOT / "schemas" / "conformance" / "cmt-hash" / "vector
 # loudly rather than shrink what is checked while staying green. Bump these
 # when the manifest legitimately grows.
 EXPECTED_SECTION_COUNT = 9
-EXPECTED_VECTOR_COUNT = 4
+EXPECTED_VECTOR_COUNT = 8
 EXPECTED_ACCEPT_COUNT = 1
 EXPECTED_REJECT_COUNT = 11
 

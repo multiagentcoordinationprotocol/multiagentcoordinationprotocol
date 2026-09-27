@@ -27,7 +27,7 @@ rather than inventing a citation, and pinning the value here does not create one
 | `retry` | both SDKs | `RetryPolicy` defaults: max retries, base/max backoff, the derived backoff schedule, the retryable error-code set, and the deliberate absence of jitter |
 | `projection_anomaly` | both SDKs | The `ProjectionAnomaly` field set, field order, the two anomaly-kind strings, and the snake_case→lowerCamelCase naming transform a lowerCamelCase consumer follows |
 | `commitment_hash` | runtime, both SDKs | The commitment-hash format, pinned as an accept/reject behavior table (not a shared regex string, since `macp-runtime` implements this as a hand-written byte check, not a regex) |
-| `contribute_payload` | runtime, both SDKs | The `Contribute` payload's proto vs. legacy-JSON byte disambiguation: decode order, first-byte facts, and generated round-trip vectors |
+| `contribute_payload` | runtime, both SDKs | The `Contribute` payload's proto vs. legacy-JSON byte disambiguation: decode order, first-byte facts, and generated round-trip vectors, including the four `collision_*` vectors where a canonical-proto payload also parses as JSON |
 | `contribute_acceptance` | runtime only | Whether an empty `Contribute` payload is rejected — a runtime-only acceptance gate by design, not an unconfirmed value: both SDKs deliberately decode without raising instead of gating (see the section's own `source`) |
 
 Every section carries:
@@ -60,11 +60,14 @@ vendored `cmt-hash` pack).
 Deliberately **not** seeded in v1.0.0, tracked as follow-up work instead of silently
 patched over here:
 
-- **`Contribute` payload decode on non-canonical inputs.** "No known drift" is true only
-  on the canonical vectors this manifest pins. On non-canonical inputs (leading
-  whitespace, a non-string `value`, an empty payload) the three implementations already
-  disagree — seeding a value the implementations don't actually agree on would poison this
-  mechanism's credibility on day one. Tracked as a follow-up issue per SDK.
+- **Non-string `value` in legacy `Contribute` JSON is still unpinned.** The
+  canonical-proto/legacy-JSON length-collision band is now pinned by
+  `contribute_payload`'s `collision_*` vectors, and empty-payload gating is settled
+  (see `contribute_acceptance`'s own `source`). What remains open is what a decoder
+  does with valid legacy JSON whose `value` is not a string: `macp-sdk-typescript`
+  coerces it (`String(parsed.value ?? '')`), `macp-sdk-python` passes it through
+  uninterpreted. Both are deliberate, and they are not the same behavior — so no value is
+  seeded here until they converge. Tracked as its own follow-up issue.
 - **`projection_anomaly.kind`'s static contract width differs by SDK.** Python types
   `kind` as a plain `str`; TypeScript types it as a closed 2-value union. The two SDKs
   agree on every runtime value produced today, but this manifest cannot itself make
