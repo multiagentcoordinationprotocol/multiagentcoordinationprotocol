@@ -44,7 +44,8 @@ retry.* (besides the recomputed schedule) and projection_anomaly.* have NO
 in-repo source at all -- they live only in macp-sdk-python and
 macp-sdk-typescript, neither of which is this repo -- so this script does not,
 and cannot, check them further. The manifest marks them "convention" instead
-of inventing a citation (see the manifest's own Long-term posture D7 note).
+of inventing a citation, and schemas/parity/README.md explains why that is
+preferred to a fabricated source.
 
 Every failure is accumulated and reported before exiting non-zero (this
 repo's check-prose.py / check-indexes.sh convention) -- one bad value must
@@ -91,7 +92,8 @@ EXPECTED_REJECT_COUNT = 11
 # their `value` (below) proves only that the pair is self-consistent -- it
 # would stay green if a `value` were edited to something that no longer
 # collides, leaving a vector that tests nothing. So the collision itself is
-# asserted, and counted.
+# asserted, and counted. Bump this when a collision length is legitimately
+# added; the collision band is wider than the four pinned here.
 EXPECTED_COLLISION_COUNT = 4
 COLLISION_PREFIX = "collision_"
 
@@ -344,7 +346,21 @@ def check_collision_vectors(vectors: list) -> list[str]:
     is ALSO parseable as JSON, because the field-1 tag byte and the length
     varint are themselves insignificant JSON whitespace (or, at value length
     123, the literal `{`). That property lives in the bytes, not in the
-    manifest's shape, so nothing above would notice if it were lost.
+    manifest's shape, so nothing above would notice if it were lost: a `value`
+    edited to something that no longer collides re-derives to a perfectly
+    self-consistent hex pair.
+
+    Two things are asserted. (1) Every collision_* vector's proto bytes still
+    parse as JSON -- any JSON value, deliberately not only an object: the
+    collision band includes lengths whose JSON reading is a bare number or
+    string (see contribute_payload.source), and requiring an object here would
+    reject a legitimate future vector at one of those lengths. (2) At least one
+    collision_* vector's JSON reading carries no `value` key at all, which is
+    the most destructive reading of the class -- a decoder extracting `value`
+    from it gets nothing rather than something wrong. That is the property
+    justifying a vector at length 10 alongside the legacy-shaped ones, so it is
+    held rather than left to prose. A floor, not an equality: pinning a second
+    such length later is a legitimate edit, not a regression.
     """
     errors = []
     collisions = [v for v in vectors if v.get("name", "").startswith(COLLISION_PREFIX)]
@@ -358,34 +374,37 @@ def check_collision_vectors(vectors: list) -> list[str]:
     without_value_key = []
     for v in collisions:
         name = v.get("name", "<unnamed>")
+        raw = v["protobuf_hex"]
         try:
-            decoded = json.loads(bytes.fromhex(v["protobuf_hex"]).decode("utf-8"))
-        except (ValueError, UnicodeDecodeError) as exc:
+            decoded_bytes = bytes.fromhex(raw)
+        except ValueError as exc:
+            # Not reachable while the schema's hex `pattern` holds and the
+            # unconditional re-derivation above runs, but reported distinctly
+            # so it can never be misread as "the collision was lost".
+            errors.append(
+                "contribute_payload vector %r: protobuf_hex %r is not decodable hex (%s)"
+                % (name, raw, exc)
+            )
+            continue
+        try:
+            # json.JSONDecodeError and UnicodeDecodeError are both ValueError.
+            decoded = json.loads(decoded_bytes.decode("utf-8"))
+        except ValueError as exc:
             errors.append(
                 "contribute_payload vector %r: its protobuf_hex bytes do not parse as JSON "
                 "(%s), so the proto/JSON collision this vector exists to pin no longer "
                 "holds -- the vector is decorative" % (name, exc)
             )
             continue
-        if not isinstance(decoded, dict):
-            errors.append(
-                "contribute_payload vector %r: its protobuf_hex bytes parse as JSON %r, not "
-                "an object -- the collision this vector pins is with a legacy-JSON *object*"
-                % (name, decoded)
-            )
-            continue
-        if "value" not in decoded:
+        if not isinstance(decoded, dict) or "value" not in decoded:
             without_value_key.append(name)
 
-    # Exactly one collision vector reads as an object with no `value` key. That
-    # is a distinct decoder branch -- the value is lost entirely rather than
-    # returned wrong -- and it is the reason the length-10 vector is pinned
-    # separately from the other three.
-    if collisions and len(without_value_key) != 1:
+    if collisions and not without_value_key:
         errors.append(
-            "expected exactly 1 %s* vector whose JSON reading has no `value` key (the "
-            "total-data-loss branch), found %d: %s"
-            % (COLLISION_PREFIX, len(without_value_key), sorted(without_value_key))
+            "expected at least 1 %s* vector whose JSON reading carries no `value` key "
+            "(the branch where a decoder loses the value entirely rather than returning a "
+            "wrong one); none of %s does, so that branch is no longer pinned"
+            % (COLLISION_PREFIX, sorted(v.get("name", "<unnamed>") for v in collisions))
         )
     return errors
 

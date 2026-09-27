@@ -27,7 +27,7 @@ rather than inventing a citation, and pinning the value here does not create one
 | `retry` | both SDKs | `RetryPolicy` defaults: max retries, base/max backoff, the derived backoff schedule, the retryable error-code set, and the deliberate absence of jitter |
 | `projection_anomaly` | both SDKs | The `ProjectionAnomaly` field set, field order, the two anomaly-kind strings, and the snake_case→lowerCamelCase naming transform a lowerCamelCase consumer follows |
 | `commitment_hash` | runtime, both SDKs | The commitment-hash format, pinned as an accept/reject behavior table (not a shared regex string, since `macp-runtime` implements this as a hand-written byte check, not a regex) |
-| `contribute_payload` | runtime, both SDKs | The `Contribute` payload's proto vs. legacy-JSON byte disambiguation: decode order, first-byte facts, and generated round-trip vectors, including the four `collision_*` vectors where a canonical-proto payload also parses as JSON |
+| `contribute_payload` | runtime, both SDKs | The `Contribute` payload's proto vs. legacy-JSON byte disambiguation: decode order, first-byte facts, and generated round-trip vectors, including the `collision_*` vectors at the value byte-lengths where a canonical-proto payload also parses as JSON |
 | `contribute_acceptance` | runtime only | Whether an empty `Contribute` payload is rejected — a runtime-only acceptance gate by design, not an unconfirmed value: both SDKs deliberately decode without raising instead of gating (see the section's own `source`) |
 
 Every section carries:
@@ -57,8 +57,8 @@ vendored `cmt-hash` pack).
 
 ## Open items
 
-Deliberately **not** seeded in v1.0.0, tracked as follow-up work instead of silently
-patched over here:
+Deliberately **not** seeded here, tracked as follow-up work instead of silently
+patched over:
 
 - **Non-string `value` in legacy `Contribute` JSON is still unpinned.** The
   canonical-proto/legacy-JSON length-collision band is now pinned by
