@@ -11,13 +11,16 @@ nothing while CI reports success. `check_collision_vectors()` exists to close
 that, and this script is what keeps `check_collision_vectors()` honest: without
 it, deleting one of its `errors.append` calls would not fail any build.
 
-`check_first_byte_markers()` is covered for the same reason and a sharper one.
-Re-derivation is gated on `not decode_only`, so a `decode_only` vector's
-`legacy_json_hex` -- which the manifest schema permits -- is validated by
-nothing else in the file. Its two assertions are the only thing holding
-`first_byte`'s pinned discriminator bytes to the vectors they describe, and the
-only thing stopping the manifest from publishing a `legacy_json_hex` that a
-proto-first reading could claim.
+The re-derivation itself and the vector-count guard are covered too, though they
+long predate the collision vectors: an assertion nobody has ever seen fail is
+one nobody would notice deleting. `check_first_byte_markers()` gets two
+mutations rather than one, because its single `errors.append` is reached through
+two independent loop iterations -- drop either key from that loop and the other
+mutation still passes.
+
+Every `errors.append` in the `contribute_payload` check tree is covered: 9 error
+paths, 10 mutations. That is a property worth re-checking after any edit here,
+by neutering each append in a scratch copy and confirming this script goes red.
 
 Same shape as scripts/check-prose-test.py (issue #129): copy the tree, mutate
 the COPY, run the real unmodified scripts/check-parity-contract.py against it
@@ -146,6 +149,12 @@ def mutate_protobuf_hex_undecodable(data: dict) -> str:
     mutation writes the manifest directly. Covered anyway so that every
     errors.append in check_collision_vectors() has a test proving it fires --
     an uncovered branch is one nobody would notice deleting.
+
+    The only mutation here that cannot isolate its target, and unavoidably so:
+    bytes that fail `bytes.fromhex` also fail the re-derivation and the
+    first-byte marker, since a re-derived hex is by construction valid and
+    0x0a-leading. Three assertions fire. The `expect` substring is what proves
+    the intended one is among them.
     """
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == "collision_leading_brace_13":
@@ -154,10 +163,18 @@ def mutate_protobuf_hex_undecodable(data: dict) -> str:
     raise SystemExit("FAIL: collision_leading_brace_13 not found -- mutation is stale")
 
 
+def find(data: dict, name: str) -> dict:
+    for v in data["sections"]["contribute_payload"]["vectors"]:
+        if v["name"] == name:
+            return v
+    raise SystemExit("FAIL: vector %r not found -- mutation is stale" % name)
+
+
 def mutate_first_byte_proto_marker_drifts(data: dict) -> str:
     """`first_byte.protobuf` edited away from the byte the vectors actually lead
-    with. Nothing re-derives `first_byte` from anything, so the vectors are the
-    only thing that can catch it -- and 0x0b is deliberately a near-miss of 0x0a,
+    with. The proto tag is fixed upstream by multi_round.proto's `value = 1`, but
+    nothing parses the proto file to confirm this literal, so the vectors are
+    what catch a drifted marker -- and 0x0b is deliberately a near-miss of 0x0a,
     the shape a typo takes."""
     fb = data["sections"]["contribute_payload"]["first_byte"]
     if fb.get("protobuf") != "0x0a":
@@ -166,30 +183,72 @@ def mutate_first_byte_proto_marker_drifts(data: dict) -> str:
     return "first_byte.protobuf"
 
 
+def mutate_first_byte_json_marker_drifts(data: dict) -> str:
+    """The same drift on the other marker, which needs its own mutation: the two
+    keys are separate loop iterations over separate hex fields, so neutering one
+    leaves the other passing. 0x7c (`|`) is the near-miss with teeth -- it is the
+    byte that would CLOSE the proto group a leading 0x7b opens."""
+    fb = data["sections"]["contribute_payload"]["first_byte"]
+    if fb.get("legacy_json") != "0x7b":
+        raise SystemExit("FAIL: first_byte.legacy_json is not 0x7b -- mutation is stale")
+    fb["legacy_json"] = "0x7c"
+    return "first_byte.legacy_json"
+
+
 def mutate_decode_only_legacy_hex_smuggled(data: dict) -> str:
     """A `decode_only` vector given a `legacy_json_hex` equal to its own
     `protobuf_hex`.
 
-    This is the one edit that reaches a legacy_json_hex nothing else validates:
-    the checker's re-derivation is gated on `not decode_only`, and the manifest
-    schema permits `decode_only: true` alongside `legacy_json_hex`, so the field
-    is otherwise dead data. Copying the adjacent field is the likeliest way it
-    happens, and it is the worst possible content -- bytes that round-trip
-    byte-identically through the canonical proto encoding, which is precisely
-    the ambiguity `decode_order`'s tie-break assumes cannot arise on the legacy
-    side. Only the legacy first-byte marker stands between the manifest and
-    publishing it.
+    The reason the re-derivation keys on the field being PRESENT rather than on
+    `decode_only` being absent. The manifest schema permits `decode_only: true`
+    alongside `legacy_json_hex`, so under the old `if not decode_only` gate this
+    field was re-derived against nothing -- and copying the adjacent field is
+    both the likeliest way it happens and the worst possible content: bytes that
+    round-trip byte-identically through the canonical proto encoding, which is
+    precisely the ambiguity `decode_order`'s tie-break assumes cannot arise on
+    the legacy side. A first-byte check alone would not have been enough; it
+    catches this particular payload but not, say, a hand-written `7b7d`.
     """
-    for v in data["sections"]["contribute_payload"]["vectors"]:
-        if v["name"] == "one_byte_varint_boundary":
-            if not v.get("decode_only") or "legacy_json_hex" in v:
-                raise SystemExit(
-                    "FAIL: one_byte_varint_boundary is no longer a decode_only vector "
-                    "without a legacy_json_hex -- mutation is stale"
-                )
-            v["legacy_json_hex"] = v["protobuf_hex"]
-            return "one_byte_varint_boundary"
-    raise SystemExit("FAIL: one_byte_varint_boundary not found -- mutation is stale")
+    v = find(data, "one_byte_varint_boundary")
+    if not v.get("decode_only") or "legacy_json_hex" in v:
+        raise SystemExit(
+            "FAIL: one_byte_varint_boundary is no longer a decode_only vector "
+            "without a legacy_json_hex -- mutation is stale"
+        )
+    v["legacy_json_hex"] = v["protobuf_hex"]
+    return "one_byte_varint_boundary"
+
+
+def mutate_legacy_hex_dropped_without_decode_only(data: dict) -> str:
+    """The other half of that gate: a vector that simply loses its legacy form.
+    Keying on presence would let this pass silently if nothing required the field
+    of a vector that is not marked decode_only."""
+    v = find(data, "ascii_short")
+    if v.get("decode_only") or "legacy_json_hex" not in v:
+        raise SystemExit("FAIL: ascii_short is no longer a legacy-carrying vector -- stale")
+    del v["legacy_json_hex"]
+    return "ascii_short"
+
+
+def mutate_protobuf_hex_drifts(data: dict) -> str:
+    """One byte of a non-collision vector's `protobuf_hex` changed, keeping valid
+    hex and the 0x0a lead byte so only the re-derivation can catch it. Covers the
+    oldest assertion in the file, which had no test before."""
+    v = find(data, "ascii_short")
+    original = v["protobuf_hex"]
+    v["protobuf_hex"] = original[:-2] + ("00" if original[-2:] != "00" else "01")
+    return "ascii_short"
+
+
+def mutate_vector_count_guard(data: dict) -> str:
+    """A non-collision vector removed, so only the total-count guard fires (the
+    collision count is untouched). Also previously untested."""
+    vectors = data["sections"]["contribute_payload"]["vectors"]
+    kept = [v for v in vectors if v["name"] != "utf8_accent"]
+    if len(kept) == len(vectors):
+        raise SystemExit("FAIL: utf8_accent not found -- mutation is stale")
+    data["sections"]["contribute_payload"]["vectors"] = kept
+    return "utf8_accent"
 
 
 MUTATIONS = (
@@ -219,9 +278,29 @@ MUTATIONS = (
         "first_byte.protobuf pins",
     ),
     (
+        "the pinned legacy-JSON first-byte marker drifted from the vectors",
+        mutate_first_byte_json_marker_drifts,
+        "first_byte.legacy_json pins",
+    ),
+    (
         "a decode_only vector smuggled in a legacy_json_hex holding canonical proto",
         mutate_decode_only_legacy_hex_smuggled,
-        "first_byte.legacy_json pins",
+        ("legacy_json_hex", "does not match the re-derived encoding"),
+    ),
+    (
+        "a vector lost its legacy_json_hex without being marked decode_only",
+        mutate_legacy_hex_dropped_without_decode_only,
+        "has no legacy_json_hex and is not marked decode_only",
+    ),
+    (
+        "a vector's protobuf_hex drifted from its value",
+        mutate_protobuf_hex_drifts,
+        ("protobuf_hex", "does not match the re-derived encoding"),
+    ),
+    (
+        "a vector was removed, dropping the total below the pinned count",
+        mutate_vector_count_guard,
+        "contribute_payload.vectors, found",
     ),
 )
 
@@ -246,21 +325,27 @@ def main() -> int:
         print("[OK] baseline: unmutated copy passes under MACP_ROOT")
 
         for label, mutate, expect in MUTATIONS:
+            # A tuple means every substring must appear. Two assertions share one
+            # message template ("... does not match the re-derived encoding ..."),
+            # so a single substring could not tell the protobuf_hex branch from
+            # the legacy_json_hex one and a mis-aimed mutation would look caught.
+            wanted = (expect,) if isinstance(expect, str) else expect
             data = json.loads(pristine)
             mutate(data)
             (tree / CONTRACT_REL).write_text(
                 json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
             )
             code, out = run_checker(tree)
+            missing = [w for w in wanted if w not in out]
             if code == 0:
                 failures.append(
                     "%s: checker PASSED a manifest it should have rejected -- the "
                     "corresponding assertion in check-parity-contract.py is decorative" % label
                 )
-            elif expect not in out:
+            elif missing:
                 failures.append(
-                    "%s: checker failed (good) but never said %r, so it failed for the wrong "
-                    "reason. Output:\n%s" % (label, expect, out)
+                    "%s: checker failed (good) but never said %s, so it failed for the wrong "
+                    "reason. Output:\n%s" % (label, ", ".join(repr(m) for m in missing), out)
                 )
             else:
                 print("[OK] caught: %s" % label)
@@ -272,12 +357,12 @@ def main() -> int:
     if failures:
         for f in failures:
             print("FAIL %s" % f, file=sys.stderr)
-        print("\n%d of %d contribute_payload assertions are not doing their job."
+        print("\n%d of %d contribute_payload mutations went uncaught or misdiagnosed."
               % (len(failures), len(MUTATIONS)), file=sys.stderr)
         return 1
 
-    print("[OK] all %d contribute_payload assertions reject what they promise to reject, for "
-          "the stated reason" % len(MUTATIONS))
+    print("[OK] all %d mutations rejected, each for the reason it promises -- every "
+          "errors.append in the contribute_payload check tree is covered" % len(MUTATIONS))
     return 0
 
 

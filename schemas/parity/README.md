@@ -7,10 +7,11 @@ today already agree — with matching values but no shared source of truth — a
 repo (where applicable), `macp-runtime`, `macp-sdk-python`, and `macp-sdk-typescript`.
 `scripts/check-parity-contract.py` holds every value that has an in-repo source (a
 registry, an RFC prose block, the proto file, or the conformance fixture corpus) to that
-source, so this file is never itself an unverified third copy of anything. Where a value has
-no such source it is held to the manifest's own vectors instead: `contribute_payload`'s two
-`first_byte` discriminator bytes must be the bytes every vector actually leads with, which is
-also what keeps a `legacy_json_hex` that a proto-first reading could claim out of this file.
+source, so this file is never itself an unverified third copy of anything. Most values with no
+in-repo source cannot be checked here at all — they live only in the SDKs, and their `source`
+fields say so. Where such a value can be held to something else *in* the manifest, it is:
+`contribute_payload`'s two `first_byte` discriminator bytes must be the bytes every vector
+actually leads with, so a drifted marker is a contradiction inside one file.
 
 **This file is non-normative.** It *projects* values whose actual normative home — where
 one exists — is named in that section's own `source` field. `contract.json` MUST NOT
