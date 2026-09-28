@@ -233,7 +233,7 @@ if (bootstrap.initiator) {
 
 ### Cancellation (Option A — RFC-pure default)
 
-Both SDKs auto-bind a local HTTP `POST <cancelCallback.path>` listener for you — you don't need to hand-roll one. The control-plane's UI-triggered cancel calls that listener; the SDK responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.2 — only the initiator (or a policy-delegated role) may cancel. See the SDK guides linked above if you need to override the default cancel behavior.
+Both SDKs auto-bind a local HTTP `POST <cancelCallback.path>` listener for you on the bootstrap path — you don't need to hand-roll one. They bind at different moments, which matters only if your integration never starts the participant: the Python SDK binds while building the participant from the bootstrap, so the listener is live as soon as you hold the object, whereas the TypeScript SDK stores the config at construction and starts the listener when the participant begins running. A TypeScript integration that constructs a participant and never runs it therefore has no listener auto-bound (it can still attach one itself), and the troubleshooting row below is what that looks like from the runtime's side. (Either SDK's binding timing is a library choice, not a protocol requirement — see `sdk-parity.md`'s `## MAY Implement`.) The control-plane's UI-triggered cancel calls that listener; the SDK responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.3 (Termination) — only the initiator (or a policy-delegated role) may cancel. See the SDK guides linked above if you need to override the default cancel behavior.
 
 ---
 
@@ -266,4 +266,4 @@ Both SDKs auto-bind a local HTTP `POST <cancelCallback.path>` listener for you �
 - `schemas/json/macp-agent-bootstrap.schema.json` — agent bootstrap contract
 - `schemas/json/macp-session-metadata.schema.json` — session metadata runtime returns
 - RFC-MACP-0004 §3 (Authentication) + §4 (Authorization) + §11 (Multi-tenancy)
-- RFC-MACP-0001 §7 (Session lifecycle) + §7.2 (Cancellation authority)
+- RFC-MACP-0001 §7 (Session lifecycle) + §7.3 (Termination — cancellation authority)
