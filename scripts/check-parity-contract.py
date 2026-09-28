@@ -29,6 +29,10 @@ VALUE that has an in-repo source to that source:
     macp-policy-descriptor.schema.json's schema_version enum
   - retry.backoff_schedule_seconds          <- recomputed from max_retries /
     backoff_base_seconds / backoff_max_seconds
+  - retry.retryable_error_codes             <- every member must appear in this
+    manifest's own error_codes.permanent (which check_error_codes holds to
+    registries/error-codes.md, and which runs first). Membership only, never
+    "the right subset"; `deprecated` codes are deliberately not admitted
   - commitment_hash.pattern                 <- schemas/conformance/cmt-hash/
     vector-schema.json's (otherwise unchecked-by-anything) hash pattern;
     every accept/reject value re-checked against the manifest's own pattern
@@ -47,12 +51,18 @@ VALUE that has an in-repo source to that source:
     every legacy_json_hex with the pinned JSON one, so a marker edited away
     from what the vectors actually encode is caught inside this one file
 
-That list is what this script holds to a source. retry.* (besides the recomputed
-schedule and the three values it is recomputed from) and projection_anomaly.* are
-not held to one: what they pin is a choice made in macp-sdk-python and
+That list is what this script holds to a source. What remains unheld is
+retry.max_retries / backoff_base_seconds / backoff_max_seconds / jitter, and all
+of projection_anomaly.*: what those pin is a choice made in macp-sdk-python and
 macp-sdk-typescript, not a value this repo states anywhere. The manifest marks
 them "convention" instead of inventing a citation, and schemas/parity/README.md
 explains why that is preferred to a fabricated source.
+
+Note that retry is no longer wholly convention-sourced: retryable_error_codes is
+now held to this manifest's own error_codes.permanent, and the three backoff
+inputs, while unheld individually, are jointly constrained by the schedule they
+recompute -- so the section is partly guarded and partly not, which is why
+reading the bullet list above rather than a one-line summary of it matters.
 
 Do not read coverage off this docstring, in either direction. Five review rounds
 on this file each caught a summary of what is and is not checked drifting from
@@ -295,6 +305,20 @@ def check_policy_builder_schema_version(sections: dict) -> list[str]:
 
 
 def check_retry_schedule(sections: dict) -> list[str]:
+    """Two independent things about `retry`, accumulated rather than short-circuited.
+
+    The name is now narrower than the function: it also holds
+    `retryable_error_codes` to the manifest's own `error_codes.permanent`.
+    Renaming would touch the CHECKS tuple for no assurance gain, so the docstring
+    carries the correction instead.
+
+    This function used to `return` on the first failure. It accumulates now
+    because the two assertions are unrelated -- a manifest with both a drifted
+    schedule and a bogus retryable code must report both. The module docstring's
+    rule is that one bad value must never mask another, and an early return here
+    broke it the moment there were two values to check.
+    """
+    errors = []
     retry = sections["retry"]
     base, cap, n = retry["backoff_base_seconds"], retry["backoff_max_seconds"], retry["max_retries"]
     # 0.1 * 2**i is exact in binary for the range in play, and backoff_max
@@ -302,12 +326,42 @@ def check_retry_schedule(sections: dict) -> list[str]:
     # deliberate: an epsilon comparison would hide a real drifted value.
     recomputed = [min(base * (2 ** i), cap) for i in range(n)]
     if recomputed != retry["backoff_schedule_seconds"]:
-        return [
+        errors.append(
             "retry.backoff_schedule_seconds %r != recomputed %r from max_retries/"
             "backoff_base_seconds/backoff_max_seconds"
             % (retry["backoff_schedule_seconds"], recomputed)
-        ]
-    return []
+        )
+
+    # Held to the MANIFEST's own error_codes.permanent, not to
+    # registries/error-codes.md directly. check_error_codes already holds that
+    # list to the registry and runs FIRST in CHECKS, so a registry rename yields
+    # one clear failure there instead of two overlapping ones here. Same shape as
+    # check_commitment_hash re-checking its accept/reject values against the
+    # manifest's own `pattern` rather than re-reading the vector schema.
+    #
+    # Membership only -- deliberately NOT "the right subset". A retryable set
+    # containing all 16 permanent codes, or none of the ones actually worth
+    # retrying, passes. What this catches is a code that is not a canonical error
+    # code at all: a typo (`RATELIMITED`), a renamed code, or an invented one.
+    # Judging WHICH codes deserve a retry is an SDK policy call with no in-repo
+    # source, which is exactly why `retry.source` marks this section a convention.
+    #
+    # `deprecated` is deliberately not admitted, so a retryable `UNAUTHORIZED`
+    # fails. That is the right outcome -- a deprecated code should not be acquiring
+    # new retry semantics -- and it is stated here so a reader does not mistake the
+    # omission for an oversight.
+    permanent = set(sections["error_codes"]["permanent"])
+    for code in retry["retryable_error_codes"]:
+        if code not in permanent:
+            errors.append(
+                "retry.retryable_error_codes contains %r, which is not a member of "
+                "error_codes.permanent -- a retryable code that is not a canonical "
+                "error code can never match a real error, so the retry policy would "
+                "silently never fire for it (note `deprecated` codes are deliberately "
+                "not admitted here)" % code
+            )
+
+    return errors
 
 
 def check_commitment_hash(sections: dict) -> list[str]:

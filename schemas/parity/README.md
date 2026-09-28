@@ -10,10 +10,11 @@ registry, an RFC prose block, a JSON Schema, or the example/conformance corpora)
 source, so this file is never itself an unverified third copy of anything. It does not cover
 everything: a value whose `source` declares it a convention with no in-repo home often has
 nothing to hold it to. Some are held to other values inside this manifest instead — among them
-`retry.backoff_schedule_seconds`, recomputed from the `retry` fields it derives from, and
-`contribute_payload`'s two `first_byte` discriminator bytes, which must be the bytes every
-vector actually leads with. Read that script rather than any summary of it, including this one,
-before relying on a particular value being guarded.
+`retry.backoff_schedule_seconds`, recomputed from the `retry` fields it derives from;
+`retry.retryable_error_codes`, every member of which must appear in this manifest's own
+`error_codes.permanent`; and `contribute_payload`'s two `first_byte` discriminator bytes, which
+must be the bytes every vector actually leads with. Read that script rather than any summary of
+it, including this one, before relying on a particular value being guarded.
 
 **This file is non-normative.** It *projects* values whose actual normative home — where
 one exists — is named in that section's own `source` field. `contract.json` MUST NOT

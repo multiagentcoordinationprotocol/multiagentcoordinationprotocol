@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
-"""Regression proof that check-parity-contract.py's contribute_payload
-assertions bite -- the ones re-derivation alone cannot make.
+"""Regression proof that check-parity-contract.py's assertions bite -- above all
+the contribute_payload ones re-derivation alone cannot make.
+
+Scope note, because it changed: this file was written for `contribute_payload`
+alone, and the exhaustive-coverage claim below is still scoped to that tree. It
+is no longer the only thing here. Assertions elsewhere in the checker get a
+mutation when they, too, would pass silently if deleted -- currently
+`retry.retryable_error_codes`. Those mutations are as real as the rest; they are
+just outside what the "every append is covered" count counts, for the reason
+spelled out under "The `contribute_payload` check tree" below.
 
 `contribute_payload`'s `collision_*` vectors pin the value byte-lengths at
 which a canonical proto `ContributePayload` also parses as JSON. Re-deriving
@@ -21,8 +29,10 @@ two mutations each print one FAIL line per vector while touching only one
 assertion; see the lines-vs-sites note below.)
 
 Every `errors.append` in the `contribute_payload` check tree is covered: 15
-error paths, covered by 17 of this script's mutations. The two numbers are not
-equal and are not meant to be -- some appends need more than one mutation (see
+error paths, covered by 17 of this script's mutations. Read "of" literally --
+the script carries more mutations than that, and the surplus is the out-of-tree
+coverage described above, not an unexplained remainder. The two numbers 15 and 17
+are not equal and are not meant to be -- some appends need more than one mutation (see
 `check_first_byte_markers` above), and no mutation is *credited* with covering
 two appends, so the designated cover map stays one-directional and a deleted
 append always orphans a mutation.
@@ -518,7 +528,41 @@ def mutate_one_legacy_form_deleted(data: dict) -> str:
     return "utf8_accent"
 
 
+def mutate_retryable_code_not_permanent(data: dict) -> str:
+    """A retryable error code that is not a canonical error code.
+
+    The FIRST mutation in this file outside the contribute_payload tree, which is
+    why the module docstring's opening had to widen.
+
+    Two codes, one of each failure shape, because they are not the same mistake:
+    `RATELIMITED` is the underscore-less typo of a real code -- the realistic way
+    this breaks -- and `TEAPOT` is an outright invention. Both were verified to
+    PASS before this assertion existed.
+
+    Isolation: `retry.backoff_schedule_seconds` and the three values it is
+    recomputed from are untouched, so the sibling assertion in the same function
+    stays silent. Measured: 2 FAIL lines from 1 site (one per bad code), which is
+    the single-append-in-a-loop shape described in the module docstring, not an
+    overlap.
+    """
+    codes = data["sections"]["retry"]["retryable_error_codes"]
+    permanent = data["sections"]["error_codes"]["permanent"]
+    if "RATELIMITED" in permanent or "TEAPOT" in permanent:
+        raise SystemExit(
+            "FAIL: RATELIMITED/TEAPOT is now a permanent error code -- mutation is stale"
+        )
+    if not codes:
+        raise SystemExit("FAIL: retry.retryable_error_codes is empty -- mutation is stale")
+    data["sections"]["retry"]["retryable_error_codes"] = ["RATELIMITED", "TEAPOT"]
+    return "retryable_error_codes"
+
+
 MUTATIONS = (
+    (
+        "a retryable error code is not a member of error_codes.permanent",
+        mutate_retryable_code_not_permanent,
+        "not a member of error_codes.permanent",
+    ),
     (
         "every legacy_json_hex deleted, every vector marked decode_only",
         mutate_all_legacy_forms_deleted,
@@ -663,12 +707,13 @@ def main() -> int:
     if failures:
         for f in failures:
             print("FAIL %s" % f, file=sys.stderr)
-        print("\n%d of %d contribute_payload mutations went uncaught or misdiagnosed."
+        print("\n%d of %d parity-contract mutations went uncaught or misdiagnosed."
               % (len(failures), len(MUTATIONS)), file=sys.stderr)
         return 1
 
     print("[OK] all %d mutations rejected, each for the reason it promises -- every "
-          "errors.append in the contribute_payload check tree is covered" % len(MUTATIONS))
+          "errors.append in the contribute_payload check tree is covered, plus the "
+          "out-of-tree assertions listed in this script's docstring" % len(MUTATIONS))
     return 0
 
 
