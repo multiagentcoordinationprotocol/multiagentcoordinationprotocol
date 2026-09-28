@@ -35,7 +35,9 @@ inventing text.
 **No conformance fixture can enforce this, and it would be misleading to imply otherwise.** The
 runner replays *accepted* envelopes through projections (see `## Conformance Test Suite` below),
 whereas a builder that refuses to construct the envelope fails before anything reaches a projection.
-Enforcement here is per-SDK review, filed as `macp-sdk-typescript` #124 and `macp-sdk-python` #93, not the corpus.
+Enforcement here is per-SDK review, not the corpus; it was filed as `macp-sdk-typescript` #124 and
+`macp-sdk-python` #93, both since closed (`macp-sdk-typescript` PR #132 is the over-strictness half).
+Enforcement staying per-SDK is the durable point — the issue numbers are history, not open work.
 
 ### Projections
 - One projection class per standards-track mode
