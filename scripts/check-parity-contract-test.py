@@ -18,8 +18,8 @@ mutations rather than one, because its single `errors.append` is reached through
 two independent loop iterations -- drop either key from that loop and the other
 mutation still passes.
 
-Every `errors.append` in the `contribute_payload` check tree is covered: 13
-error paths, covered by 14 of this script's mutations. The two numbers are not
+Every `errors.append` in the `contribute_payload` check tree is covered: 14
+error paths, covered by 15 of this script's mutations. The two numbers are not
 equal and are not meant to be -- some appends need more than one mutation (see
 `check_first_byte_markers` above), and no mutation is *credited* with covering
 two appends, so the designated cover map stays one-directional and a deleted
@@ -391,7 +391,40 @@ def mutate_duplicate_vector_name(data: dict) -> str:
     return "utf8_accent -> ascii_short"
 
 
+def mutate_empty_vector_value(data: dict) -> str:
+    """A vector given `value: ""` with a hex pair that is otherwise self-consistent.
+
+    REPLACES a vector in place rather than appending a ninth: appending would trip
+    EXPECTED_VECTOR_COUNT first and the mutation would look "caught" while saying
+    nothing about the empty-value assertion.
+
+    The two hexes are chosen so that only the new assertion can fire. `0a00` is
+    what this script's own encoder produces for "" (tag, then a zero length), and
+    the legacy hex is `json.dumps({"value": ""})` = `{"value":""}`, 12 bytes. So
+    the vector is internally consistent under every pre-existing check, which is
+    the point: the manifest can be made to hold a schema-valid, self-consistent,
+    and still incoherent empty-value vector, and before this assertion nothing
+    said so.
+
+    `ascii_short` is the target because it is a non-collision vector: no
+    `collision_` prefix, so the count guard, the name/length checks and the
+    length-set check are all silent, and the `value`-key floor is unaffected.
+    """
+    v = find(data, "ascii_short")
+    if v["value"] == "":
+        raise SystemExit("FAIL: ascii_short is already empty -- mutation is stale")
+    v["value"] = ""
+    v["protobuf_hex"] = "0a00"
+    v["legacy_json_hex"] = b'{"value":""}'.hex()
+    return "ascii_short"
+
+
 MUTATIONS = (
+    (
+        "a vector's value is empty, with an otherwise self-consistent hex pair",
+        mutate_empty_vector_value,
+        "has an empty `value`",
+    ),
     (
         "two vectors share a name, every other field intact",
         mutate_duplicate_vector_name,

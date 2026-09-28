@@ -130,7 +130,22 @@ FENCED_JSON_RE = re.compile(r"```json\n(.*?)\n```", re.DOTALL)
 
 def proto_contribute(value: str) -> bytes:
     """6-line stdlib protobuf-tag encoder for ContributePayload.value (field 1,
-    string): tag 0x0A, a base-128 varint length, then the UTF-8 bytes."""
+    string): tag 0x0A, a base-128 varint length, then the UTF-8 bytes.
+
+    Never called with "". Canonical proto3 gives a plain singular `string` field
+    implicit presence, so the canonical encoding of value "" is ZERO bytes --
+    byte-identical to an absent payload (multi_round.proto states this at the
+    field). This function would instead return b"\\x0a\\x00", a two-byte encoding
+    of a present-but-empty field, which is not canonical output for any input.
+
+    There is deliberately no `if not value: return b""` guard. The sole caller
+    (check_contribute_payload's vector loop) rejects an empty `value` before
+    reaching here, so such a branch would be unreachable code -- and this file
+    already refuses unreachable defensive branches on the grounds that nobody
+    would notice deleting them. If a caller is ever added, reject there too
+    rather than teaching this function to return a non-canonical two bytes or a
+    zero-length string it has no way to express in `protobuf_hex`.
+    """
     b = value.encode("utf-8")
     n, out = len(b), bytearray([0x0A])
     while True:
@@ -372,6 +387,38 @@ def check_contribute_payload(sections: dict) -> list[str]:
     errors.extend(check_first_byte_markers(cp))
     for v in vectors:
         name = v.get("name", "<unnamed>")
+
+        # An empty `value` is rejected rather than encoded, and the manifest
+        # cannot express a correct empty-value vector at all -- which is why
+        # rejecting is the whole fix and `proto_contribute` needs no
+        # empty-string branch.
+        #
+        # Canonical proto3 gives ContributePayload.value implicit presence, so
+        # value "" encodes to ZERO bytes -- byte-identical to an absent payload
+        # (multi_round.proto says so at the field itself). There is therefore no
+        # `protobuf_hex` that correctly describes an empty value: the schema's
+        # pattern is `^([0-9a-f]{2})+$`, one-or-more byte pairs, so the empty
+        # string is schema-INVALID and `"0a00"` is a two-byte encoding of a
+        # one-byte-length field, not of an absent one.
+        #
+        # A sibling section of this same manifest already states the answer:
+        # contribute_acceptance.empty_payload is "reject", sourced to the
+        # runtime's parse_contribute_value. So an empty-value vector would
+        # contradict a section two keys away -- exactly the class of internal
+        # contradiction this script exists to catch. `continue` because every
+        # remaining check on this vector re-derives from `value`, and
+        # re-deriving from a value the manifest may not contain produces
+        # confusing secondary diagnostics rather than information.
+        if v["value"] == "":
+            errors.append(
+                "contribute_payload vector %r has an empty `value` -- canonical proto3 gives "
+                "ContributePayload.value implicit presence, so an empty value encodes to zero "
+                "bytes, byte-identical to an absent payload, and no protobuf_hex can describe "
+                "it (the schema's `^([0-9a-f]{2})+$` makes the empty string invalid). "
+                "contribute_acceptance.empty_payload already pins this case as \"reject\"" % name
+            )
+            continue
+
         expected_proto = proto_contribute(v["value"]).hex()
         if v["protobuf_hex"] != expected_proto:
             errors.append(
