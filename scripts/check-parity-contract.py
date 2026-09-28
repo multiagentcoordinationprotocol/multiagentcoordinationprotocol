@@ -121,6 +121,13 @@ COLLISION_PREFIX = "collision_"
 # and edit the prose, which names these numbers in contribute_payload.source.
 EXPECTED_COLLISION_LENGTHS = (10, 13, 32, 123)
 
+# A FLOOR, not an equality, on how many vectors carry a legacy_json_hex. See the
+# long note at its use site in check_contribute_payload for why 7 and not 1, and
+# for why lowering it would silently un-guard first_byte.legacy_json. Raise it
+# when a legacy-carrying vector is legitimately added; never lower it without
+# reading that note.
+EXPECTED_MIN_LEGACY_VECTOR_COUNT = 7
+
 ERROR_CODE_ROW_RE = re.compile(
     r"^\|\s*([A-Z][A-Z0-9_]*)\s*\|.*\|\s*(permanent|deprecated)\s*\|", re.MULTILINE
 )
@@ -405,10 +412,19 @@ def check_contribute_payload(sections: dict) -> list[str]:
         # contribute_acceptance.empty_payload is "reject", sourced to the
         # runtime's parse_contribute_value. So an empty-value vector would
         # contradict a section two keys away -- exactly the class of internal
-        # contradiction this script exists to catch. `continue` because every
-        # remaining check on this vector re-derives from `value`, and
-        # re-deriving from a value the manifest may not contain produces
-        # confusing secondary diagnostics rather than information.
+        # contradiction this script exists to catch.
+        #
+        # `continue` rather than falling through, and it skips THREE remaining
+        # per-vector checks, two of which would re-derive from `value` and
+        # produce confusing secondary diagnostics ("protobuf_hex '0a00' does not
+        # match the re-derived encoding '' of value ''"). The third -- the
+        # "no legacy_json_hex and not marked decode_only" requirement -- does NOT
+        # re-derive, and skipping it is a deliberate consequence rather than a
+        # covered case: an empty-value vector is already being rejected, so
+        # telling its author about a second, unrelated defect in the same vector
+        # adds noise to a report they must act on anyway. Say so explicitly
+        # because the earlier wording here claimed every skipped check re-derives,
+        # which was not true of that one.
         if v["value"] == "":
             errors.append(
                 "contribute_payload vector %r has an empty `value` -- canonical proto3 gives "
@@ -452,6 +468,41 @@ def check_contribute_payload(sections: dict) -> list[str]:
                     "the re-derived encoding %r of value %r"
                     % (name, actual_json, expected_json, v["value"])
                 )
+    # A floor on how many vectors carry the legacy form at all. Styled on
+    # check_collision_vectors' value-key floor: a floor, not an equality.
+    #
+    # Everything above checks each legacy_json_hex that EXISTS. Nothing checked
+    # how many exist -- and `decode_only: true` is a schema-legal way to omit the
+    # field, so the whole legacy half of this section could be deleted in one
+    # green, schema-valid commit by marking every vector decode_only. Nothing
+    # else would notice: the per-vector requirement is satisfied by decode_only,
+    # the re-derivation has nothing left to re-derive, and
+    # check_first_byte_markers SKIPS vectors with no legacy hex -- so
+    # first_byte.legacy_json would silently stop being checked at all, and could
+    # then be set to any byte. That last consequence is why this floor is what
+    # keeps the legacy marker non-vacuous, and why lowering it would silently
+    # un-guard that marker too.
+    #
+    # A floor of 7 rather than 1 or an equality:
+    #   - 1 would keep first_byte.legacy_json non-vacuous while still permitting
+    #     6 of the 7 legacy forms to be deleted -- the coverage this section is
+    #     for, gone, with one token vector left to keep the marker honest.
+    #   - an equality would break on every legitimate vector addition, which is
+    #     already governed by EXPECTED_VECTOR_COUNT and which the manifest's own
+    #     README calls a MINOR bump. A new decode_only vector must not turn this
+    #     red.
+    # So: 7 catches deletion, and stays green when the section legitimately grows.
+    legacy_carriers = [v for v in vectors if v.get("legacy_json_hex") is not None]
+    if len(legacy_carriers) < EXPECTED_MIN_LEGACY_VECTOR_COUNT:
+        errors.append(
+            "only %d contribute_payload vector(s) carry a legacy_json_hex, below the floor of "
+            "%d -- `decode_only` is a schema-legal way to omit the field, so without this floor "
+            "the legacy half of this section could be deleted in one green commit, taking "
+            "first_byte.legacy_json's only non-vacuous check with it (check_first_byte_markers "
+            "skips vectors with no legacy hex)"
+            % (len(legacy_carriers), EXPECTED_MIN_LEGACY_VECTOR_COUNT)
+        )
+
     errors.extend(check_collision_vectors(vectors))
     return errors
 

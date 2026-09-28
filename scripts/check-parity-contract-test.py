@@ -16,30 +16,57 @@ long predate the collision vectors: an assertion nobody has ever seen fail is
 one nobody would notice deleting. `check_first_byte_markers()` gets two
 mutations rather than one, because its single `errors.append` is reached through
 two independent loop iterations -- drop either key from that loop and the other
-mutation still passes.
+mutation still passes. (That single-append-inside-a-loop shape is also why those
+two mutations each print one FAIL line per vector while touching only one
+assertion; see the lines-vs-sites note below.)
 
-Every `errors.append` in the `contribute_payload` check tree is covered: 14
-error paths, covered by 15 of this script's mutations. The two numbers are not
+Every `errors.append` in the `contribute_payload` check tree is covered: 15
+error paths, covered by 17 of this script's mutations. The two numbers are not
 equal and are not meant to be -- some appends need more than one mutation (see
 `check_first_byte_markers` above), and no mutation is *credited* with covering
 two appends, so the designated cover map stays one-directional and a deleted
 append always orphans a mutation.
 
 Read "credited" strictly: it is a claim about the cover map, NOT about blast
-radius. Half the mutations here trip two or three distinct error sites, because
-the manifest's fields constrain each other and one edit can violate several at
-once -- measured over all 14, seven of them do. Each such case is noted in its
-own docstring, with whether the overlap was avoidable. What the assertion above
-promises is only that every append has at least one mutation that FAILS when
-that append is removed; that is the property worth re-checking after any edit
-here, by neutering each append in a scratch copy and confirming this script goes
-red for the message that append emits.
+radius. MANY mutations here trip more than one error site, because the
+manifest's fields constrain each other and one edit can violate several at once.
+Each such case is noted in its own docstring, with whether the overlap was
+avoidable.
+
+Two quantities get confused here, so name them apart before measuring either.
+A mutation's FAIL *lines* are how many messages the run prints; its *sites* are
+how many distinct `errors.append` statements produced them. They are not the
+same number, and the gap is not noise: `check_first_byte_markers` holds a single
+`errors.append` inside a loop over every vector, so drifting one marker prints
+one line per vector -- eight of them -- from ONE site. That is a well-isolated
+mutation being loud, not a mutation with a wide blast radius. Only the site count
+says anything about whether assertions overlap.
+
+No count of either quantity is stated anywhere in this file -- deliberately, and
+this is the third attempt at this paragraph. Two successive review rounds each
+corrected a figure here ("four of ten", then "seven of fourteen, two or three
+sites"), and the very next phase falsified it again, because adding one assertion
+silently widens the blast radius of every pre-existing mutation that touches the
+same field. A figure nothing machine-checks, in the one file whose purpose is to
+stop coverage claims from drifting, is a liability rather than documentation.
+
+So: to learn the current distribution, MEASURE it. Copy the tree, apply one
+mutation to the copy, run the checker under `MACP_ROOT`, count the FAIL lines,
+and collapse them to sites by normalising the interpolated values out of each
+message. If you add an assertion, sweep the PRE-EXISTING mutations too, not just
+your own -- that is precisely the step whose omission falsified this paragraph
+twice.
+
+What the assertion above promises is only that every append has at least one
+mutation that FAILS when that append is removed. That is the property worth
+re-checking after any edit here, by neutering each append in a scratch copy and
+confirming this script goes red for the message that append emits.
 
 "The `contribute_payload` check tree" means the functions reachable from
 `check_contribute_payload()`, not the whole checker. An assertion in another
-section is not in scope for that count and is not claimed to be covered by it --
-this script may still carry mutations for such assertions, and those mutations
-are simply not what the 13 counts.
+section is not in scope for the error-path count above and is not claimed to be
+covered by it -- this script may still carry mutations for such assertions, and
+those mutations are simply not what that count counts.
 
 Same shape as scripts/check-prose-test.py (issue #129): copy the tree, mutate
 the COPY, run the real unmodified scripts/check-parity-contract.py against it
@@ -180,11 +207,12 @@ def mutate_protobuf_hex_undecodable(data: dict) -> str:
 
     Fires three assertions, not one, and unavoidably: bytes that fail
     `bytes.fromhex` also fail the re-derivation and the first-byte marker, since
-    a re-derived hex is by construction valid and 0x0a-leading. Four of the ten
+    a re-derived hex is by construction valid and 0x0a-leading. Several other
     mutations here trip more than one assertion for similar reasons -- perfect
     isolation is not available when the manifest's fields are derived from each
-    other. The `expect` substring is what proves the intended assertion is among
-    the ones that fired.
+    other. (No count of how many; see the module docstring for why this file
+    states none.) The `expect` substring is what proves the intended assertion is
+    among the ones that fired.
     """
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == "collision_leading_brace_13":
@@ -334,7 +362,14 @@ def mutate_decode_only_legacy_hex_smuggled(data: dict) -> str:
 def mutate_legacy_hex_dropped_without_decode_only(data: dict) -> str:
     """The other half of that gate: a vector that simply loses its legacy form.
     Keying on presence would let this pass silently if nothing required the field
-    of a vector that is not marked decode_only."""
+    of a vector that is not marked decode_only.
+
+    Since the legacy floor landed this trips two sites, not one: deleting a
+    legacy form necessarily takes the carrier count from 7 to 6. Unavoidable --
+    there is no way to drop a legacy_json_hex without lowering the count of
+    vectors that have one. The `expect` substring keeps it honest, and neutering
+    the per-vector requirement alone still turns this mutation red.
+    """
     v = find(data, "ascii_short")
     if v.get("decode_only") or "legacy_json_hex" not in v:
         raise SystemExit("FAIL: ascii_short is no longer a legacy-carrying vector -- stale")
@@ -353,14 +388,34 @@ def mutate_protobuf_hex_drifts(data: dict) -> str:
 
 
 def mutate_vector_count_guard(data: dict) -> str:
-    """A non-collision vector removed, so only the total-count guard fires (the
-    collision count is untouched). Also previously untested."""
+    """A vector removed, so only the total-count guard fires.
+
+    Targets `one_byte_varint_boundary` specifically, and the choice is what makes
+    the isolation claim true rather than merely intended. It must be a vector
+    that is BOTH non-collision (so the collision count and the two length checks
+    stay quiet) AND a non-carrier of `legacy_json_hex` (so the legacy floor stays
+    quiet). `one_byte_varint_boundary` is the only vector that is both -- it is
+    the sole `decode_only` non-carrier.
+
+    It used to remove `utf8_accent`, which was non-collision but IS a carrier. So
+    when the legacy floor landed, this mutation silently started tripping two
+    sites, and this docstring's word "only" silently became false. Measured after
+    the retarget: exactly 1 error. If a future phase adds an assertion, re-measure
+    this one before trusting the word "only" again.
+    """
     vectors = data["sections"]["contribute_payload"]["vectors"]
-    kept = [v for v in vectors if v["name"] != "utf8_accent"]
+    target = find(data, "one_byte_varint_boundary")
+    if target.get("legacy_json_hex") is not None:
+        raise SystemExit(
+            "FAIL: one_byte_varint_boundary now carries a legacy_json_hex, so removing it "
+            "would also trip the legacy floor -- retarget to another non-collision "
+            "non-carrier or accept the overlap, but do not leave 'only' in the docstring"
+        )
+    kept = [v for v in vectors if v["name"] != "one_byte_varint_boundary"]
     if len(kept) == len(vectors):
-        raise SystemExit("FAIL: utf8_accent not found -- mutation is stale")
+        raise SystemExit("FAIL: one_byte_varint_boundary not found -- mutation is stale")
     data["sections"]["contribute_payload"]["vectors"] = kept
-    return "utf8_accent"
+    return "one_byte_varint_boundary"
 
 
 def mutate_duplicate_vector_name(data: dict) -> str:
@@ -419,7 +474,61 @@ def mutate_empty_vector_value(data: dict) -> str:
     return "ascii_short"
 
 
+def mutate_all_legacy_forms_deleted(data: dict) -> str:
+    """The whole legacy half of the section deleted in one schema-valid edit.
+
+    This is the scenario the floor exists for, and the reason it is not
+    hypothetical: `decode_only: true` is a schema-legal way to omit
+    `legacy_json_hex`, so marking every vector decode_only satisfies the
+    per-vector requirement while removing every legacy form. Before the floor,
+    this passed -- and it also silently retired
+    check_first_byte_markers' legacy marker, which skips vectors that carry no
+    legacy hex, so first_byte.legacy_json could then hold any byte at all.
+
+    Setting first_byte.legacy_json to a wrong byte too is what makes that second
+    consequence visible, and it was verified rather than reasoned about: with the
+    floor neutered, this entire mutation -- every legacy form gone AND
+    first_byte.legacy_json set to 0x00 -- passes the checker with zero errors.
+    """
+    vectors = data["sections"]["contribute_payload"]["vectors"]
+    carriers = [v for v in vectors if v.get("legacy_json_hex") is not None]
+    if len(carriers) < 2:
+        raise SystemExit("FAIL: fewer than 2 legacy carriers to delete -- mutation is stale")
+    for v in vectors:
+        v.pop("legacy_json_hex", None)
+        v["decode_only"] = True
+    data["sections"]["contribute_payload"]["first_byte"]["legacy_json"] = "0x00"
+    return "all %d legacy forms" % len(carriers)
+
+
+def mutate_one_legacy_form_deleted(data: dict) -> str:
+    """ONE legacy carrier stripped, marked decode_only so the per-vector
+    requirement stays satisfied.
+
+    Its own mutation, because it proves the floor is a FLOOR rather than an
+    all-or-nothing guard: the mutation above would still be caught by a check
+    that merely required "at least one legacy form somewhere", and this one would
+    not. 7 -> 6 is the smallest edit the floor must reject.
+    """
+    v = find(data, "utf8_accent")
+    if v.get("legacy_json_hex") is None:
+        raise SystemExit("FAIL: utf8_accent carries no legacy_json_hex -- mutation is stale")
+    del v["legacy_json_hex"]
+    v["decode_only"] = True
+    return "utf8_accent"
+
+
 MUTATIONS = (
+    (
+        "every legacy_json_hex deleted, every vector marked decode_only",
+        mutate_all_legacy_forms_deleted,
+        "below the floor of",
+    ),
+    (
+        "one legacy carrier stripped, taking the count from 7 to 6",
+        mutate_one_legacy_form_deleted,
+        "below the floor of",
+    ),
     (
         "a vector's value is empty, with an otherwise self-consistent hex pair",
         mutate_empty_vector_value,
