@@ -18,12 +18,22 @@ mutations rather than one, because its single `errors.append` is reached through
 two independent loop iterations -- drop either key from that loop and the other
 mutation still passes.
 
-Every `errors.append` in the `contribute_payload` check tree is covered: 12
-error paths, covered by 13 of this script's mutations. The two numbers are not
+Every `errors.append` in the `contribute_payload` check tree is covered: 13
+error paths, covered by 14 of this script's mutations. The two numbers are not
 equal and are not meant to be -- some appends need more than one mutation (see
-`check_first_byte_markers` above), and no mutation covers two appends. That is a
-property worth re-checking after any edit here, by neutering each append in a
-scratch copy and confirming this script goes red.
+`check_first_byte_markers` above), and no mutation is *credited* with covering
+two appends, so the designated cover map stays one-directional and a deleted
+append always orphans a mutation.
+
+Read "credited" strictly: it is a claim about the cover map, NOT about blast
+radius. Half the mutations here trip two or three distinct error sites, because
+the manifest's fields constrain each other and one edit can violate several at
+once -- measured over all 14, seven of them do. Each such case is noted in its
+own docstring, with whether the overlap was avoidable. What the assertion above
+promises is only that every append has at least one mutation that FAILS when
+that append is removed; that is the property worth re-checking after any edit
+here, by neutering each append in a scratch copy and confirming this script goes
+red for the message that append emits.
 
 "The `contribute_payload` check tree" means the functions reachable from
 `check_contribute_payload()`, not the whole checker. An assertion in another
@@ -126,6 +136,15 @@ def mutate_value_key_branch_lost(data: dict) -> str:
     10-byte replacement cannot work here: the shortest legacy-shaped object is
     `{"value":""}` at 12 bytes, which is why length 10 is structurally
     value-less and worth pinning in the first place.
+
+    Since the name/length assertions landed, this trips THREE error sites, not
+    one: re-encoding to 13 bytes while keeping the `_10` name also violates the
+    name-vs-length check and shortens the pinned-length multiset. That overlap is
+    unavoidable and follows from the paragraph above -- no 10-byte value can
+    carry a `value` key, so there is no length-preserving way to write this
+    mutation. The `expect` substring is what keeps it honest: it still proves the
+    floor assertion specifically fired, and neutering that assertion alone still
+    turns this mutation red.
     """
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == "collision_foreign_key_10":
@@ -179,8 +198,24 @@ def mutate_collision_length_drifts_from_name(data: dict) -> str:
 
     It still collides (13 bytes is a genuine collision length), and both hexes are
     re-derived, so neither the collision assertion nor the re-derivation can catch
-    it -- only the name-vs-length check can. This is the mutation that makes the
-    numbers in the vector names load-bearing instead of decorative.
+    it. This is the mutation that makes the numbers in the vector names
+    load-bearing instead of decorative.
+
+    It does NOT isolate the name-vs-length check, and an earlier version of this
+    docstring wrongly claimed it did. Two error sites fire: moving a 32-byte
+    vector to 13 bytes both contradicts its own name AND leaves the pinned-length
+    multiset at [10, 13, 13, 123] instead of [10, 13, 32, 123]. The `expect`
+    substring is what proves the name-vs-length branch is among the two, and
+    neutering that branch alone still turns this mutation red.
+
+    The case that isolates name-vs-length cleanly is a name SWAP -- exchange
+    `collision_leading_brace_13` and `collision_leading_brace_32`'s names, leaving
+    every value untouched: the multiset is unchanged so the set check stays
+    silent, and only the per-vector comparison fires (twice). That asymmetry is
+    exactly what check-parity-contract.py's own docstring means by "(4) compares
+    lengths only, so two vectors could swap names and stay green" -- the two
+    assertions catch overlapping but non-identical failure sets, which is why both
+    exist.
     """
     v = find(data, "collision_leading_brace_32")
     if len(v["value"].encode("utf-8")) != 32:
@@ -232,6 +267,15 @@ def mutate_collision_band_collapses_onto_one_length(data: dict) -> str:
 
 
 def find(data: dict, name: str) -> dict:
+    """Return the vector with this `name`.
+
+    Returns the FIRST match, which is only safe because the checker now rejects
+    duplicate names outright (`check_contribute_payload`'s uniqueness loop, tested
+    by `mutate_duplicate_vector_name` below). Before that assertion existed this
+    was a silent hazard: a duplicate name made one of the pair unreachable, so a
+    mutation keyed on it would exercise the wrong vector -- or the same one twice
+    -- and still print "caught".
+    """
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == name:
             return v
@@ -319,7 +363,40 @@ def mutate_vector_count_guard(data: dict) -> str:
     return "utf8_accent"
 
 
+def mutate_duplicate_vector_name(data: dict) -> str:
+    """Two vectors given the same `name`, with every other field left alone.
+
+    The mutation that makes the harness's own central assumption enforced rather
+    than lucky: `find()` above returns the FIRST match, so a duplicate name
+    silently renders one of the pair unmutatable -- every mutation keyed on that
+    name would still report "caught" while testing the wrong vector, or the same
+    vector twice.
+
+    Deliberately a RENAME, not a duplicated object. Both vectors keep their own
+    `value`/`protobuf_hex`/`legacy_json_hex`, so both still re-derive cleanly;
+    the total stays 8 so the count guard is silent; neither name starts with
+    `collision_` so the band checks are silent. Only the uniqueness assertion can
+    fire. A duplicated OBJECT would instead be the one case `"uniqueItems": true`
+    already catches, which is exactly why the schema keyword is not the fix.
+    """
+    vectors = data["sections"]["contribute_payload"]["vectors"]
+    names = [v["name"] for v in vectors]
+    if "utf8_accent" not in names or "ascii_short" not in names:
+        raise SystemExit(
+            "FAIL: expected both utf8_accent and ascii_short to exist -- mutation is stale"
+        )
+    for v in vectors:
+        if v["name"] == "utf8_accent":
+            v["name"] = "ascii_short"
+    return "utf8_accent -> ascii_short"
+
+
 MUTATIONS = (
+    (
+        "two vectors share a name, every other field intact",
+        mutate_duplicate_vector_name,
+        "two vectors named",
+    ),
     (
         "a collision vector's value no longer collides",
         mutate_stops_colliding,

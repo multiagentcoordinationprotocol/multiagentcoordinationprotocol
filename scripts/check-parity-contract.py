@@ -342,6 +342,33 @@ def check_contribute_payload(sections: dict) -> list[str]:
             "expected %d contribute_payload.vectors, found %d"
             % (EXPECTED_VECTOR_COUNT, len(vectors))
         )
+
+    # Name uniqueness, checked FIRST so that a duplicate-name manifest reports
+    # the ambiguity before any message that names a vector -- every other error
+    # in this tree identifies its subject by `name`, so on a duplicate the rest
+    # of the run is ambiguous, and it should be known to be ambiguous rather
+    # than silently so.
+    #
+    # Checker-side rather than schema-side on purpose. Draft 2020-12 has no
+    # "unique by property" keyword; `"uniqueItems": true` on the array catches
+    # only the exact-duplicate-OBJECT case, and two vectors sharing a name with
+    # DIFFERENT values still validate -- which is precisely the case that lets
+    # the collision band collapse onto one byte length under distinct-looking
+    # entries (see check_collision_vectors). A schema-side half-measure would
+    # also be invisible to the mutation harness, which never invokes ajv.
+    seen: set[str] = set()
+    for v in vectors:
+        name = v.get("name", "<unnamed>")
+        if name in seen:
+            errors.append(
+                "contribute_payload has two vectors named %r -- names are how every "
+                "other message in this section identifies its subject, and how "
+                "check-parity-contract-test.py's find() selects a vector to mutate, "
+                "so a duplicate makes one of the pair unreachable and every "
+                "name-bearing diagnostic ambiguous" % name
+            )
+        seen.add(name)
+
     errors.extend(check_first_byte_markers(cp))
     for v in vectors:
         name = v.get("name", "<unnamed>")
@@ -454,7 +481,25 @@ def check_collision_vectors(vectors: list) -> list[str]:
     edited to something that no longer collides re-derives to a perfectly
     self-consistent hex pair.
 
-    Four things are asserted. (1) Every collision_* vector's proto bytes still
+    Five things are asserted, through seven `errors.append` calls. The two counts
+    differ for a reason worth stating, since a reader counting appends against
+    numbered claims would otherwise conclude the list is incomplete:
+
+      (0) the pinned collision-vector COUNT (EXPECTED_COLLISION_COUNT), which the
+          four numbered items below deliberately do not cover and which predates
+          them -- one append;
+      (1) two appends: an undecodable protobuf_hex is reported separately from
+          hex that decodes but does not parse as JSON, because the diagnostics are
+          not interchangeable (one is a malformed field, the other a vector that
+          has stopped colliding);
+      (2) one append;
+      (3) two appends: a name with no trailing number at all is reported
+          separately from a number that disagrees with the value, because the
+          first leaves the pinned length UNSTATED -- such a vector contributes no
+          length and would otherwise fall out of both (3) and (4) in silence;
+      (4) one append.
+
+    (1) Every collision_* vector's proto bytes still
     parse as JSON -- any JSON value, deliberately not only an object: the
     collision band includes lengths whose JSON reading is a bare number or
     string (each SDK's own 1-127 sweep enumerates them), and requiring an
