@@ -97,8 +97,11 @@ Optional features that enhance the SDK but are not required for conformance:
   inside the manifest instead, among them `contribute_payload.first_byte`'s two discriminator
   bytes, asserted against the bytes every vector leads with; `macp-runtime` asserts those same
   two markers against its vendored copy, so that drift is now caught here rather than
-  downstream. Read `scripts/check-parity-contract.py` rather than any summary of it before
-  assuming a section is covered.
+  downstream. `retry.retryable_error_codes` is the second: its members must all appear in the
+  manifest's own `error_codes.permanent`, which is itself held to `registries/error-codes.md`, so
+  a retryable code that is not a canonical error code fails even though the `retry` section's
+  `source` still reads "convention". Read `scripts/check-parity-contract.py` rather than any
+  summary of it before assuming a section is covered.
 - **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
   `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
   against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it
