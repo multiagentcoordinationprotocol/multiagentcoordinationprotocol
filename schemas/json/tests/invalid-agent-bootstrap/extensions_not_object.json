@@ -33,9 +33,9 @@
       "configurationVersion": "runtime-2026.03.02",
       "policyVersion": "banking-policy-2026.03",
       "contextId": "ctx:txn:TXN-48000-SaoPaulo",
-      "extensions": {
-        "x-tracing": "eyJ0cmFjZXBhcmVudCI6IjAwLTRiZjkyZjM1NzdiMzRkYTZhM2NlOTI5ZDBlMGU0NzM2LTAwZjA2N2FhMGJhOTAyYjctMDEifQ=="
-      },
+      "extensions": [
+        "x-tracing"
+      ],
       "maxSuspendMs": 60000
     },
     "kickoff": {
@@ -47,5 +47,6 @@
     "host": "checkout-orchestrator.internal",
     "port": 8080,
     "path": "/macp/cancel"
-  }
+  },
+  "_invalid_because": "initiator.sessionStart.extensions is an ARRAY. The proto field is map<string, bytes>, which the canonical JSON mapping renders as an object keyed by protocol identifier. Isolates the extensions CONTAINER's type keyword, which is a different constraint from the value subschema's type that extensions_value_not_string.json covers."
 }

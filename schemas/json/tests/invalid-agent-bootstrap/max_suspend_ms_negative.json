@@ -36,7 +36,7 @@
       "extensions": {
         "x-tracing": "eyJ0cmFjZXBhcmVudCI6IjAwLTRiZjkyZjM1NzdiMzRkYTZhM2NlOTI5ZDBlMGU0NzM2LTAwZjA2N2FhMGJhOTAyYjctMDEifQ=="
       },
-      "maxSuspendMs": 60000
+      "maxSuspendMs": -1
     },
     "kickoff": {
       "messageType": "Proposal",
@@ -47,5 +47,6 @@
     "host": "checkout-orchestrator.internal",
     "port": 8080,
     "path": "/macp/cancel"
-  }
+  },
+  "_invalid_because": "initiator.sessionStart.maxSuspendMs is negative. It binds a cumulative SUSPENDED-time budget (RFC-MACP-0001 Section 7.5), so a negative budget is meaningless; 0 is legal and means the runtime's configured default applies. Isolates maxSuspendMs's minimum keyword."
 }

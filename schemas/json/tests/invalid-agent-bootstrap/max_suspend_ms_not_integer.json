@@ -36,7 +36,7 @@
       "extensions": {
         "x-tracing": "eyJ0cmFjZXBhcmVudCI6IjAwLTRiZjkyZjM1NzdiMzRkYTZhM2NlOTI5ZDBlMGU0NzM2LTAwZjA2N2FhMGJhOTAyYjctMDEifQ=="
       },
-      "maxSuspendMs": 60000
+      "maxSuspendMs": 1.5
     },
     "kickoff": {
       "messageType": "Proposal",
@@ -47,5 +47,6 @@
     "host": "checkout-orchestrator.internal",
     "port": 8080,
     "path": "/macp/cancel"
-  }
+  },
+  "_invalid_because": "initiator.sessionStart.maxSuspendMs is fractional. The proto field is int64, so a non-integer has no wire representation. Isolates maxSuspendMs's type keyword, which is a different constraint from the minimum that max_suspend_ms_negative.json covers."
 }

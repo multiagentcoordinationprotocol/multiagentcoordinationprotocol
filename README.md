@@ -123,6 +123,7 @@ MACP/
         invalid-handoff-rules/ # negative Handoff-rules fixtures (MUST fail validation)
         invalid-policy-descriptors/ # negative PolicyDescriptor fixtures (MUST fail validation)
         invalid-parity-contract/ # negative parity-contract fixtures (MUST fail validation)
+        invalid-agent-bootstrap/ # negative agent-bootstrap fixtures (MUST fail validation)
         valid-policy-rules/    # maximal positive rules fixtures (MUST validate)
       policy/
         decision-rules.schema.json

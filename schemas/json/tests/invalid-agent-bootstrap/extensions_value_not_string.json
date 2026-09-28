@@ -34,7 +34,7 @@
       "policyVersion": "banking-policy-2026.03",
       "contextId": "ctx:txn:TXN-48000-SaoPaulo",
       "extensions": {
-        "x-tracing": "eyJ0cmFjZXBhcmVudCI6IjAwLTRiZjkyZjM1NzdiMzRkYTZhM2NlOTI5ZDBlMGU0NzM2LTAwZjA2N2FhMGJhOTAyYjctMDEifQ=="
+        "x-tracing": 42
       },
       "maxSuspendMs": 60000
     },
@@ -47,5 +47,6 @@
     "host": "checkout-orchestrator.internal",
     "port": 8080,
     "path": "/macp/cancel"
-  }
+  },
+  "_invalid_because": "initiator.sessionStart.extensions maps a key to a NUMBER. SessionStartPayload.extensions is map<string, bytes>, and RFC-MACP-0001 Section 10.3 maps protobuf bytes to base64 STRINGS in JSON, so a non-string value has no canonical reading. Isolates the extensions VALUE subschema's type keyword."
 }
