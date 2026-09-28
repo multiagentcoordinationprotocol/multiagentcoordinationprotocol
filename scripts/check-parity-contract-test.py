@@ -18,9 +18,18 @@ mutations rather than one, because its single `errors.append` is reached through
 two independent loop iterations -- drop either key from that loop and the other
 mutation still passes.
 
-Every `errors.append` in the `contribute_payload` check tree is covered: 9 error
-paths, 10 mutations. That is a property worth re-checking after any edit here,
-by neutering each append in a scratch copy and confirming this script goes red.
+Every `errors.append` in the `contribute_payload` check tree is covered: 12
+error paths, covered by 13 of this script's mutations. The two numbers are not
+equal and are not meant to be -- some appends need more than one mutation (see
+`check_first_byte_markers` above), and no mutation covers two appends. That is a
+property worth re-checking after any edit here, by neutering each append in a
+scratch copy and confirming this script goes red.
+
+"The `contribute_payload` check tree" means the functions reachable from
+`check_contribute_payload()`, not the whole checker. An assertion in another
+section is not in scope for that count and is not claimed to be covered by it --
+this script may still carry mutations for such assertions, and those mutations
+are simply not what the 13 counts.
 
 Same shape as scripts/check-prose-test.py (issue #129): copy the tree, mutate
 the COPY, run the real unmodified scripts/check-parity-contract.py against it
@@ -165,6 +174,63 @@ def mutate_protobuf_hex_undecodable(data: dict) -> str:
     raise SystemExit("FAIL: collision_leading_brace_13 not found -- mutation is stale")
 
 
+def mutate_collision_length_drifts_from_name(data: dict) -> str:
+    """A collision vector re-encoded to a DIFFERENT byte length, keeping its name.
+
+    It still collides (13 bytes is a genuine collision length), and both hexes are
+    re-derived, so neither the collision assertion nor the re-derivation can catch
+    it -- only the name-vs-length check can. This is the mutation that makes the
+    numbers in the vector names load-bearing instead of decorative.
+    """
+    v = find(data, "collision_leading_brace_32")
+    if len(v["value"].encode("utf-8")) != 32:
+        raise SystemExit("FAIL: collision_leading_brace_32 is not 32 bytes -- mutation is stale")
+    reencode(v, '{"value":"y"}')  # 13 bytes, still collides
+    return "collision_leading_brace_32"
+
+
+def mutate_collision_name_loses_its_number(data: dict) -> str:
+    """A collision vector renamed to drop its trailing _<int> entirely.
+
+    Keeps the collision_ prefix, so the count guard stays quiet and the vector is
+    still selected -- but the length it pins becomes unstated. Without its own
+    assertion this vector would simply fall out of both length checks, which is the
+    silent-exit case rather than a loud one. Trips the length-set assertion too, and
+    unavoidably: a vector with no stated length contributes none, so the set is one
+    short. The `expect` substring is what proves the intended branch fired.
+    """
+    v = find(data, "collision_leading_brace_13")
+    v["name"] = "collision_leading_brace"
+    return "collision_leading_brace"
+
+
+def mutate_collision_band_collapses_onto_one_length(data: dict) -> str:
+    """The band collapsed onto one length, with every name honestly renamed to match.
+
+    The case the per-vector name check alone CANNOT catch, and the reason
+    EXPECTED_COLLISION_LENGTHS exists: after this, every collision vector's name
+    agrees with its own value's byte length, all four names are still distinct (so
+    the duplicate-name check stays quiet), every hex re-derives, and all four still
+    collide. Only the pinned length SET notices that three of the four lengths the
+    prose claims are gone.
+    """
+    renamed = []
+    for v in data["sections"]["contribute_payload"]["vectors"]:
+        if not v["name"].startswith("collision_"):
+            continue
+        # 10 bytes, collides (tag 0x0a + varint 0x0a are both LF), and carries no
+        # `value` key -- so the missing-value-key floor stays satisfied too.
+        reencode(v, '{"a":"xx"}')
+        v["name"] = "collision_%s_10" % chr(ord("a") + len(renamed))
+        renamed.append(v["name"])
+    if len(renamed) != 4:
+        raise SystemExit(
+            "FAIL: expected 4 collision_* vectors to rename, found %d -- mutation is stale"
+            % len(renamed)
+        )
+    return ", ".join(renamed)
+
+
 def find(data: dict, name: str) -> dict:
     for v in data["sections"]["contribute_payload"]["vectors"]:
         if v["name"] == name:
@@ -273,6 +339,21 @@ MUTATIONS = (
         "a collision vector's protobuf_hex is not decodable hex",
         mutate_protobuf_hex_undecodable,
         "is not decodable hex",
+    ),
+    (
+        "a collision vector's byte length drifted from the length its name pins",
+        mutate_collision_length_drifts_from_name,
+        "in its name but its `value` is",
+    ),
+    (
+        "a collision vector's name lost its trailing byte-length number",
+        mutate_collision_name_loses_its_number,
+        "does not end in _<byte-length>",
+    ),
+    (
+        "the collision band collapsed onto one length, every name honestly renamed",
+        mutate_collision_band_collapses_onto_one_length,
+        "but contribute_payload.source's prose claims",
     ),
     (
         "the pinned proto first-byte marker drifted from the vectors",

@@ -112,6 +112,15 @@ EXPECTED_REJECT_COUNT = 11
 EXPECTED_COLLISION_COUNT = 4
 COLLISION_PREFIX = "collision_"
 
+# The four value byte-lengths contribute_payload.source names in prose ("at value
+# byte-lengths 10, 13, 32 and 123 ..."). Pinned as a SET, not just per-vector, because
+# name-vs-length agreement alone does not stop the band collapsing: four vectors renamed
+# collision_a_10 ... collision_d_10, all 10 bytes, would each agree with their own name
+# and still leave one length pinned four times while the prose claims four distinct ones.
+# Bump this together with EXPECTED_COLLISION_COUNT when a length is legitimately added --
+# and edit the prose, which names these numbers in contribute_payload.source.
+EXPECTED_COLLISION_LENGTHS = (10, 13, 32, 123)
+
 ERROR_CODE_ROW_RE = re.compile(
     r"^\|\s*([A-Z][A-Z0-9_]*)\s*\|.*\|\s*(permanent|deprecated)\s*\|", re.MULTILINE
 )
@@ -445,7 +454,7 @@ def check_collision_vectors(vectors: list) -> list[str]:
     edited to something that no longer collides re-derives to a perfectly
     self-consistent hex pair.
 
-    Two things are asserted. (1) Every collision_* vector's proto bytes still
+    Four things are asserted. (1) Every collision_* vector's proto bytes still
     parse as JSON -- any JSON value, deliberately not only an object: the
     collision band includes lengths whose JSON reading is a bare number or
     string (each SDK's own 1-127 sweep enumerates them), and requiring an
@@ -456,6 +465,25 @@ def check_collision_vectors(vectors: list) -> list[str]:
     justifying a vector at length 10 alongside the legacy-shaped ones, so it is
     held rather than left to prose. A floor, not an equality: pinning a second
     such length later is a legitimate edit, not a regression.
+
+    (3) Each collision_* name's trailing _<int> equals its `value`'s UTF-8 byte
+    length, which turns the names from decoration into the statement of which
+    length each vector pins. (4) The multiset of those lengths is exactly
+    EXPECTED_COLLISION_LENGTHS, which is what makes the four numbers in
+    contribute_payload.source's prose load-bearing.
+
+    (4) is not redundant with (3), and this is the reason both exist: under (3)
+    alone the band can be collapsed onto a single length -- rename the four to
+    collision_a_10 ... collision_d_10 and re-encode every value to 10 bytes, and
+    each name still agrees with its own value while three of the four pinned
+    lengths are gone. Distinct names also survive the duplicate-name check, so
+    nothing else would catch it. Conversely (3) is not redundant with (4): (4)
+    compares lengths only, so two vectors could swap names and stay green.
+
+    Note that length 123 is the case where the length varint IS the `{` byte, so
+    keying the check on the name's trailing number is also what keeps that pun
+    honest -- collision_no_leading_brace_123 is the only vector whose collision
+    comes from the varint rather than from whitespace.
 
     The mirror-image property -- that a legacy_json_hex can never be misread as
     canonical proto -- is not this function's job and needs no assertion of its
@@ -475,8 +503,37 @@ def check_collision_vectors(vectors: list) -> list[str]:
         )
 
     without_value_key = []
+    pinned_lengths = []
     for v in collisions:
         name = v.get("name", "<unnamed>")
+
+        # The trailing _<int> in a collision_* name IS the value byte-length it pins.
+        # Read only the LAST underscore-separated token: names carry descriptive
+        # middles too (collision_no_leading_brace_123), so a regex over the whole
+        # name would match the wrong number.
+        suffix = name.rsplit("_", 1)[-1]
+        if not suffix.isdigit():
+            # Reported distinctly, and deliberately not skipped silently: a
+            # collision vector renamed to drop its number would otherwise leave
+            # both length checks below with nothing to say about it.
+            errors.append(
+                "contribute_payload vector %r matches %s* but its name does not end in "
+                "_<byte-length>, so the length it pins is unstated and unchecked -- the "
+                "collision band's lengths are what contribute_payload.source claims in prose"
+                % (name, COLLISION_PREFIX)
+            )
+        else:
+            claimed = int(suffix)
+            actual = len(v["value"].encode("utf-8"))
+            pinned_lengths.append(actual)
+            if claimed != actual:
+                errors.append(
+                    "contribute_payload vector %r claims value byte length %d in its name "
+                    "but its `value` is %d UTF-8 bytes -- the name is the only statement of "
+                    "which collision length this vector pins, so a disagreement makes it "
+                    "decorative" % (name, claimed, actual)
+                )
+
         raw = v["protobuf_hex"]
         try:
             decoded_bytes = bytes.fromhex(raw)
@@ -501,6 +558,14 @@ def check_collision_vectors(vectors: list) -> list[str]:
             continue
         if not isinstance(decoded, dict) or "value" not in decoded:
             without_value_key.append(name)
+
+    if sorted(pinned_lengths) != sorted(EXPECTED_COLLISION_LENGTHS):
+        errors.append(
+            "the %s* vectors pin value byte lengths %s, but contribute_payload.source's prose "
+            "claims %s -- a length was dropped, duplicated, or moved, so the band the "
+            "tie-break exists for is no longer the band that is pinned"
+            % (COLLISION_PREFIX, sorted(pinned_lengths), sorted(EXPECTED_COLLISION_LENGTHS))
+        )
 
     if collisions and not without_value_key:
         errors.append(
