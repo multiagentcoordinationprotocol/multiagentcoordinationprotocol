@@ -491,9 +491,19 @@ done
 #         loop's missing-schema guard is that schema's first line of defense,
 #         same as the invalid-*-rules/ loops' guards are for their rule
 #         schemas (see the comment above INVALID_RULES_PAIRS).
+#       - macp-agent-bootstrap.schema.json's guard IS SHADOWED, same as the
+#         policy-descriptor row and for the same reason: that schema already
+#         has a positive consumer earlier in this script (the agent_bootstrap:
+#         prefix table over examples/discovery/), so a deleted or corrupt
+#         schema fails there first. Kept as defense in depth for the checkout
+#         that lacks those examples.
+#     So the table is 3 rows with 2 DIFFERENT shadowing states. Do not read the
+#     rows as sharing a single property -- add the row's status here when adding
+#     a row, or this comment stops describing the table below it.
 INVALID_DESCRIPTOR_PAIRS=(
     "invalid-policy-descriptors:macp-policy-descriptor.schema.json:policy-descriptor"
     "invalid-parity-contract:macp-parity-contract.schema.json:parity-contract"
+    "invalid-agent-bootstrap:macp-agent-bootstrap.schema.json:agent-bootstrap"
 )
 
 for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do

@@ -64,11 +64,11 @@
         },
         "tls": {
           "type": "boolean",
-          "description": "If true, use TLS for the gRPC channel. Default true in production per RFC-MACP-0006 §3."
+          "description": "If true, use TLS for the gRPC channel. Default true in production: RFC-MACP-0004 Section 2 (Transport Security) requires encrypted transport, and for gRPC over HTTP/2 requires TLS 1.2 or higher."
         },
         "allowInsecure": {
           "type": "boolean",
-          "description": "Dev-only escape hatch to permit a plaintext channel. Must be false in production."
+          "description": "Dev-only escape hatch permitting a plaintext channel. Must be false in production. NON-NORMATIVE note: within this bootstrap document the two fields are separate inputs -- tls states whether TLS is wanted, allowInsecure whether plaintext is tolerated -- but how an SDK combines them (whether allowInsecure alone may select plaintext, or only permit it) is NOT settled here. The two SDKs currently differ, and that default is each SDK's connection-security behavior, so it is theirs to reconcile; see the cross-SDK transport issue."
         },
         "controlPlaneBaseUrl": {
           "type": "string",
@@ -108,9 +108,23 @@
             "modeVersion": { "type": "string", "minLength": 1 },
             "configurationVersion": { "type": "string", "minLength": 1 },
             "policyVersion": { "type": "string" },
-            "context": {
+            "contextId": {
               "type": "string",
-              "description": "Opaque bytes/blob (base64 / proto-encoded) to embed in SessionStartPayload.context."
+              "description": "Globally-unique context reference (e.g. ctx:sha256:<hex>, a URI, or any opaque string). The runtime preserves it but MUST NOT interpret it. Embedded as SessionStartPayload.context_id, a proto string, so this is a plain JSON string and is NOT base64-encoded."
+            },
+            "extensions": {
+              "type": "object",
+              "description": "Generic extension blocks keyed by protocol identifier. Values are base64-encoded protocol-specific bytes. Embedded as SessionStartPayload.extensions, a map<string, bytes>; per RFC-MACP-0001 Section 10.3 protobuf bytes fields MUST be represented as base64-encoded strings in JSON. A caller wanting to carry structured data base64-encodes its own serialization, so the inner format is the caller's declared choice rather than the SDK's guess. Note contentEncoding is an annotation in JSON Schema 2020-12, not an assertion: this schema declares the encoding, it does not validate it.",
+              "additionalProperties": {
+                "type": "string",
+                "description": "Protobuf bytes mapped to base64 string in JSON.",
+                "contentEncoding": "base64"
+              }
+            },
+            "maxSuspendMs": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Embedded as SessionStartPayload.max_suspend_ms. Upper bound on cumulative time the session may spend SUSPENDED (RFC-MACP-0001 Section 7.5)."
             },
             "roots": {
               "type": "array",

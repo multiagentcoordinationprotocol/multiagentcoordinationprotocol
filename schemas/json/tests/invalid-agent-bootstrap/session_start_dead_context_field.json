@@ -36,7 +36,8 @@
       "extensions": {
         "x-tracing": "eyJ0cmFjZXBhcmVudCI6IjAwLTRiZjkyZjM1NzdiMzRkYTZhM2NlOTI5ZDBlMGU0NzM2LTAwZjA2N2FhMGJhOTAyYjctMDEifQ=="
       },
-      "maxSuspendMs": 60000
+      "maxSuspendMs": 60000,
+      "context": "Y3R4OnR4bjpUWE4tNDgwMDAtU2FvUGF1bG8="
     },
     "kickoff": {
       "messageType": "Proposal",
@@ -47,5 +48,6 @@
     "host": "checkout-orchestrator.internal",
     "port": 8080,
     "path": "/macp/cancel"
-  }
+  },
+  "_invalid_because": "initiator.sessionStart carries the removed `context` key. RFC-MACP-0001 Section 7.4.2 records that the bytes `context` field has been removed, superseded by context_id (field 8) and extensions (field 9), so a bootstrap naming it describes a field no runtime has. Isolates initiator.sessionStart's additionalProperties keyword."
 }
