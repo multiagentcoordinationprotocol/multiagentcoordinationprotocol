@@ -70,6 +70,14 @@ what CHECKS actually does, in one direction or the other; the code below is the
 only description of that which cannot go stale. Read it before relying on a
 value being guarded.
 
+One check here is about this script rather than the manifest:
+check_own_contribute_error_paths() parses this file's **own source** -- under the
+same MACP_ROOT-relative ROOT, which is what makes it mutation-testable -- and
+pins how many `errors.append` calls the contribute_payload check tree holds.
+check-parity-contract-test.py prints a claim that every one of them is covered by
+a mutation, and nothing previously made that claim fail when an append was added
+without one. Same idiom as scripts/check-prose.py's check_check_count() own-count guard.
+
 Every failure is accumulated and reported before exiting non-zero (this
 repo's check-prose.py / check-indexes.sh convention) -- one bad value must
 never mask another. Fixed-count assertions (EXPECTED_SECTION_COUNT etc.)
@@ -81,6 +89,7 @@ mismatch or missing source).
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -109,6 +118,17 @@ EXPECTED_SECTION_COUNT = 9
 EXPECTED_VECTOR_COUNT = 8
 EXPECTED_ACCEPT_COUNT = 1
 EXPECTED_REJECT_COUNT = 11
+
+# The number of `errors.append` calls reachable from CONTRIBUTE_TREE_ANCHOR.
+# check-parity-contract-test.py PRINTS a claim that every one of them is covered
+# by a mutation; nothing made that claim fail when an append was added without
+# one, which is what this pins. See check_own_contribute_error_paths() for why
+# the count is derived from the call graph rather than a name list, and for the
+# two distinct failure modes the guard has.
+#
+# Measured, not asserted: re-derive with an AST walk before editing this number.
+EXPECTED_CONTRIBUTE_ERROR_PATHS = 15
+CONTRIBUTE_TREE_ANCHOR = "check_contribute_payload"
 
 # The collision_* vectors exist to pin the byte-lengths at which a canonical
 # proto ContributePayload ALSO parses as JSON. Re-deriving their hex from
@@ -774,6 +794,139 @@ def check_collision_vectors(vectors: list) -> list[str]:
     return errors
 
 
+def check_own_contribute_error_paths(sections: dict) -> list[str]:
+    """Pin the number of `errors.append` calls in the contribute_payload check tree.
+
+    `sections` is unused. The signature matches so this can sit in CHECKS with
+    the rest; what it reads is this script's own source.
+
+    WHY THIS IS NOT REDUNDANT WITH THE SELF-TEST.
+    scripts/check-parity-contract-test.py asserts every error path in this tree
+    has a mutation that catches its removal, and PRINTS that claim on success.
+    But it enumerates the mutations it has, not the appends that exist -- so
+    adding an append with no mutation leaves the claim printed and false. The
+    same decay that scripts/check-prose.py's check_check_count() own-count guard exists to
+    stop, and this is modelled on it directly: parse own source under ROOT, guard
+    unreadable/unparseable, guard a missing anchor, refuse a count of zero.
+
+    WHY IT LIVES IN THE CHECKER AND NOT IN THE SELF-TEST.
+    The self-test runs THIS script against a COPIED tree via MACP_ROOT. Because
+    the read below is ROOT-relative, the copy's source is what gets parsed, so a
+    mutation can edit it -- which is what makes the guard itself testable. In the
+    self-test the guard would have no harness-native mutation at all: every
+    MUTATIONS entry is `mutate(data: dict) -> str` over the manifest JSON.
+
+    WHY THE FUNCTION SET COMES FROM THE CALL GRAPH.
+    A hardcoded name tuple reintroduces the decay: an append added in a NEW
+    helper called from the anchor would leave the count right and the claim
+    false. So walk `ast.Call` out of the anchor, keep the names that are
+    top-level functions here, and repeat transitively. Today that finds five:
+    check_contribute_payload, check_first_byte_markers, check_collision_vectors,
+    proto_contribute, legacy_json_bytes.
+
+    WHY `errors.append` AND NOT ANY `.append`.
+    This tree holds three non-`errors` appends -- `without_value_key.append`,
+    `pinned_lengths.append`, and `out.append` inside proto_contribute. A naive
+    any-`.append` count reads 18 where the real figure is 15, so the match is on
+    `errors.append` specifically.
+
+    TWO FAILURE MODES, DELIBERATELY DIFFERENT, AND ONE IS NOT THE OTHER.
+    (a) Renaming or deleting the ANCHOR trips the missing-anchor branch below, by
+        name. It does NOT silently measure an empty tree and report 0.
+    (b) Renaming a CALLEE -- check_collision_vectors, say -- does not trip (a) at
+        all: the walk just stops finding it and the count drops by that
+        function's appends. What catches that is the EQUALITY, which is why this
+        is an equality and not a `>=` floor. Do not assume (a) covers (b).
+
+    THE COUNT IS SCOPED TO THIS TREE, not the whole script. Other sections'
+    appends are outside it by design -- check_retry_schedule's membership check is
+    one -- and the self-test says the same thing about its coverage claim.
+
+    ONE OF THIS FUNCTION'S FOUR BRANCHES HAS NO MUTATION. The self-test covers
+    the missing-anchor branch, the count-mismatch branch (in both directions) and
+    the parse half of the read/parse branch. What it does NOT cover is the
+    zero-count branch, which needs a checker with no error paths at all -- reached
+    only by neutering all fifteen appends at once, a degenerate tree rather than
+    plausible drift. The OSError half of the read/parse branch is also uncovered,
+    for a harness reason rather than a principled one: every SOURCE_MUTATIONS entry
+    is `mutate(src: str) -> str`, which rewrites the file's contents and so cannot
+    make the path absent or unreadable -- which is what an OSError needs (a missing
+    file, a missing directory, or a permission bit; any of the three, not one
+    specific tree shape).
+
+    An earlier version of this paragraph claimed the whole read/parse branch was
+    impractical to reach. That was false -- appending `def (` to the copy takes
+    one line -- and the branch is now covered.
+
+    Note also that this function's own appends are NOT in the count it pins -- it
+    is not in the anchor's call tree -- so a branch added here never needs the
+    constant bumped.
+    """
+    errors: list[str] = []
+    src_path = ROOT / "scripts" / "check-parity-contract.py"
+    try:
+        tree = ast.parse(src_path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError) as exc:
+        errors.append(
+            "check-parity-contract.py could not be read or parsed at %s, so the number of "
+            "error paths in its own contribute_payload check tree is unknown: %s"
+            % (src_path, exc)
+        )
+        return errors
+
+    funcs = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
+    if CONTRIBUTE_TREE_ANCHOR not in funcs:
+        errors.append(
+            "check-parity-contract.py has no top-level %s(), which is the anchor this count "
+            "walks out from -- renaming it makes the error-path count unmeasurable, and the "
+            "count must not silently become 0. Update CONTRIBUTE_TREE_ANCHOR alongside the "
+            "rename." % CONTRIBUTE_TREE_ANCHOR
+        )
+        return errors
+
+    reached: set[str] = set()
+    stack = [CONTRIBUTE_TREE_ANCHOR]
+    while stack:
+        name = stack.pop()
+        if name in reached:
+            continue
+        reached.add(name)
+        for node in ast.walk(funcs[name]):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                    and node.func.id in funcs):
+                stack.append(node.func.id)
+
+    found = 0
+    for name in sorted(reached):
+        for node in ast.walk(funcs[name]):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "append"
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "errors"):
+                found += 1
+
+    if found == 0:
+        errors.append(
+            "the %s() call tree contains no `errors.append` at all -- a count of 0 is never "
+            "right for a check whose whole job is to report mismatches, so this is a broken "
+            "measurement rather than a real result" % CONTRIBUTE_TREE_ANCHOR
+        )
+        return errors
+
+    if found != EXPECTED_CONTRIBUTE_ERROR_PATHS:
+        errors.append(
+            "the %s() call tree has %d `errors.append` call(s), but "
+            "EXPECTED_CONTRIBUTE_ERROR_PATHS pins %d (tree: %s). "
+            "check-parity-contract-test.py prints a claim that every one of them is covered by "
+            "a mutation; adding or removing a path without touching that file would leave the "
+            "claim printed and false. Add the mutation, then bump the constant -- in that order."
+            % (CONTRIBUTE_TREE_ANCHOR, found, EXPECTED_CONTRIBUTE_ERROR_PATHS,
+               ", ".join(sorted(reached)))
+        )
+
+    return errors
+
+
 CHECKS = (
     check_error_codes,
     check_modes,
@@ -783,6 +936,7 @@ CHECKS = (
     check_retry_schedule,
     check_commitment_hash,
     check_contribute_payload,
+    check_own_contribute_error_paths,
 )
 
 

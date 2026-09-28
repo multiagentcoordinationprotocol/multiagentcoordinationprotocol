@@ -4,11 +4,21 @@ the contribute_payload ones re-derivation alone cannot make.
 
 Scope note, because it changed: this file was written for `contribute_payload`
 alone, and the exhaustive-coverage claim below is still scoped to that tree. It
-is no longer the only thing here. Assertions elsewhere in the checker get a
-mutation when they, too, would pass silently if deleted -- currently
-`retry.retryable_error_codes`. Those mutations are as real as the rest; they are
+is no longer the only thing here. Two AREAS elsewhere in the checker now carry
+mutations -- `retry.retryable_error_codes` and `check_own_contribute_error_paths` --
+which is **four** covered out-of-tree `errors.append` sites, not two: the retry
+membership loop is one site, and the guard contributes three of its four. They are as
+real as the rest; they are
 just outside what the "every append is covered" count counts, for the reason
 spelled out under "The `contribute_payload` check tree" below.
+
+Do NOT read that as a policy this file follows. It is not "every assertion that
+would pass silently if deleted has a mutation" -- measured at this commit, the
+checker holds **35** `errors.append` sites and this file covers **19** of them.
+The 16 uncovered ones are all outside the contribute tree, and they include the
+backoff-schedule assertion in the very same function as the covered retry
+membership check. Out-of-tree coverage here is opportunistic, added where a phase
+touched the assertion anyway. The only exhaustive claim is the tree one.
 
 `contribute_payload`'s `collision_*` vectors pin the value byte-lengths at
 which a canonical proto `ContributePayload` also parses as JSON. Re-deriving
@@ -29,13 +39,34 @@ two mutations each print one FAIL line per vector while touching only one
 assertion; see the lines-vs-sites note below.)
 
 Every `errors.append` in the `contribute_payload` check tree is covered: 15
-error paths, covered by 17 of this script's mutations. Read "of" literally --
-the script carries more mutations than that, and the surplus is the out-of-tree
-coverage described above, not an unexplained remainder. The two numbers 15 and 17
-are not equal and are not meant to be -- some appends need more than one mutation (see
-`check_first_byte_markers` above), and no mutation is *credited* with covering
-two appends, so the designated cover map stays one-directional and a deleted
-append always orphans a mutation.
+error paths, covered by 17 of this script's mutations. Read "of" literally, and
+here is the arithmetic in full so no remainder is left unexplained: the script
+carries **22** mutations = 17 tree + 1 `retry` + 4 for the count guard. The two
+numbers 15 and 17 are not equal and are not meant to be -- some appends need more
+than one mutation (see `check_first_byte_markers` above), and no mutation is
+*credited* with covering two appends, so the designated cover map stays
+one-directional and a deleted append always orphans a mutation.
+
+`check_own_contribute_error_paths()` in the checker pins that 15, and this file
+carries four mutations of a second kind for it, `SOURCE_MUTATIONS`, which edit the
+copied **checker source** rather than the manifest: an append added, an append
+deleted, the call-graph anchor renamed, and the copy made unparseable. They work
+only because run_checker() executes the REAL checker and points MACP_ROOT at the
+copy, so the copy is parsed and never run.
+
+**What that pin does and does not guarantee, measured rather than assumed.** It is
+NOT true that "adding a 16th append without adding a mutation turns `make
+parity-contract` red": bump `EXPECTED_CONTRIBUTE_ERROR_PATHS` to 16 in the same
+commit and `parity-contract` is green. What goes red is `make
+parity-contract-selftest`, because two `SOURCE_MUTATIONS` assert on the literal
+strings "call tree has 16", "call tree has 14" and "pins 15". So the real property
+is the composite one, and note the quantifier: adding an append forces you to touch
+BOTH files, not just the checker. That is stronger than a one-file guard, and it is
+also all it is -- touching both files is not the same as adding a mutation. The
+coverage claim
+itself is still honour-system: bump the constant, update those three literals, add
+no mutation, and the run is green with a printed claim that has gone false. If you
+are editing this tree, that paragraph is the one to re-read.
 
 Read "credited" strictly: it is a claim about the cover map, NOT about blast
 radius. MANY mutations here trip more than one error site, because the
@@ -47,10 +78,14 @@ Two quantities get confused here, so name them apart before measuring either.
 A mutation's FAIL *lines* are how many messages the run prints; its *sites* are
 how many distinct `errors.append` statements produced them. They are not the
 same number, and the gap is not noise: `check_first_byte_markers` holds a single
-`errors.append` inside a loop over every vector, so drifting one marker prints
-one line per vector -- eight of them -- from ONE site. That is a well-isolated
-mutation being loud, not a mutation with a wide blast radius. Only the site count
-says anything about whether assertions overlap.
+`errors.append` inside a loop over every vector, so drifting one marker prints one
+line per vector it does not skip -- measured, eight for the proto marker and SEVEN
+for the legacy one, because `one_byte_varint_boundary` is `decode_only` and carries
+no legacy hex to check -- from ONE site either way. That is a well-isolated mutation
+being loud, not a mutation with a wide blast radius. Only the site count says
+anything about whether assertions overlap. (An earlier version of this paragraph
+gave "eight" for both. It was right about the proto marker and wrong about the
+legacy one, which is a small illustration of why the rule below is MEASURE.)
 
 No count of either quantity is stated anywhere in this file -- deliberately, and
 this is the third attempt at this paragraph. Two successive review rounds each
@@ -71,6 +106,20 @@ What the assertion above promises is only that every append has at least one
 mutation that FAILS when that append is removed. That is the property worth
 re-checking after any edit here, by neutering each append in a scratch copy and
 confirming this script goes red for the message that append emits.
+
+**That procedure has one step it did not need before the count guard landed, and
+skipping it produces a red run that proves nothing.** Neutering an IN-TREE append
+drops the measured count to 14, so `check_own_contribute_error_paths` fires and the
+copy fails its BASELINE check -- you get `FAIL baseline: the unmutated copy does not
+pass`, **zero** mutations run, and the neutered append's own message appears nowhere.
+Red for the wrong reason, which is the exact trap this file warns about elsewhere. So
+when neutering an in-tree append, bump `EXPECTED_CONTRIBUTE_ERROR_PATHS` to 14 in the
+same scratch copy. The run then correctly names the orphaned mutation -- measured,
+`FAIL two vectors share a name ...` for the duplicate-name append -- alongside **two
+spurious failures** from the two count-literal source mutations: they still assert the
+strings "call tree has 16" and "call tree has 14", while a 14-path checker emits 15 and
+13. Expected noise, not a second finding. Out-of-tree appends need neither the bump nor
+the noise filter.
 
 "The `contribute_payload` check tree" means the functions reachable from
 `check_contribute_payload()`, not the whole checker. An assertion in another
@@ -93,6 +142,7 @@ mutation is NOT caught, i.e. if an assertion has gone decorative).
 """
 from __future__ import annotations
 
+import ast
 import json
 import os
 import shutil
@@ -104,9 +154,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CHECKER = REPO_ROOT / "scripts" / "check-parity-contract.py"
 # Only the trees the checker actually reads, rather than a whole-repo copy:
-# it opens schemas/, registries/, examples/json/ and one RFC.
-NEEDED = ("schemas", "registries", "examples", "rfcs")
+# it opens schemas/, registries/, examples/json/ and one RFC -- plus, since
+# check_own_contribute_error_paths landed, its own source under `scripts/`.
+#
+# `scripts` is here for that self-read ONLY. The checker that RUNS is always the
+# real one at REPO_ROOT (see run_checker); the copy is parsed, never executed.
+# That asymmetry is the whole reason a source mutation below can be both
+# effective (the guard sees it) and side-effect-free (nothing else does).
+NEEDED = ("schemas", "registries", "examples", "rfcs", "scripts")
 CONTRACT_REL = Path("schemas") / "parity" / "contract.json"
+SOURCE_REL = Path("scripts") / "check-parity-contract.py"
 
 
 def varint(n: int) -> bytes:
@@ -651,6 +708,162 @@ MUTATIONS = (
 )
 
 
+# --- source mutations ----------------------------------------------------------
+# A different kind of mutation: these edit the COPY of check-parity-contract.py
+# rather than the manifest, because what they test is
+# check_own_contribute_error_paths(), which parses the checker's own source
+# through the same MACP_ROOT seam. Signature is `mutate(src: str) -> str`.
+#
+# These can only work because run_checker() executes the REAL checker and points
+# MACP_ROOT at the copy: the copy is parsed, never imported or run. So an inserted
+# statement changes what the guard MEASURES without changing what any check DOES,
+# and a renamed function in the copy cannot raise NameError.
+#
+# Every one of them must still produce syntactically valid Python. An unparseable
+# copy trips the guard's read/parse branch instead, which would report "caught"
+# for the wrong reason -- hence each assertion below names the guard's specific
+# message, not merely a non-zero exit.
+
+
+def _function_body_end_line(src: str, func: str) -> int:
+    """1-based line number of `func`'s LAST top-level statement.
+
+    Used as an insertion point: putting a statement immediately before the final
+    `return errors` keeps the docstring, the signature and every existing branch
+    untouched, so the only thing that moves is the append count.
+    """
+    tree = ast.parse(src)
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == func:
+            return node.body[-1].lineno
+    raise SystemExit("FAIL: %s() not found in the checker source -- mutation is stale" % func)
+
+
+def mutate_source_error_path_added(src: str) -> str:
+    """One extra `errors.append` in the tree, with no mutation covering it.
+
+    The decay this exists to stop, in its exact shape: a new error path added to
+    check_collision_vectors while check-parity-contract-test.py keeps printing
+    that every path in the tree is covered.
+    """
+    line = _function_body_end_line(src, "check_collision_vectors")
+    lines = src.splitlines(keepends=True)
+    lines.insert(line - 1, '    errors.append("synthetic path added by the self-test")\n')
+    return "".join(lines)
+
+
+def mutate_source_error_path_deleted(src: str) -> str:
+    """One `errors.append` removed from the tree.
+
+    The guard is an EQUALITY, not a floor, so it must catch this direction too --
+    a deleted path silently narrows what the checker asserts while every existing
+    mutation for the REMAINING paths still passes.
+
+    Targets check_first_byte_markers because it holds exactly ONE append, so
+    "delete one path" is unambiguous and the expected count (14) does not depend
+    on which of several appends got picked. The statement itself spans six lines as a
+    `%` format; all seven of check_collision_vectors' are likewise multi-line `%`
+    formats (of 4 to 6 lines each -- four of the seven are six-line, so do not read
+    "six" as the shared property; multi-line is). Multi-line is the norm in this
+    checker, not an obstacle, because the replacement below is span-based
+    (`lineno - 1` through `end_lineno`) rather than line-based.
+    An earlier version of this docstring claimed the target was chosen for being
+    a one-line statement and contrasted it with multi-line appends elsewhere.
+    Both halves were false; the real reason is the count above.
+    """
+    tree = ast.parse(src)
+    target = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "check_first_byte_markers":
+            for sub in ast.walk(node):
+                if (isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute)
+                        and sub.func.attr == "append"
+                        and isinstance(sub.func.value, ast.Name)
+                        and sub.func.value.id == "errors"):
+                    target = sub
+    if target is None:
+        raise SystemExit(
+            "FAIL: check_first_byte_markers has no errors.append -- mutation is stale"
+        )
+    lines = src.splitlines(keepends=True)
+    # Replace the whole statement with a `pass`, so the enclosing block does not
+    # become empty and unparseable. `pass` is not an append, so the count drops.
+    start, end = target.lineno - 1, target.end_lineno
+    indent = len(lines[start]) - len(lines[start].lstrip())
+    lines[start:end] = [" " * indent + "pass\n"]
+    return "".join(lines)
+
+
+def mutate_source_anchor_renamed(src: str) -> str:
+    """The anchor function the call-graph walk starts from, renamed.
+
+    A DIFFERENT failure mode from the two above, and the guard reports it
+    differently: without the missing-anchor branch this would measure an empty
+    tree and count 0, which an equality against 15 would catch but blame on the
+    wrong thing. Renaming a CALLEE instead (check_collision_vectors, say) is the
+    other mode and is caught by the equality -- see the guard's docstring.
+
+    Only the `def` line is renamed, so the real checker's CHECKS tuple still
+    resolves; the copy is parsed, not imported, so nothing raises NameError.
+    """
+    needle = "def check_contribute_payload("
+    if src.count(needle) != 1:
+        raise SystemExit(
+            "FAIL: expected exactly 1 `%s`, found %d -- mutation is stale"
+            % (needle, src.count(needle))
+        )
+    return src.replace(needle, "def check_contribute_payload_renamed(")
+
+
+def mutate_source_unparseable(src: str) -> str:
+    """The copied checker source is no longer valid Python.
+
+    Covers the guard's read/parse branch. It is worth covering precisely because
+    the alternative is silent: a checker whose own source cannot be parsed can
+    still validate the manifest perfectly, so without this branch the append
+    count would simply stop being measured and the run would stay green.
+
+    Appending `def (` makes `ast.parse` raise while leaving the file readable, so it
+    separates the parse failure from the OSError half of the same branch. It is NOT
+    the smallest such edit -- a single trailing `(`, `:`, `=` or quote raises too;
+    `def (` is chosen because it reads unmistakably as deliberate damage rather than
+    as a stray character someone might "tidy up".
+
+    The OSError half stays uncovered, and for a harness reason rather than a
+    principled one: it needs the path to be absent or unreadable, which a
+    `src -> str` mutation cannot arrange -- it can only rewrite the file's contents.
+
+    Isolation: the checker still RUNS from the real path, so every other
+    assertion behaves exactly as at baseline. Measured: 1 FAIL line, 1 site, and
+    the guard returns early so nothing downstream of it reports.
+    """
+    return src + "\ndef (\n"
+
+
+SOURCE_MUTATIONS = (
+    (
+        "an errors.append was added to the contribute tree with no mutation covering it",
+        mutate_source_error_path_added,
+        ("call tree has 16 `errors.append`", "EXPECTED_CONTRIBUTE_ERROR_PATHS pins 15"),
+    ),
+    (
+        "an errors.append was deleted from the contribute tree",
+        mutate_source_error_path_deleted,
+        ("call tree has 14 `errors.append`", "EXPECTED_CONTRIBUTE_ERROR_PATHS pins 15"),
+    ),
+    (
+        "the call-graph anchor function was renamed",
+        mutate_source_anchor_renamed,
+        "has no top-level check_contribute_payload()",
+    ),
+    (
+        "the copied checker source is unparseable, so the count cannot be measured",
+        mutate_source_unparseable,
+        "could not be read or parsed at",
+    ),
+)
+
+
 def main() -> int:
     tmp_root = Path(tempfile.mkdtemp(prefix="macp-parity-selftest-"))
     failures: list[str] = []
@@ -661,6 +874,7 @@ def main() -> int:
             shutil.copytree(REPO_ROOT / name, tree / name, symlinks=True)
 
         pristine = (tree / CONTRACT_REL).read_text(encoding="utf-8")
+        pristine_src = (tree / SOURCE_REL).read_text(encoding="utf-8")
 
         # Baseline: the untouched copy must PASS, or every "caught" result
         # below would be meaningless (a red baseline catches everything).
@@ -669,6 +883,32 @@ def main() -> int:
             print("FAIL baseline: the unmutated copy does not pass:\n%s" % out, file=sys.stderr)
             return 1
         print("[OK] baseline: unmutated copy passes under MACP_ROOT")
+
+        def judge(label: str, expect, code: int, out: str) -> None:
+            """Shared verdict for both mutation kinds -- identical rules, two inputs."""
+            wanted = (expect,) if isinstance(expect, str) else expect
+            missing = [w for w in wanted if w not in out]
+            if code == 0:
+                failures.append(
+                    "%s: checker PASSED a tree it should have rejected -- the "
+                    "corresponding assertion in check-parity-contract.py is decorative" % label
+                )
+            elif missing:
+                failures.append(
+                    "%s: checker failed (good) but never said %s, so it failed for the wrong "
+                    "reason. Output:\n%s" % (label, ", ".join(repr(m) for m in missing), out)
+                )
+            else:
+                print("[OK] caught: %s" % label)
+
+        # Source mutations first: they edit the copied checker rather than the
+        # manifest, and running them before the manifest loop keeps the two
+        # pristine-restore paths from interleaving.
+        for label, mutate_src, expect in SOURCE_MUTATIONS:
+            (tree / SOURCE_REL).write_text(mutate_src(pristine_src), encoding="utf-8")
+            code, out = run_checker(tree)
+            judge(label, expect, code, out)
+            (tree / SOURCE_REL).write_text(pristine_src, encoding="utf-8")
 
         for label, mutate, expect in MUTATIONS:
             # A tuple means every substring must appear somewhere in the output.
@@ -679,26 +919,13 @@ def main() -> int:
             # among those that fired, not that it was the only one -- see
             # mutate_protobuf_hex_undecodable for why that is the most this can
             # promise.
-            wanted = (expect,) if isinstance(expect, str) else expect
             data = json.loads(pristine)
             mutate(data)
             (tree / CONTRACT_REL).write_text(
                 json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
             )
             code, out = run_checker(tree)
-            missing = [w for w in wanted if w not in out]
-            if code == 0:
-                failures.append(
-                    "%s: checker PASSED a manifest it should have rejected -- the "
-                    "corresponding assertion in check-parity-contract.py is decorative" % label
-                )
-            elif missing:
-                failures.append(
-                    "%s: checker failed (good) but never said %s, so it failed for the wrong "
-                    "reason. Output:\n%s" % (label, ", ".join(repr(m) for m in missing), out)
-                )
-            else:
-                print("[OK] caught: %s" % label)
+            judge(label, expect, code, out)
             # restore before the next mutation
             (tree / CONTRACT_REL).write_text(pristine, encoding="utf-8")
     finally:
@@ -708,12 +935,14 @@ def main() -> int:
         for f in failures:
             print("FAIL %s" % f, file=sys.stderr)
         print("\n%d of %d parity-contract mutations went uncaught or misdiagnosed."
-              % (len(failures), len(MUTATIONS)), file=sys.stderr)
+              % (len(failures), len(MUTATIONS) + len(SOURCE_MUTATIONS)), file=sys.stderr)
         return 1
 
-    print("[OK] all %d mutations rejected, each for the reason it promises -- every "
-          "errors.append in the contribute_payload check tree is covered, plus the "
-          "out-of-tree assertions listed in this script's docstring" % len(MUTATIONS))
+    print("[OK] all %d mutations rejected (%d manifest, %d checker-source), each for the reason "
+          "it promises -- every errors.append in the contribute_payload check tree is covered, "
+          "the count of them is itself pinned, plus the out-of-tree assertions listed in this "
+          "script's docstring"
+          % (len(MUTATIONS) + len(SOURCE_MUTATIONS), len(MUTATIONS), len(SOURCE_MUTATIONS)))
     return 0
 
 
