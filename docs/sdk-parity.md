@@ -145,22 +145,23 @@ The optional features themselves:
   a retryable code that is not a canonical error code fails even though the `retry` section's
   `source` still reads "convention". Read `scripts/check-parity-contract.py` rather than any
   summary of it before assuming a section is covered.
-- **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
-  `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
-  against it in CI. `macp-sdk-python` does not vendor it at all; wiring it up is filed as
-  `macp-sdk-python` #93 rather than done here — so until that lands, a manifest change reaches that
-  SDK only when a human carries it there. The two
-  existing copies pin the spec repo differently, which is what decides
-  who notices a manifest change and when: `macp-runtime` checks this repo out at an explicit
-  pinned revision, so it stays green until its maintainers bump that revision deliberately,
-  whereas `macp-sdk-typescript` checks out the default branch, so a merged manifest change
-  reaches its drift check on that repo's next CI run without anyone opting in. **Any** manifest change
-  therefore needs a re-vendor issue filed against each consumer, and the unpinned one is the
-  time-sensitive half. Note "any", not "any that adds a vector or a section": `verify-parity` in
-  `macp-sdk-typescript` is a byte-level diff, and its `contract.test.ts` additionally hard-asserts
-  the exact `contract_version` string as a deliberate tripwire, so even an annotation-only PATCH
-  bump turns that repo red. The 1.1.0 → 1.1.1 bump is filed as `macp-sdk-typescript` #125. See `schemas/parity/README.md` for
-  the full section list and versioning rules.
+- **Consumer wiring, and why the three vendored copies behave differently**: all three consumers —
+  `macp-runtime`, `macp-sdk-python`, and `macp-sdk-typescript` — now vendor this manifest into their
+  own `tests/parity/` and assert against it in CI. (`macp-sdk-python` was the last to wire it up, in
+  its PR #95; the note that previously stood here, saying it did not vendor the manifest at all and
+  that a change reached it only when a human carried it there, is no longer true.) What decides who
+  notices a manifest change and when is how each pins this repo, and they split **two against one**:
+  `macp-runtime` checks this repo out at an explicit pinned revision, so it stays green until its
+  maintainers bump that revision deliberately, whereas **both SDKs** check out the default branch,
+  so a merged manifest change reaches their drift checks on those repos' next CI run without anyone
+  opting in. **Any** manifest change therefore needs a re-vendor issue filed against each consumer,
+  and the two unpinned ones are the time-sensitive half. Note "any", not "any that adds a vector or a
+  section": `verify-parity` is a byte-level diff in both SDKs, and each additionally hard-asserts the
+  exact `contract_version` string as a deliberate tripwire, so even an annotation-only PATCH bump
+  turns both repos red. The 1.1.1 → 1.2.0 bump (`projection_anomaly.kinds` gaining
+  `duplicate_task_accept` and `settled_handoff`) is the current one; the issues filed for the
+  preceding 1.1.0 → 1.1.1 bump, including `macp-sdk-typescript` #125, are closed. See
+  `schemas/parity/README.md` for the full section list and versioning rules.
 
 ## Conformance Test Suite
 
