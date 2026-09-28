@@ -86,15 +86,31 @@ Optional features that enhance the SDK but are not required for conformance:
 - **`applies_to` semantics**: each section names which of `macp-runtime` /
   `macp-sdk-python` / `macp-sdk-typescript` MUST assert it. Adding a consumer to a
   section's `applies_to` is a MINOR manifest bump and is expected to turn that consumer's
-  CI red at its next pin bump until it wires the corresponding assertion.
+  CI red until it wires the corresponding assertion — at its next pin bump if it pins a spec
+  revision, or on its next CI run if it tracks the default branch (see the next bullet).
 - **CI enforcement in this repo**: `make parity-contract` holds every in-repo-sourced
-  value in the manifest to its registry/RFC/proto/fixture source, so an edit to the
-  manifest that isn't backed by a matching upstream change fails before it can land.
-- **SDK wiring is a follow-up, not part of this manifest's initial landing**: as of this
-  writing, `macp-runtime` is the only consumer with a proof-of-concept parity check against
-  this manifest; wiring `macp-sdk-python` and `macp-sdk-typescript` to assert against it is
-  tracked as a separate follow-up issue per SDK. See `schemas/parity/README.md` for the
-  full section list and versioning rules.
+  value in the manifest to its registry/RFC/schema/corpus source, so an edit to the
+  manifest that isn't backed by a matching upstream change fails before it can land. It does
+  **not** cover everything: a value whose `source` declares it a convention with no in-repo home
+  often has nothing to check it against, and can be given a wrong value without turning CI red
+  — which is what those `source` fields are warning you about. Some are held to other values
+  inside the manifest instead, among them `contribute_payload.first_byte`'s two discriminator
+  bytes, asserted against the bytes every vector leads with; `macp-runtime` asserts those same
+  two markers against its vendored copy, so that drift is now caught here rather than
+  downstream. Read `scripts/check-parity-contract.py` rather than any summary of it before
+  assuming a section is covered.
+- **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
+  `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
+  against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it
+  up — so a manifest change reaches that SDK only when a human carries it there. The two
+  existing copies pin the spec repo differently, which is what decides
+  who notices a manifest change and when: `macp-runtime` checks this repo out at an explicit
+  pinned revision, so it stays green until its maintainers bump that revision deliberately,
+  whereas `macp-sdk-typescript` checks out the default branch, so a merged manifest change
+  reaches its drift check on that repo's next CI run without anyone opting in. A manifest
+  change that adds a vector or a section therefore needs a re-vendor issue filed against each
+  consumer, and the unpinned one is the time-sensitive half. See `schemas/parity/README.md` for
+  the full section list and versioning rules.
 
 ## Conformance Test Suite
 

@@ -13,6 +13,14 @@ package macp.modes.multi_round.v1;
 // `value` is an opaque string by design: contributions are compared for
 // equality only, never interpreted. Structured or binary contributions can
 // be added as new fields in a later revision without breaking this one.
+//
+// `value` is declared without `optional`, so it has no proto3 field presence:
+// an explicitly-empty contribution encodes to zero bytes, byte-identical to an
+// absent payload -- a distinction the legacy JSON form (`{"value": ""}`) could
+// express and this one cannot. macp-runtime's parse_contribute_value rejects a
+// zero-byte Contribute outright, citing this among its reasons. Restoring
+// presence via `optional` would be a breaking change to an already-shipped
+// public field, not a patch.
 message ContributePayload {
   string value = 1;
 }

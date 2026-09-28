@@ -1,4 +1,4 @@
-.PHONY: prose-check prose-check-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
+.PHONY: prose-check prose-check-selftest parity-contract-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors parity-contract check-indexes clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
 
@@ -19,6 +19,7 @@ help:
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
 	@echo "  make parity-contract       Check the cross-implementation parity-contract manifest (issue #134)"
+	@echo "  make parity-contract-selftest  Prove the parity-contract vector assertions reject what they promise"
 	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
 	@echo "  make prose-check-selftest  Prove check-prose.py survives an unreadable file (issue #129)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
@@ -43,7 +44,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors parity-contract check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -74,6 +75,10 @@ cmt-hash-vectors:
 parity-contract:
 	@echo "Checking parity-contract manifest..."
 	@python3 scripts/check-parity-contract.py
+
+parity-contract-selftest:
+	@echo "Checking the parity-contract vector assertions actually bite..."
+	@python3 scripts/check-parity-contract-test.py
 
 # Check the hand-maintained RFC/registry/fixture indexes against files on disk
 check-indexes:
