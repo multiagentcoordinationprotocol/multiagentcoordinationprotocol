@@ -47,6 +47,54 @@ Every section carries:
 - `source` — where the value actually comes from. Honest about the absence of a normative
   home where one doesn't exist, rather than inventing a citation.
 
+## What this manifest does not pin, and why
+
+The admission rule above is positive — "values that today already agree". Its consequence is the
+question most often asked of this file, so state it directly: a **disagreement** between consumers
+is categorically inadmissible here. There is no way to pin a divergence, and adding one would make
+every other value ambiguous about whether it records agreement or aspiration. A divergence is
+either resolved upstream — in an RFC, registry, or proto, which this manifest then projects — or it
+is a matter this manifest has no standing over.
+
+The less obvious half: some values would be inadmissible **even if both consumers already agreed**,
+because nothing on the wire depends on them. Pinning those would turn a cross-implementation values
+manifest into a library-API specification, a different document with a different review bar.
+RFC-MACP-0013 Section 3 (The Hashing Projection) states the principle this file follows — the spec
+constrains an SDK's internal shape where a wire-visible value depends on it: "An SDK that
+holds these values in a different internal shape … MUST project into this key set when computing or
+verifying the hash." The converse — that the spec constrains internal shape ONLY there — is this
+file's reading of RFC-MACP-0013's silence elsewhere rather than something it states, and it is the
+reading this file acts on: where nothing on the wire depends on the shape, nothing here pins it.
+
+The out-of-scope classes, each already visible elsewhere in this repo:
+
+1. **In-memory decoded shapes handed to a caller.** What a decoder returns to application code for
+   the same bytes — a wrapper labelling the encoding, a normalised single-key object, a
+   language-native map. Identical bytes in and identical bytes out; the object in between is the
+   library's. Worked example in Open items below.
+2. **Agent-framework and strategy behaviour.** Participant abstractions, dispatchers, voting and
+   committing strategies, bootstrap helpers. `docs/sdk-parity.md`'s `MAY Implement` tier names
+   these optional, and two SDKs may implement the same-named strategy over entirely different
+   inputs without either being non-conformant. RFC-MACP-0007 Section 1 (Purpose) declines to
+   standardize one universal voting algorithm and Section 6 (Terminal semantics) repeats that a
+   deployment may choose its own, so there is no upstream here to project.
+3. **Handler-context field types.** What a framework hands a handler, and how widely it types that
+   value, is framework surface — the same MAY tier.
+4. **Client-side validation strictness beyond the wire.** A client that requires a field the mode's
+   schema leaves optional is over-strict, and `docs/sdk-parity.md` states that as a MUST-Implement
+   rule. It is still not pinnable *here*: this file holds values, and "which fields a builder
+   demands of its caller" is not a value.
+5. **Transport-call ergonomics.** Deadline semantics, what a watch call returns, how many flags
+   gate an insecure channel. The wire contract is RFC-MACP-0006's; the call signature is the
+   library's.
+6. **Static type width.** Two consumers can agree on every value produced at runtime and still type
+   the field differently — a plain string versus a closed union. This file cannot make one
+   language's type-checker enforce another's closed set; the `projection_anomaly.kind` Open item
+   below is the worked example.
+
+None of this says a divergence in those classes is harmless. It says the divergence is the
+consumers' to resolve, and that this file will mirror the outcome rather than originate it.
+
 ## Versioning
 
 `contract_version` is semver:
@@ -54,6 +102,20 @@ Every section carries:
 - **PATCH** — annotation or `source` text changes only; no value changes.
 - **MINOR** — a new section, a new vector, a new reject example, or a new consumer named
   in a section's `applies_to`.
+- **MINOR, and with a sequencing rule of its own** — a new member added to a frozen list that has
+  **no in-repo gate at all**. Today that is exactly one list: `projection_anomaly.kinds`. The MAJOR
+  gate below cannot apply to it, because there is no upstream to land first — the list's source *is*
+  the consumers' agreement. So the rule is sequencing instead: the new member lands here only
+  **after** the consumers it describes have agreed on it. This manifest follows; it does not
+  originate. A member added ahead of that agreement would be this file inventing a contract, which
+  the non-normative disclaimer above forbids.
+
+  **`retry.retryable_error_codes` is NOT in this category, despite its `source` reading
+  "convention".** Its members are held to this manifest's own `error_codes.permanent`, which is
+  itself held to `registries/error-codes.md` — so adding a member *does* have an upstream that must
+  land first, and `make parity-contract` rejects one that has not. Which codes are worth retrying
+  remains a convention; which strings may appear is registry-gated. Do not read the section's
+  `source` field as meaning the whole section is ungated.
 - **MAJOR** — an existing frozen value changes or is removed. By construction this
   requires the upstream RFC/registry/proto change to land *first* — `check-parity-contract.py`
   holds every in-repo-sourced value to its source, so an unmatched manifest edit fails the
@@ -69,15 +131,28 @@ vendored `cmt-hash` pack).
 Deliberately **not** seeded here, tracked as follow-up work instead of silently
 patched over:
 
-- **Non-string `value` in legacy `Contribute` JSON is still unpinned.** The
-  canonical-proto/legacy-JSON length-collision band is now pinned by
-  `contribute_payload`'s `collision_*` vectors, and empty-payload gating is settled
-  (see `contribute_acceptance`'s own `source`). What remains open is what a decoder
-  does with valid legacy JSON whose `value` is not a string: `macp-sdk-typescript`
-  coerces it (`String(parsed.value ?? '')`), `macp-sdk-python` passes it through
-  uninterpreted, and `macp-runtime` declines it outright (its legacy-JSON reader types
-  `value` as a required string, so a non-string fails to deserialize). No two of the three
-  agree — so no value is seeded here until they converge. Tracked as issue #142.
+- **Non-string `value` in legacy `Contribute` JSON is still unpinned, and the live defect has
+  narrowed.** The canonical-proto/legacy-JSON length-collision band is now pinned by
+  `contribute_payload`'s `collision_*` vectors, empty-payload gating is settled (see
+  `contribute_acceptance`'s own `source`), and `macp-sdk-typescript` now applies a canonical-proto
+  tie-break before reading bytes as legacy JSON — so the collision half of this question is fixed
+  downstream. What remains is what a decoder does with valid legacy JSON whose `value` is not a
+  string: `macp-sdk-typescript` **coerces** it, turning a numeric `value` into its string form and a
+  missing or null one into `""`; `macp-sdk-python` passes the parsed object through uninterpreted;
+  and `macp-runtime` declines it outright, since its legacy-JSON reader types `value` as a required
+  string. No two of the three agree — so no value is seeded here until they converge. The asymmetry
+  is worth naming, because it is decidable without an RFC: a decode layer may decline to interpret
+  `value`, or pass it through; **altering** it is neither, and is the odd one out however the shape
+  question below is settled. Tracked as issue #142.
+- **The decoded shape a `Contribute` decoder hands its caller is deliberately not pinned.** For the
+  same legacy-JSON bytes, `macp-sdk-python` returns the parsed object unaltered under a wrapper that
+  labels the encoding, and `macp-sdk-typescript` returns a normalised single-key object. Two
+  in-memory shapes, one byte sequence, nothing wire-visible between them — class 1 of the
+  out-of-scope list above. Pinning a library's return type for a value with no wire consequence
+  would be a first for this repo, and RFC-MACP-0013 Section 3 (The Hashing Projection) is the
+  precedent for why it is not done. Recorded as **declined**, not open: this is the second half of
+  issue #142, and the answer is that this manifest is the wrong instrument, not that the question
+  does not matter.
 - **`projection_anomaly.kind`'s static contract width differs by SDK.** Python types
   `kind` as a plain `str`; TypeScript types it as a closed 2-value union. The two SDKs
   agree on every runtime value produced today, but this manifest cannot itself make
@@ -89,3 +164,50 @@ patched over:
   here because it is small and genuinely useful to a lowerCamelCase consumer, worded
   descriptively rather than as an RFC-2119 requirement, and covered by this file's
   non-normative disclaimer above rather than treated as an exception to it.
+- **`projection_anomaly.kinds` will mirror a decision the SDKs have not yet made.** The two kind
+  strings pinned today come from the SDKs' own agreement, not from this repo: "anomaly" has zero
+  occurrences anywhere in `rfcs/` or `registries/`, and `macp-runtime` has no such concept. The open
+  question — whether discarding a competing `TaskAccept`, or a `Handoff` message for an
+  already-settled handoff, should also record an anomaly — is about a client library's observability
+  record, not about acceptance: RFC-MACP-0009 Section 5 (Validation rules) rule 3a and
+  RFC-MACP-0010 Section 5 (Validation rules) rule 4 already require **rejecting** the
+  duplicate-accept cases, so no wire behaviour is in question there. One edge is less clean than
+  that sentence suggests: a handoff already settled by *decline* falls inside the question's scope
+  but is not textually covered by either rule, so for that case the reject requirement is a
+  reading rather than a quote. Two measured facts make the ask narrower than it looks. First, the
+  "frozen pending cross-SDK agreement" marker occurs at **six** sites and **all six are in
+  `macp-sdk-typescript`**; `macp-sdk-python`'s equivalent discard is annotated without the marker, so
+  the freeze is **unilateral** — one SDK has recorded that it is waiting on a decision and the other
+  has not acknowledged that one exists. Second, a kind added today would arrive with **zero**
+  conformance coverage, because the fixture corpus contains no accept-after-settled and no
+  duplicate-`TaskAccept` case. The decision is the SDKs'; this manifest will mirror it under the
+  convention-sourced-list rule in Versioning above. Tracked as issue #148.
+- **The Decision-mode `phase` window where the two SDKs disagree stays unpinned — and one half of
+  that divergence is not a naming choice at all.** `expected_mode_state.phase`
+  **is** a cross-SDK contract this repo owns — it is pinned in the fixture corpus and documented in
+  `schemas/conformance/README.md` — but be precise about where it is *enforced*: **each SDK's
+  conformance harness asserts it; this repo's own checks do not.** `schemas/conformance/schema.json`
+  types `expected_mode_state` as a bare object and `lint_fixtures.py` never mentions `phase`, so a
+  nonsense phase in a fixture passes `make validate` here and fails downstream. Owning the value and
+  enforcing it are different things, and only the second is downstream. The corpus pins `Voting`,
+  `Committed` and `Negotiating`. It does not pin the window after a
+  `Proposal` and before any `Evaluation`, which is exactly where the two differ:
+  `macp-sdk-typescript` enters its `Evaluation` phase on the **`Proposal`** message,
+  `macp-sdk-python` on the first **`Evaluation`** message. That window stays unpinned because the
+  phase *vocabulary itself* has no normative definition anywhere in this repo — pinning it would
+  invent semantics for an unspecified label. Separately, and not a naming matter:
+  `macp-sdk-typescript` guards its terminal `Committed` phase against later messages and
+  `macp-sdk-python` does not, so a late `Vote` moves a Python projection's `phase` back out of
+  `Committed`. Calling that a violation is a **reading, not a quotation**, and the chain is worth
+  stating: the monotonicity invariant in RFC-MACP-0001 Section 7.2 (Session States) is about the
+  *session* state, and a mode `phase` is not a session state; what carries it across is
+  RFC-MACP-0002 Section 1 (Scope), "Modes MUST NOT violate MACP Core invariants". Two honest
+  qualifications follow. A conformant runtime is unlikely to deliver that late `Vote` at all: the
+  accepted `Commitment` resolves the session per RFC-MACP-0001 Section 7.3 (Termination), and
+  Section 7.2 permits no transition out of a terminal state — though note that Core states this as a
+  constraint on *transitions*, not as an explicit "reject every later message" rule, so this too is a
+  reading. Either way the divergence surfaces only on history a conformant runtime would not have
+  produced. And the corpus asserts `Committed` as a
+  value, not as a floor: no fixture replays anything after it. So this is the half that needs
+  fixing rather than deciding, but it is defense in depth, not a broken wire contract.
+  Tracked as issue #145.

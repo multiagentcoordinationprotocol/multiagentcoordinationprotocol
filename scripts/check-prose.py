@@ -295,7 +295,19 @@ def check_xrefs():
     sections = rfc_sections()
     scanned = 0
     hits = 0
-    for sub, ext in (("rfcs", ".md"), ("docs", ".md"), ("registries", ".md")):
+    # `schemas` is here because several schemas/**/README.md files cite RFC
+    # sections -- schemas/parity/README.md most of all, and that file's own text
+    # forbids inventing a citation. Leaving it unscanned meant the one document
+    # that says "the manifest says so explicitly rather than inventing a
+    # citation" was the one whose citations nothing checked. walk() already
+    # recurses, so this is the whole change: 325 -> 355 references scanned.
+    #
+    # A resolving number is NOT a correct citation. This proves §N.M exists in
+    # the cited RFC, not that it still names the section the prose means -- a
+    # renumber that happens to land on another real section passes. So keep
+    # citing the section NAME alongside the number.
+    for sub, ext in (("rfcs", ".md"), ("docs", ".md"), ("registries", ".md"),
+                     ("schemas", ".md")):
         for path in walk(sub, ext):
             self_num = None
             m = re.search(r"RFC-MACP-(\d{4})", os.path.basename(path))

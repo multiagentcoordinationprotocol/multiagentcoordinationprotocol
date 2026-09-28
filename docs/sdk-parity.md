@@ -9,11 +9,33 @@ Every official MACP SDK MUST provide:
 ### Transport Layer
 - **MacpClient** — gRPC client implementing all RPCs in `MACPRuntimeService` (currently 24, including `SuspendSession`/`ResumeSession`)
 - **MacpStream** — bidirectional streaming wrapper for `StreamSession`
-- **Authentication** — dev agent (`x-macp-agent-id`) and bearer token modes
+- **Authentication** — dev-agent and bearer-token modes, both bearer-only (no identity header: no
+  supported runtime reads one, and `macp-runtime` carries tests asserting it rejects or ignores the
+  header it once accepted)
 
 ### Session Helpers
 - One session class per standards-track mode (Decision, Proposal, Task, Handoff, Quorum)
 - Each session wraps start, mode-specific actions, commit, cancel, metadata
+
+### Client-Side Validation
+
+An SDK's own validation MUST NOT reject a payload that the mode's schema and the RFCs permit.
+Strictness beyond the wire contract turns a conformant message into a local error, and makes the
+same session open or fail depending on which SDK's helper built it — which is a parity defect even
+though every byte that reaches the runtime is valid.
+
+The concrete rule the spec already states: per RFC-MACP-0001 Section 7.1 (Session Creation),
+`intent` MAY be empty and a runtime MUST NOT reject a `SessionStart` solely because `intent` is
+empty. The same reasoning extends to the other human-readable descriptive strings — `instructions`,
+`summary`, `action` — which are plain proto3 singular fields with no field presence, so an omitted
+value and `""` are the same bytes on the wire. A client-side required-check on any of them invents a
+distinction the wire cannot carry, and a caller has no conformant way to satisfy it other than
+inventing text.
+
+**No conformance fixture can enforce this, and it would be misleading to imply otherwise.** The
+runner replays *accepted* envelopes through projections (see `## Conformance Test Suite` below),
+whereas a builder that refuses to construct the envelope fails before anything reaches a projection.
+Enforcement here is per-SDK review, filed as `macp-sdk-typescript` #124 and `macp-sdk-python` #93, not the corpus.
 
 ### Projections
 - One projection class per standards-track mode
@@ -48,7 +70,28 @@ Every official MACP SDK MUST provide:
 
 ## MAY Implement
 
-Optional features that enhance the SDK but are not required for conformance:
+Optional features that enhance the SDK but are not required for conformance.
+
+These surfaces are optional **and not parity-governed**. Two SDKs may differ here in behaviour,
+shape, naming and defaults without either being non-conformant, and the parity-contract manifest
+will not pin them — see the "What this manifest does not pin, and why" section of
+`schemas/parity/README.md`. That section is broader than this tier: it lists six classes the
+manifest will not pin, and two of them are not MAY-tier surfaces at all (one is the MUST rule
+below). Unpinnable by the manifest and optional for an SDK are different statements. Two consequences are worth
+stating outright, because each has been raised as a cross-SDK question:
+
+- **A same-named helper may compute a different quantity.** The two SDKs' `majority_voter` is the
+  worked example: one reads the projection's **evaluations**, the other reads the **votes already
+  cast**, under the same public name, the same threshold parameter and the same `0.5` default.
+  RFC-MACP-0007 Section 1 (Purpose) declines to standardize one universal voting algorithm, and
+  Section 6 (Terminal semantics) repeats that a deployment may choose its own — so there is no
+  upstream for this repo to project, and naming one of the two canonical here would be inventing
+  decision semantics the RFC deliberately left open.
+- **Permitted is not the same as good.** Saying a divergence is not a conformance defect says
+  nothing about whether it is a defect. Each SDK remains free to call its own behaviour a bug and
+  fix it; what this tier settles is only that neither SDK is non-conformant for differing.
+
+The optional features themselves:
 
 - **Watcher classes** — convenience wrappers around streaming RPCs (vs raw iterators)
 - **HTTP transport adapter** — polling transport for non-gRPC environments
@@ -104,15 +147,19 @@ Optional features that enhance the SDK but are not required for conformance:
   summary of it before assuming a section is covered.
 - **Consumer wiring, and why the two vendored copies behave differently**: `macp-runtime` and
   `macp-sdk-typescript` both vendor this manifest into their own `tests/parity/` and assert
-  against it in CI. `macp-sdk-python` does not vendor it at all, and no issue tracks wiring it
-  up — so a manifest change reaches that SDK only when a human carries it there. The two
+  against it in CI. `macp-sdk-python` does not vendor it at all; wiring it up is filed as
+  `macp-sdk-python` #93 rather than done here — so until that lands, a manifest change reaches that
+  SDK only when a human carries it there. The two
   existing copies pin the spec repo differently, which is what decides
   who notices a manifest change and when: `macp-runtime` checks this repo out at an explicit
   pinned revision, so it stays green until its maintainers bump that revision deliberately,
   whereas `macp-sdk-typescript` checks out the default branch, so a merged manifest change
-  reaches its drift check on that repo's next CI run without anyone opting in. A manifest
-  change that adds a vector or a section therefore needs a re-vendor issue filed against each
-  consumer, and the unpinned one is the time-sensitive half. See `schemas/parity/README.md` for
+  reaches its drift check on that repo's next CI run without anyone opting in. **Any** manifest change
+  therefore needs a re-vendor issue filed against each consumer, and the unpinned one is the
+  time-sensitive half. Note "any", not "any that adds a vector or a section": `verify-parity` in
+  `macp-sdk-typescript` is a byte-level diff, and its `contract.test.ts` additionally hard-asserts
+  the exact `contract_version` string as a deliberate tripwire, so even an annotation-only PATCH
+  bump turns that repo red. The 1.1.0 → 1.1.1 bump is filed as `macp-sdk-typescript` #125. See `schemas/parity/README.md` for
   the full section list and versioning rules.
 
 ## Conformance Test Suite
@@ -121,7 +168,9 @@ Each SDK must include a conformance test runner that:
 
 1. Loads all `*.json` fixtures from `tests/conformance/`
 2. Replays accepted messages (where `expect == "accept"`) through the matching projection
-3. Verifies transcript length, commitment presence, and commitment field values
+3. Verifies transcript length, commitment presence, commitment field values, and — where a fixture
+   declares `expected_mode_state` — the projected `phase` and `votes`
+   (`schemas/conformance/README.md` pins both, and each SDK's harness asserts both)
 4. Skips `multi_round` fixtures (extension mode, no required projection)
 5. Skips `reject_paths` fixtures (test runtime rejection, not projection replay)
 
