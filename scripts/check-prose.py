@@ -8,7 +8,7 @@ stayed green while RFC-MACP-0012 made four false claims about its own canonical
 schemas, while two RFCs gave opposite answers about the same tally, and while a
 justification rested on a section that does not exist.
 
-"Is this paragraph true?" is not a lint rule. These seven checks are the fraction
+"Is this paragraph true?" is not a lint rule. These eight checks are the fraction
 that is mechanical:
 
   1. line-number anchors   -- `(:102)`-style citations drift on every edit above
@@ -43,6 +43,13 @@ that is mechanical:
                               required. The schema's `required` array is the one that
                               enforces it, and nothing compared them: the RFC said
                               five while the schema said four (#120).
+  8. parity held-value      -- schemas/parity/README.md and docs/sdk-parity.md
+                              each list which contract.json values check-
+                              parity-contract.py holds to ANOTHER value inside
+                              the manifest rather than an external source.
+                              Nothing held the two lists to each other or to
+                              the script; #157 found them both disagreeing
+                              and both stale.
 
 Reporting follows check-indexes.sh: accumulate every failure and report them all,
 rather than dying on the first. One run should surface the whole list.
@@ -604,7 +611,7 @@ def check_check_count():
     structural rather than a choice: it has no per-item marker, so counting it
     needs a regex pinned to that one sentence and split on its commas -- which
     already fails. One item reads "...agrees across the schema, the RFC and the
-    fixture linter", so a naive split reports eight segments for seven items.
+    fixture linter", so a naive split reports nine segments for eight items.
     The README failure message therefore carries the obligation in its own text,
     because that is what a maintainer reads at the moment they edit the sentence;
     this docstring is not.
@@ -972,6 +979,107 @@ def check_descriptor_required():
           else "  [X] %d descriptor required-set disagreement(s)" % problems)
 
 
+# --------------------------------------------------------------------------
+# 8. parity-contract "held to other manifest values" enumeration agreement
+# --------------------------------------------------------------------------
+# scripts/check-parity-contract.py holds most contract.json values to an
+# in-repo source OUTSIDE the manifest (a registry, an RFC, a schema, the
+# example/conformance corpora). A few have no such external source for one
+# specific comparison and are held to ANOTHER VALUE INSIDE THE MANIFEST
+# instead: retry.backoff_schedule_seconds is recomputed from
+# retry.backoff_base_seconds/backoff_max_seconds/max_retries
+# (check_retry_schedule), retry.retryable_error_codes must be a subset of the
+# manifest's own error_codes.permanent (check_retry_schedule),
+# contribute_payload.first_byte's two discriminator bytes must prefix the
+# manifest's own vectors[].*_hex values (check_first_byte_markers), and
+# commitment_hash.accept/commitment_hash.reject are each re.fullmatch'd
+# against the manifest's own commitment_hash.pattern rather than against
+# schemas/conformance/cmt-hash/vector-schema.json directly (check_commitment_hash).
+#
+# NOT included: contribute_payload.vectors[*].protobuf_hex/legacy_json_hex,
+# re-derived from each vector's own `value` (check_contribute_payload). That
+# is a same-record encoding-consistency check, not a cross-section reference
+# the way the four above are -- a deliberate line, not an oversight (issue
+# #157's plan discusses this explicitly).
+#
+# schemas/parity/README.md and docs/sdk-parity.md each hand-maintain a prose
+# enumeration of exactly this set. Nothing held them to each other, and both
+# were stale: README.md was missing commitment_hash; docs/sdk-parity.md was
+# missing both commitment_hash and backoff_schedule_seconds (issue #157).
+#
+# CURATED, like CITED_TERMS above: which check_*() functions in
+# check-parity-contract.py hold a value to ANOTHER manifest value (vs. an
+# external source) is a semantic property of that function's own docstring,
+# not a syntactic pattern this script can derive by parsing it. Add a row here
+# when check_retry_schedule/check_first_byte_markers/check_commitment_hash
+# (or a future function of the same shape) gains or loses a held-to-another-
+# value assertion.
+HELD_TO_OTHER_MANIFEST_VALUES = [
+    "backoff_schedule_seconds",
+    "retryable_error_codes",
+    "first_byte",
+    "commitment_hash.pattern",
+]
+
+HELD_VALUE_SITES = [
+    ("schemas/parity/README.md",
+     r"[Ss]ome are held to other values?\s+inside (?:this|the) manifest instead"),
+    ("docs/sdk-parity.md",
+     r"[Ss]ome are held to other values?\s+inside (?:this|the) manifest instead"),
+]
+
+
+def check_parity_held_values():
+    """Assert schemas/parity/README.md and docs/sdk-parity.md agree on which
+    contract.json values check-parity-contract.py holds to ANOTHER value
+    inside the manifest, rather than to an external in-repo source.
+
+    Canonical: HELD_TO_OTHER_MANIFEST_VALUES above -- curated, not derived,
+    for the same reason CITED_TERMS is curated: whether a check_*() function
+    in check-parity-contract.py compares against another manifest value or an
+    external source is a property of that function's docstring, not a
+    syntactic shape a parser can recover.
+    """
+    global CHECKS
+    CHECKS += 1
+    print("-- parity-contract 'held to other manifest values' enumeration agrees --")
+    problems = 0
+    for relpath, anchor_pattern in HELD_VALUE_SITES:
+        path = os.path.join(ROOT, relpath)
+        try:
+            text = open(path, encoding="utf-8").read()
+        except OSError as exc:
+            problems += 1
+            fail("%s could not be read to check its 'held to other manifest "
+                 "values' enumeration: %s" % (relpath, exc))
+            continue
+        m = re.search(anchor_pattern, text)
+        if not m:
+            problems += 1
+            fail("%s: could not find the 'held to other values inside the "
+                 "manifest' sentence -- if it was reworded, update the "
+                 "pattern in scripts/check-prose.py" % relpath)
+            continue
+        tail = text[m.start():]
+        bullet = re.search(r"\n- \*\*", tail[1:])
+        candidates = [i for i in (tail.find("\n\n"),
+                                   bullet.start() + 1 if bullet else -1)
+                      if i != -1]
+        end = min(candidates) if candidates else min(len(tail), 1200)
+        window = tail[:end]
+        for item in HELD_TO_OTHER_MANIFEST_VALUES:
+            if item not in window:
+                problems += 1
+                fail("%s: its 'held to other values' enumeration does not "
+                     "mention %r, but scripts/check-parity-contract.py holds "
+                     "it to another manifest value, not an external source -- "
+                     "see check_retry_schedule/check_first_byte_markers/"
+                     "check_commitment_hash there" % (relpath, item))
+    print("  [OK] both sites enumerate all %d held-to-other-manifest-value(s)"
+          % len(HELD_TO_OTHER_MANIFEST_VALUES) if not problems
+          else "  [X] %d enumeration mismatch(es)" % problems)
+
+
 def main():
     print("Checking RFC prose against the artifacts that implement it...")
     print("")
@@ -982,6 +1090,7 @@ def main():
     check_version_census()
     check_check_count()
     check_descriptor_required()
+    check_parity_held_values()
     print("")
     print("-------------------------------------")
     if FAILURES:

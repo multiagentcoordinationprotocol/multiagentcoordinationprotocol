@@ -12,8 +12,10 @@ everything: a value whose `source` declares it a convention with no in-repo home
 nothing to hold it to. Some are held to other values inside this manifest instead — among them
 `retry.backoff_schedule_seconds`, recomputed from the `retry` fields it derives from;
 `retry.retryable_error_codes`, every member of which must appear in this manifest's own
-`error_codes.permanent`; and `contribute_payload`'s two `first_byte` discriminator bytes, which
-must be the bytes every vector actually leads with. Read that script rather than any summary of
+`error_codes.permanent`; `contribute_payload`'s two `first_byte` discriminator bytes, which
+must be the bytes every vector actually leads with; and `commitment_hash.accept`/
+`commitment_hash.reject`, each checked against this manifest's own `commitment_hash.pattern`
+rather than against the vector schema directly. Read that script rather than any summary of
 it, including this one, before relying on a particular value being guarded.
 
 **This file is non-normative.** It *projects* values whose actual normative home — where

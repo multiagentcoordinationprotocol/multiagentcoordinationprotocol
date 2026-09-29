@@ -142,10 +142,14 @@ The optional features themselves:
   inside the manifest instead, among them `contribute_payload.first_byte`'s two discriminator
   bytes, asserted against the bytes every vector leads with; `macp-runtime` asserts those same
   two markers against its vendored copy, so that drift is now caught here rather than
-  downstream. `retry.retryable_error_codes` is the second: its members must all appear in the
+  downstream. `retry.retryable_error_codes` is another: its members must all appear in the
   manifest's own `error_codes.permanent`, which is itself held to `registries/error-codes.md`, so
   a retryable code that is not a canonical error code fails even though the `retry` section's
-  `source` still reads "convention". Read `scripts/check-parity-contract.py` rather than any
+  `source` still reads "convention". So is `retry.backoff_schedule_seconds`: it is recomputed
+  from `retry.backoff_base_seconds`, `backoff_max_seconds`, and `max_retries`, and must match
+  exactly. So are `commitment_hash.accept` and `commitment_hash.reject`: each entry is checked
+  against the manifest's own `commitment_hash.pattern`, not against the vector schema directly.
+  Read `scripts/check-parity-contract.py` rather than any
   summary of it before assuming a section is covered.
 - **Consumer wiring, and why the three vendored copies behave differently**: all three consumers —
   `macp-runtime`, `macp-sdk-python`, and `macp-sdk-typescript` — now vendor this manifest into their

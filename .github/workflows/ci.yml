@@ -65,6 +65,11 @@ jobs:
           echo "Checking RFC prose against the artifacts that implement it..."
           python3 scripts/check-prose.py
 
+      - name: Prove check-prose.py survives an unreadable file (issue #129)
+        run: |
+          echo "Checking check-prose.py survives an unreadable file..."
+          python3 scripts/check-prose-test.py
+
       - name: Install protoc
         run: |
           sudo apt-get update
