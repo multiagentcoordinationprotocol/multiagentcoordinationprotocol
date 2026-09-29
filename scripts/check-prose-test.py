@@ -4,7 +4,7 @@
 Copies the real repo tree, makes one file inside the copy unreadable, then runs
 the real scripts/check-prose.py (unmodified, not copied) against that tree via
 MACP_ROOT -- the same seam the script already exposes for this purpose. Asserts
-the run reaches its own summary line for all 7 checks rather than dying with an
+the run reaches its own summary line for all 8 checks rather than dying with an
 uncaught traceback partway through.
 
 POSIX only (uses os.chmod permission bits); this repo's CI runs on Linux/macOS
@@ -70,9 +70,9 @@ def main():
             print(stderr)
             return 1
 
-        if "prose check failure(s) across 7 check(s)" not in stdout and "[OK] All 7 prose checks passed" not in stdout:
+        if "prose check failure(s) across 8 check(s)" not in stdout and "[OK] All 8 prose checks passed" not in stdout:
             print("[FAIL] check-prose.py did not reach its own summary line for "
-                  "all 7 checks -- run did not complete:")
+                  "all 8 checks -- run did not complete:")
             print("--- stdout ---")
             print(stdout)
             print("--- stderr ---")
@@ -84,7 +84,7 @@ def main():
                   "reportable failure), got 0")
             return 1
 
-        print("[OK] check-prose.py ran all 7 checks to completion with an "
+        print("[OK] check-prose.py ran all 8 checks to completion with an "
               "unreadable file present, and reported it as a failure rather "
               "than crashing")
         return 0

@@ -241,7 +241,7 @@ what it should if something on disk is actually rejected by it.
 implement it. `make validate` never did: it verifies that JSON matches schemas and that protos
 compile, but not that a normative sentence is true, and not that two RFCs agree.
 
-Seven checks, chosen because they are mechanical:
+Eight checks, chosen because they are mechanical:
 
 - **No line-number anchors.** A citation that pins a source line — an open paren, a colon, a
   line number, a close paren — drifts the moment anything above it is edited. Cite the heading
@@ -280,9 +280,22 @@ Seven checks, chosen because they are mechanical:
   them, and they drifted: the RFC listed five while the schema required four, so a descriptor
   with no `description` validated clean. The schema is read as JSON and the linter's tuple as
   Python source by AST; the two markdown tables and the count sentence are matched by pattern.
+- **The parity-contract "held to other manifest values" enumeration
+  agrees.** A few `schemas/parity/contract.json` values have no in-repo
+  source for one specific comparison — `check-parity-contract.py` instead
+  holds them to ANOTHER value inside the same manifest
+  (`retry.backoff_schedule_seconds` recomputed from the other `retry`
+  fields; `retry.retryable_error_codes` checked against the manifest's own
+  `error_codes.permanent`; `contribute_payload.first_byte`'s two
+  discriminator bytes checked against the manifest's own vectors;
+  `commitment_hash.accept`/`reject` checked against the manifest's own
+  `commitment_hash.pattern`). `schemas/parity/README.md` and this repo's
+  `docs/sdk-parity.md` each hand-maintain a prose list of exactly that set,
+  and nothing held them to each other — both were stale in different ways
+  (issue #157).
 
 **What it still does not check:** whether a paragraph is *true*. Nothing here would have caught
-an RFC asserting a constraint its schema does not impose, beyond the seven narrow classes above.
+an RFC asserting a constraint its schema does not impose, beyond the eight narrow classes above.
 That remains a human job.
 
 ## Error Codes
