@@ -77,10 +77,11 @@ Optional features that enhance the SDK but are not required for conformance.
 These surfaces are optional **and not parity-governed**. Two SDKs may differ here in behaviour,
 shape, naming and defaults without either being non-conformant, and the parity-contract manifest
 will not pin them — see the "What this manifest does not pin, and why" section of
-`schemas/parity/README.md`. That section is broader than this tier: it lists six classes the
-manifest will not pin, and two of them are not MAY-tier surfaces at all (one is the MUST rule
-below). Unpinnable by the manifest and optional for an SDK are different statements. Two consequences are worth
-stating outright, because each has been raised as a cross-SDK question:
+`schemas/parity/README.md`. That section is broader than this tier: it lists seven classes the
+manifest will not pin, and three of them are not MAY-tier surfaces at all — among them the MUST
+rule below and this document's own Naming section below. Unpinnable by the manifest and
+optional for an SDK are different statements. Two consequences are worth stating outright,
+because each has been raised as a cross-SDK question:
 
 - **A same-named helper may compute a different quantity.** The two SDKs' `majority_voter` is the
   worked example: one reads the projection's **evaluations**, the other reads the **votes already
@@ -100,6 +101,51 @@ The optional features themselves:
 - **Base session/projection classes** — shared inheritance (vs standalone classes)
 - **Agent framework** — Participant abstraction, dispatcher, strategies, bootstrap
 - **Logging** — structured logging helpers
+
+## Naming
+
+Symbol names — classes, methods, types — are outside `schemas/parity/contract.json`'s scope
+(see `schemas/parity/README.md`'s "What this manifest does not pin, and why" list, item 7):
+every value that manifest pins names a `source`, and a symbol name has none.
+This repo still expects both official SDKs to converge on shared naming for the concepts each
+SDK exposes, so the standing rule for resolving a divergence lives here instead. This is an
+expectation this document states, not a conformance requirement `## MUST Implement` enforces —
+it applies inside the `## MAY Implement` tier too (an SDK's own strategy/agent-framework
+symbols are still expected to follow it once a divergence is found there, even though that
+tier's behavior itself remains unpinned and neither SDK is non-conformant for differing on it).
+
+**The rule**, applied when a naming divergence is found between the two SDKs (or against
+`macp-runtime`, where it independently implements the same concept):
+
+- **R0 — same shape and role, or it isn't a naming question.** A pair only qualifies as a
+  naming divergence if both symbols carry the same shape and the same role in their SDK. Two
+  symbols that look like a naming mismatch but actually differ in shape or capability are a
+  contract gap, not a naming one — settle the gap on its own terms first; a name should not be
+  chosen for a mismatch that hasn't been confirmed to be the same thing.
+- **R1 — where the spec names the concept, the SDK symbol follows it.** When the wire protocol
+  or an RFC already names the concept, the SDK's symbol is that name under the SDK language's
+  own case convention, plus any fixed suffix the RFC's own vocabulary implies (e.g. the RFC's
+  message-type vocabulary making `<MessageType>Record` the pattern its projections should
+  follow). A symbol that doesn't reflect the spec's own name yields to one that does.
+- **R2 — where the spec is silent, the convention shared across both SDKs wins.** If neither
+  the wire protocol nor an RFC names the concept, look at what both SDKs already do elsewhere
+  in their own codebase. The naming pattern followed by the majority of an SDK's *own* other
+  symbols — and shared with the other SDK — is the target; a lone outlier (within its own SDK,
+  or against the other SDK's shared convention) yields.
+
+This generalizes, at the symbol level, the same principle `schemas/parity/contract.json`'s
+`projection_anomaly.field_case_rule` already machine-checks at the field level — a
+snake_case-to-lowerCamelCase transform with no rename, reorder, add, or drop, asserted in
+`macp-sdk-typescript/tests/parity/contract.test.ts`. A symbol name has no `contract.json` entry
+to hold it to, because it has no `source`, but the underlying idea — the SDK's own name follows
+the spec's name under its language's convention — is the same one, not a new rule invented for
+this section.
+
+**Decision record:** issue #135 is where this repo first applied this rule, ruling on ten
+naming divergences found across `macp-sdk-python` and `macp-sdk-typescript` — most settled as
+renames, two split out as separate shape questions rather than decided as naming, since R0
+hadn't been confirmed for either. See #135's closing comment for the full per-pair table and
+the follow-up issues tracking each SDK's actual rename work.
 
 ## Sync Mechanisms
 
