@@ -93,6 +93,11 @@ The out-of-scope classes, each already visible elsewhere in this repo:
    the field differently — a plain string versus a closed union. This file cannot make one
    language's type-checker enforce another's closed set; the `projection_anomaly.kind` Open item
    below is the worked example.
+7. **SDK public symbol names (classes, methods, types).** Governed by `docs/sdk-parity.md`'s
+   `## Naming` section, not by this manifest — every value here names a `source`, and a symbol
+   name has none. Issue #134's own proposal explicitly excluded this ("not a full symbol map —
+   file/class/function names are expected and fine to diverge per language"); issue #135 is the
+   decision record for the naming divergences found since.
 
 None of this says a divergence in those classes is harmless. It says the divergence is the
 consumers' to resolve, and that this file will mirror the outcome rather than originate it.
