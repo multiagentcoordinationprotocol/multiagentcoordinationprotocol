@@ -78,8 +78,8 @@ These surfaces are optional **and not parity-governed**. Two SDKs may differ her
 shape, naming and defaults without either being non-conformant, and the parity-contract manifest
 will not pin them — see the "What this manifest does not pin, and why" section of
 `schemas/parity/README.md`. That section is broader than this tier: it lists seven classes the
-manifest will not pin, and three of them are not MAY-tier surfaces at all (one is the MUST rule
-below; another is this document's own Naming section below). Unpinnable by the manifest and
+manifest will not pin, and three of them are not MAY-tier surfaces at all — among them the MUST
+rule below and this document's own Naming section below. Unpinnable by the manifest and
 optional for an SDK are different statements. Two consequences are worth stating outright,
 because each has been raised as a cross-SDK question:
 
@@ -108,7 +108,11 @@ Symbol names — classes, methods, types — are outside `schemas/parity/contrac
 (see `schemas/parity/README.md`'s "What this manifest does not pin, and why" list, item 7):
 every value that manifest pins names a `source`, and a symbol name has none.
 This repo still expects both official SDKs to converge on shared naming for the concepts each
-SDK exposes, so the standing rule for resolving a divergence lives here instead.
+SDK exposes, so the standing rule for resolving a divergence lives here instead. This is an
+expectation this document states, not a conformance requirement `## MUST Implement` enforces —
+it applies inside the `## MAY Implement` tier too (an SDK's own strategy/agent-framework
+symbols are still expected to follow it once a divergence is found there, even though that
+tier's behavior itself remains unpinned and neither SDK is non-conformant for differing on it).
 
 **The rule**, applied when a naming divergence is found between the two SDKs (or against
 `macp-runtime`, where it independently implements the same concept):
