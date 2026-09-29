@@ -1,0 +1,18 @@
+{
+  "_invalid_because": "max_suspend_ms is fractional. The proto field is int64, so a non-integer has no wire representation. Isolates the type keyword, a different constraint from the minimum that session_start_negative_max_suspend_ms.json covers (RFC-MACP-0001 §7.5).",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "SessionStart",
+  "message_id": "msg-invalid-010",
+  "session_id": "sess-ghi789",
+  "sender": "agent://coordinator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "intent": "approve release",
+    "participants": ["agent://a", "agent://b"],
+    "mode_version": "1.0.0",
+    "configuration_version": "runtime-2026.07.01",
+    "ttl_ms": 60000,
+    "max_suspend_ms": 1.5
+  }
+}

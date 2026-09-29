@@ -23,6 +23,8 @@ itself never causes the rejection.
 | `missing_payload.json` | Exactly one of `payload` / `payload_b64` is required (RFC-MACP-0001 §10) |
 | `bad_macp_version.json` | `macp_version` MUST be semantic-version formatted |
 | `session_start_missing_versions.json` | SessionStart MUST bind `ttl_ms`, `mode_version`, `configuration_version` (RFC-MACP-0001 §7, RFC-MACP-0003) |
+| `session_start_negative_max_suspend_ms.json` | `max_suspend_ms` MUST be non-negative (RFC-MACP-0001 §7.5, RFC-MACP-0003 §2) |
+| `session_start_max_suspend_ms_not_integer.json` | `max_suspend_ms` MUST be an integer (RFC-MACP-0001 §7.5) |
 
 `signal_with_session_id.json`/`signal_with_mode.json` and
 `session_scoped_empty_session_id.json`/`session_scoped_empty_mode.json` are

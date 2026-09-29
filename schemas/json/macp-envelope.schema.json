@@ -331,6 +331,11 @@
             "$ref": "#/$defs/Base64Bytes"
           },
           "description": "Generic extension blocks keyed by protocol identifier. Values are base64-encoded protocol-specific bytes."
+        },
+        "max_suspend_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum cumulative suspended duration in milliseconds before a SUSPENDED session transitions to EXPIRED (RFC-MACP-0001 §7.5). 0 or absent means the runtime's configured default; the resolved cap MUST be recorded on the session for replay (RFC-MACP-0003 §2)."
         }
       }
     },
