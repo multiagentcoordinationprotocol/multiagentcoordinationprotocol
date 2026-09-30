@@ -88,7 +88,7 @@
       "properties": {
         "session_start": {
           "type": "object",
-          "required": ["intent", "participants", "ttl_ms"],
+          "required": ["intent", "participants", "ttl_ms", "mode_version", "configuration_version"],
           "additionalProperties": false,
           "properties": {
             "intent": { "type": "string" },

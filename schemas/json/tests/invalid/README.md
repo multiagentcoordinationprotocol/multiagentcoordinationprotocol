@@ -27,7 +27,8 @@ itself never causes the rejection.
 | `session_start_max_suspend_ms_not_integer.json` | `max_suspend_ms` MUST be an integer (RFC-MACP-0001 §7.5) |
 | `commitment_supersedes_bad_hash_format.json` | `supersedes.commitment_hash` MUST be a syntactically valid canonical commitment hash: `sha256:` + 64 lowercase hex characters (RFC-MACP-0001 §7.3.1, RFC-MACP-0013) |
 | `commitment_supersedes_empty_session_id.json` | `supersedes.session_id` MUST be non-empty when `supersedes` is present (RFC-MACP-0001 §7.3.1) |
-| `session_suspend_missing_reason.json` | `SessionSuspend`'s payload MUST carry a non-empty `reason` (RFC-MACP-0001 §7.5) |
+| `session_suspend_missing_reason.json` | `SessionSuspend`'s payload MUST carry a non-empty `reason` (schema-level requirement, mirroring `SessionCancelPayload`'s convention — not itself stated by RFC-MACP-0001 §7.5) |
+| `session_resume_missing_reason.json` | `SessionResume`'s payload MUST carry a non-empty `reason` (schema-level requirement, mirroring `SessionCancelPayload`'s convention — not itself stated by RFC-MACP-0001 §7.5) |
 | `session_resume_negative_banked_ms.json` | `banked_ms` MUST be non-negative (RFC-MACP-0001 §7.5, RFC-MACP-0003 §2) |
 
 `signal_with_session_id.json`/`signal_with_mode.json` and
