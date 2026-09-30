@@ -2,10 +2,22 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.4.0-draft
+**Version:** 1.5.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.5.0-draft:** §3.2's bookkeeping-entries list now names
+> `SessionCancel` explicitly (previously reachable only via the trailing "any other
+> internal log entry" catch-all), citing RFC-MACP-0001 §7.3 where it is defined.
+> Clarifying prose only — RFC-MACP-0001 §7.3 already called `SessionCancel` a
+> "terminal annotation", the same class of entry this section already exempted from
+> ordinal-consumption and subscribe-delivery (issue #159). This section's item 4
+> ("only accepted-history envelopes are delivered") means accepted-history is a
+> *necessary* condition for delivery, not sufficient — bookkeeping entries are part
+> of accepted history (RFC-MACP-0001 §7.3, §7.5) yet are excluded from delivery by
+> this bullet; that reading already applied to `SessionSuspend`/`SessionResume` and
+> is unchanged by adding `SessionCancel` to the same list.
+>
 > **Changelog — 1.4.0-draft:** §3.2 gains a **Redelivery** subsection stating the client-side counterpart of RFC-MACP-0001 §8.2: a client MUST tolerate being redelivered an envelope it has already observed (both from at-least-once transport and from ordinary re-subscribe replay), MUST key duplicate detection on `message_id`, and MUST NOT let a repeat advance its sequence position, count against a Mode cardinality rule, or mutate accumulated state. The sequence-counting sentence is tightened to "distinct accepted envelopes" accordingly.
 >
 > **Changelog — 1.3.0-draft:** §3.2 now defines what the passive-subscribe sequence *is* — the 1-based ordinal of accepted session-scoped envelopes, exclusive `after_sequence`, internal entries consuming no ordinals, stability across restart and compaction, and `FAILED_PRECONDITION` for a resume below the compacted base. Previously the sequence was specified only behaviorally ("starting from `after_sequence + 1`"), which left clients no defined way to compute their own position.
@@ -114,7 +126,7 @@ On a request with `subscribe_session_id` set, a runtime that advertises `session
 **Sequence semantics.** For resume to be interoperable, a runtime MUST implement `after_sequence` against the following definition of the session sequence:
 
 - The sequence is the **1-based ordinal of accepted session-scoped envelopes**, assigned in acceptance order. The first envelope accepted on a session has ordinal 1.
-- Entries a runtime records for its own bookkeeping — the `SessionSuspend` / `SessionResume` annotations of RFC-MACP-0001 §7.5, TTL expiry, storage checkpoints, and any other internal log entry — MUST NOT consume ordinals. Client-visible ordinals are therefore contiguous.
+- Entries a runtime records for its own bookkeeping — the `SessionSuspend` / `SessionResume` annotations of RFC-MACP-0001 §7.5, the `SessionCancel` terminal annotation of RFC-MACP-0001 §7.3, TTL expiry, storage checkpoints, and any other internal log entry — MUST NOT consume ordinals. Client-visible ordinals are therefore contiguous.
 - `after_sequence` is **exclusive**. Replay resumes at `after_sequence + 1`; `after_sequence = 0` replays from the session's first accepted envelope.
 
 The Envelope carries no sequence field on the wire (RFC-MACP-0001 §6), so a client can determine its position only by counting the **distinct accepted envelopes** it has been delivered — see **Redelivery** below, since the same envelope may arrive more than once and a repeat MUST NOT advance the count. Two obligations follow, and a runtime MUST satisfy both:

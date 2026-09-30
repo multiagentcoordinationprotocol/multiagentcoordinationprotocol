@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.1.0-draft
+**Version:** 1.2.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -11,6 +11,12 @@
 
 > This is an RFC-style open standard. It is not an IETF RFC.
 
+> **Changelog — 1.2.0-draft:** §7.3's `SessionCancel` terminal-annotation sentence
+> and §7.5's `SessionSuspend`/`SessionResume` "accepted history" sentence each gain a
+> cross-reference to RFC-MACP-0006 §3.2, which states that these internal
+> annotations consume no ordinal and are not delivered on a subscribe stream.
+> Clarifying prose only — no change to what a conformant runtime does (issue #159).
+>
 > **Changelog — 1.1.0-draft:** §6 gains a normative statement of the MACP Core protocol
 > version this specification defines: `1.0`. Every Envelope example in this repository, and
 > every known implementation, has sent `macp_version: "1.0"` since before this RFC existed,
@@ -266,7 +272,7 @@ Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
 By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. The runtime MUST record the initiator in `SessionMetadata.initiator` at session creation time for authorization checks. Deployments MAY extend cancellation authority to additional roles through policy. `CancelSession` MUST be subject to the same authentication requirements as any session-scoped operation.
 
-`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation. `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
+`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation (as an internal annotation: it consumes no ordinal and is not delivered on a subscribe stream, see RFC-MACP-0006 §3.2). `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
 
 `CancelSession` is a Core control-plane message. Mode-specific authorization rules (e.g., who can emit which Mode message type) do NOT apply to `CancelSession`. Only the initiator and policy-delegated roles may cancel a session.
 
@@ -311,7 +317,7 @@ An `OPEN` session MAY be paused into the `SUSPENDED` state and later resumed to 
 - `SuspendSession` is accepted only when the session is `OPEN`; it transitions the session to `SUSPENDED`.
 - `ResumeSession` is accepted only when the session is `SUSPENDED`; it transitions the session back to `OPEN`.
 
-Like `CancelSession`, they are restricted to the session initiator and policy-delegated roles, are subject to the same authentication requirements, and are NOT governed by Mode-specific authorization rules. Upon accepting a `SuspendSession` request the runtime MUST append a `SessionSuspend` envelope (with `SessionSuspendPayload`); upon accepting a `ResumeSession` request it MUST append a `SessionResume` envelope (with `SessionResumePayload`). These envelopes MUST NOT be submitted via the `Send` RPC — the runtime is the sole emitter — and they enter the accepted history so the suspension timeline is part of the replayed record.
+Like `CancelSession`, they are restricted to the session initiator and policy-delegated roles, are subject to the same authentication requirements, and are NOT governed by Mode-specific authorization rules. Upon accepting a `SuspendSession` request the runtime MUST append a `SessionSuspend` envelope (with `SessionSuspendPayload`); upon accepting a `ResumeSession` request it MUST append a `SessionResume` envelope (with `SessionResumePayload`). These envelopes MUST NOT be submitted via the `Send` RPC — the runtime is the sole emitter — and they enter the accepted history so the suspension timeline is part of the replayed record (as internal annotations: they consume no ordinal and are not delivered on a subscribe stream, see RFC-MACP-0006 §3.2).
 
 **Acceptance while suspended.** A `SUSPENDED` session is not `OPEN`; therefore any session-scoped Mode message (Proposal, Vote, Commitment, …) referencing it MUST be rejected with a non-OPEN session error, exactly as for terminal sessions (§7.3). Only `ResumeSession` (and `CancelSession`) may be accepted against a `SUSPENDED` session.
 
