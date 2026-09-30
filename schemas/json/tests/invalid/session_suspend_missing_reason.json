@@ -1,0 +1,13 @@
+{
+  "_invalid_because": "SessionSuspend's payload MUST carry a non-empty reason (RFC-MACP-0001 §7.5), mirroring SessionCancelPayload's existing convention.",
+  "macp_version": "1.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "SessionSuspend",
+  "message_id": "msg-invalid-013",
+  "session_id": "sess-mno345",
+  "sender": "runtime://macp.example",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "suspended_by": "user://alice"
+  }
+}
