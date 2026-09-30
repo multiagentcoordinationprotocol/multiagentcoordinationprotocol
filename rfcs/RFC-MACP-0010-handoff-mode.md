@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) - Handoff Mode
 
 **Document:** RFC-MACP-0010
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0002
+
+> **Changelog — 1.1.0-draft:** §5.1(2)'s closing sentence no longer reads as classification equivalence between the synthetic `HandoffAccept` and the `SessionSuspend`/`SessionResume`/`SessionCancel` envelopes it analogizes to — the analogy is narrowed to the replay-boundary property it actually supports, the `SessionCancel` citation is corrected from RFC-MACP-0001 §7.5 to RFC-MACP-0001 §7.3 (§7.5 covers only `SessionSuspend`/`SessionResume`), and the synthetic accept's own ordinal-consuming, stream-delivered classification (RFC-MACP-0006 §3.2) is now stated directly rather than left to a reader's inference. No behavior change — the synthetic accept's actual classification is unchanged; only what this sentence claims about it is corrected (issue #160).
 
 ## Abstract
 
@@ -92,11 +94,7 @@ implicitly, under the following contract:
    any `Commitment` evaluation** that depends on the offer being accepted. A
    runtime SHOULD observe the deadline eagerly (a timer or sweep, like TTL
    expiry); it MUST observe it lazily at the latest when processing the next
-   session-scoped message. Because the synthetic accept is an accepted
-   history entry, replay simply replays it: the timer itself is outside the
-   replay boundary, its recorded product is inside — the same construction
-   as runtime-emitted `SessionSuspend`/`SessionResume`/`SessionCancel`
-   envelopes (RFC-MACP-0001 §7.5).
+   session-scoped message. Because the synthetic accept is an accepted history entry, replay simply replays it: the timer itself is outside the replay boundary, its recorded product is inside — the same replay-boundary property as any runtime-authored entry that enters the log, such as the `SessionSuspend`/`SessionResume` annotations of RFC-MACP-0001 §7.5 and the `SessionCancel` annotation of RFC-MACP-0001 §7.3. This entry's *classification* for ordinal-consumption and stream delivery is a separate question, governed by RFC-MACP-0006 §3.2, and is unrelated to this replay-boundary property — unlike those three envelopes, the synthetic `HandoffAccept` is an ordinary accepted Mode message: it consumes an accepted ordinal and is delivered on a subscribe stream like any other accepted envelope.
 
 3. **Envelope convention.** The synthetic accept is runtime-emitted; clients
    MUST NOT submit it via `Send`. Its Envelope `sender` is the offer's
