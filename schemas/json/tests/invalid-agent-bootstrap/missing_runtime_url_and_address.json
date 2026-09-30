@@ -3,7 +3,6 @@
   "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
   "participant_id": "agent://checkout.orchestrator",
   "mode": "macp.mode.decision.v1",
-  "runtime_url": "runtime.internal:50051",
   "auth_token": "macp-dev-token-REDACTED",
   "secure": true,
   "allow_insecure": false,
@@ -26,7 +25,7 @@
         "agent://compliance"
       ],
       "ttl_ms": 15000,
-      "max_suspend_ms": -1,
+      "max_suspend_ms": 60000,
       "mode_version": "1.0.0",
       "configuration_version": "runtime-2026.03.02",
       "policy_version": "banking-policy-2026.03",
@@ -45,5 +44,5 @@
     "port": 8080,
     "path": "/macp/cancel"
   },
-  "_invalid_because": "initiator.session_start.max_suspend_ms is negative. It binds a cumulative SUSPENDED-time budget (RFC-MACP-0001 Section 7.5), so a negative budget is meaningless; 0 is legal and means the runtime's configured default applies. Isolates max_suspend_ms's minimum keyword."
+  "_invalid_because": "Neither runtime_url nor runtime_address is present. Both real SDK readers throw at bootstrap time without one ('must set runtime_url or runtime_address' / 'missing runtime_address / runtime_url'), so the schema's top-level anyOf requiring at least one must reject this too. Isolates the top-level anyOf added for the runtime_url/runtime_address alias pair."
 }

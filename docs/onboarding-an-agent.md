@@ -105,7 +105,7 @@ The default algorithm allowlist is RS256/ES256; HS256 requires an explicit `MACP
 
 ### Option A — Static bearer (your own scenario-producing tier)
 
-Inject the token you generated in Step 2A into your agent's bootstrap however your own tier does configuration — an env var, a secrets manager entry, whatever fits. The only requirement is that the agent's bootstrap ends up with the correct Bearer token in its runtime-auth field (e.g. `runtime.bearerToken`).
+Inject the token you generated in Step 2A into your agent's bootstrap however your own tier does configuration — an env var, a secrets manager entry, whatever fits. The only requirement is that the agent's bootstrap ends up with the correct Bearer token in its runtime-auth field (e.g. `auth_token`).
 
 ### Option B — `macp-playground` (automatic, nothing to register)
 
@@ -150,90 +150,72 @@ Then add the agent to the scenario's `participants` list in its YAML.
 
 ## Step 5 — Pick an SDK and wire the agent loop
 
+Both SDKs ship a high-level `agent`/`Participant` framework that reads the bootstrap file for you (auth, transport, projection, and cancel-callback wiring included) and dispatches to handlers you register — you no longer hand-build a `MacpClient` or drive a raw stream loop yourself. See each SDK's own Agent Framework guide for the full API: [`macp-sdk-python/docs/guides/agent-framework.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-python/blob/main/docs/guides/agent-framework.md), [`macp-sdk-typescript/docs/guides/agent-framework.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript/blob/main/docs/guides/agent-framework.md).
+
 ### Python
 
 ```python
-import os
-from macp_sdk import MacpClient, AuthConfig, DecisionSession, new_session_id
-from macp_worker_sdk import load_bootstrap
+from macp_sdk.agent import from_bootstrap
 
-bootstrap = load_bootstrap()
-auth = AuthConfig.for_bearer(
-    os.environ["MACP_RUNTIME_TOKEN"],
-    expected_sender=bootstrap.participant.participant_id,
-)
+participant = from_bootstrap()  # reads $MACP_BOOTSTRAP_FILE
 
-client = MacpClient(
-    target=os.environ["MACP_RUNTIME_ADDRESS"],
-    secure=os.environ.get("MACP_RUNTIME_TLS", "true").lower() == "true",
-    auth=auth,
-)
-client.initialize()
+def on_proposal(msg, ctx):
+    payload = msg.payload  # mode-specific proto message (decoded)
+    ctx.actions.evaluate(payload.proposal_id, "APPROVE", confidence=0.9)
 
-session = DecisionSession(client, session_id=bootstrap.run.session_id, auth=auth)
+def on_voting(phase, ctx):
+    ctx.log("entering voting phase")
 
-if bootstrap.initiator is not None:
-    # Initiator path — emit SessionStart, then kickoff.
-    session.start(
-        intent=bootstrap.initiator.session_start.intent,
-        participants=bootstrap.initiator.session_start.participants,
-        ttl_ms=bootstrap.initiator.session_start.ttl_ms,
-        mode_version=bootstrap.initiator.session_start.mode_version,
-        configuration_version=bootstrap.initiator.session_start.configuration_version,
-        policy_version=bootstrap.initiator.session_start.policy_version,
-    )
-    stream = session.open_stream()
-    if bootstrap.initiator.kickoff is not None:
-        session.propose(bootstrap.initiator.kickoff.payload)  # or send raw envelope
-else:
-    # Non-initiator — just open the stream and react to events.
-    stream = session.open_stream()
+def on_done(result):
+    print("terminal:", result.state, result.commitment)
 
-for envelope in stream.responses():
-    # handle Proposal / Evaluation / Vote / Commitment / ...
-    ...
+# on()/on_phase_change()/on_terminal() are plain fluent methods, not
+# decorator factories -- each takes the handler as a direct argument.
+participant.on("Proposal", on_proposal)
+participant.on_phase_change("Voting", on_voting)
+participant.on_terminal(on_done)
+
+participant.run()  # blocks until a terminal event fires or stop() is called
 ```
+
+Non-initiator agents work identically — `from_bootstrap()` only emits `SessionStart` (and a kickoff, if present) when the bootstrap document has an `initiator` block; otherwise the participant just subscribes and reacts to handlers.
 
 ### TypeScript
 
 ```ts
-import { MacpClient, Auth, DecisionSession, newSessionId } from 'macp-sdk-typescript';
-import { loadBootstrap } from './bootstrap';
+import { agent } from 'macp-sdk-typescript';
 
-const bootstrap = loadBootstrap();
-const auth = Auth.bearer(process.env.MACP_RUNTIME_TOKEN!, {
-  expectedSender: bootstrap.participant.participantId,
-});
+const participant = agent.fromBootstrap();  // reads MACP_BOOTSTRAP_FILE
 
-const client = new MacpClient({
-  address: process.env.MACP_RUNTIME_ADDRESS!,
-  secure: process.env.MACP_RUNTIME_TLS === 'true',
-  auth,
-});
-await client.initialize();
+participant
+  .on('Proposal', async (msg, ctx) => {
+    ctx.log('Received proposal', { option: msg.payload.option });
+    await ctx.actions.evaluate({
+      proposalId: msg.payload.proposalId,
+      recommendation: 'approve',
+      confidence: 0.9,
+      reason: 'Meets criteria',
+    });
+  })
+  .on('Evaluation', async (msg, ctx) => {
+    await ctx.actions.vote({
+      proposalId: msg.payload.proposalId,
+      vote: 'approve',
+      reason: 'Evaluation looks good',
+    });
+  })
+  .onTerminal((result) => {
+    console.log('Session resolved:', result.state);
+  });
 
-const session = new DecisionSession(client, { sessionId: bootstrap.run.sessionId, auth });
-
-if (bootstrap.initiator) {
-  await session.start(bootstrap.initiator.sessionStart);
-  const stream = session.openStream();
-  if (bootstrap.initiator.kickoff) {
-    await session.propose(bootstrap.initiator.kickoff.payload);
-  }
-  for await (const envelope of stream.responses()) {
-    // handle events
-  }
-} else {
-  const stream = session.openStream();
-  for await (const envelope of stream.responses()) {
-    // handle events
-  }
-}
+await participant.run();
 ```
+
+Same non-initiator behavior as Python: `agent.fromBootstrap()` only drives `SessionStart`/kickoff when the bootstrap document's `initiator` block is present.
 
 ### Cancellation (Option A — RFC-pure default)
 
-Both SDKs auto-bind a local HTTP `POST <cancelCallback.path>` listener for you on the bootstrap path — you don't need to hand-roll one. They bind at different moments, which matters only if your integration never starts the participant: the Python SDK binds while building the participant from the bootstrap, so the listener is live as soon as you hold the object, whereas the TypeScript SDK stores the config at construction and starts the listener when the participant begins running. A TypeScript integration that constructs a participant and never runs it therefore has no listener auto-bound (it can still attach one itself), and the troubleshooting row below is what that looks like from the runtime's side. (Either SDK's binding timing is a library choice, not a protocol requirement — see `sdk-parity.md`'s `## MAY Implement`.) The control-plane's UI-triggered cancel calls that listener; the SDK responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.3 (Termination) — only the initiator (or a policy-delegated role) may cancel. See the SDK guides linked above if you need to override the default cancel behavior.
+Both SDKs auto-bind a local HTTP `POST <cancel_callback.path>` listener for you on the bootstrap path — you don't need to hand-roll one. They bind at different moments, which matters only if your integration never starts the participant: the Python SDK binds while building the participant from the bootstrap, so the listener is live as soon as you hold the object, whereas the TypeScript SDK stores the config at construction and starts the listener when the participant begins running. A TypeScript integration that constructs a participant and never runs it therefore has no listener auto-bound (it can still attach one itself), and the troubleshooting row below is what that looks like from the runtime's side. (Either SDK's binding timing is a library choice, not a protocol requirement — see `sdk-parity.md`'s `## MAY Implement`.) The control-plane's UI-triggered cancel calls that listener; the SDK responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.3 (Termination) — only the initiator (or a policy-delegated role) may cancel. See the SDK guides linked above if you need to override the default cancel behavior.
 
 ---
 
@@ -253,8 +235,8 @@ Both SDKs auto-bind a local HTTP `POST <cancelCallback.path>` listener for you o
 | Agent logs `UNAUTHENTICATED` on first `send` | Runtime doesn't recognize the credential | Static bearer: check Step 2A — token and sender in `MACP_AUTH_TOKENS_JSON` must match, then redeploy. JWT: check Step 2B — issuer/audience/JWKS config on the runtime. |
 | Agent's bootstrap is missing its Bearer credential | Credential never reached the agent | Static bearer: check Step 3A. `macp-playground`: check its `auth_mint_failure` logs and that `MACP_AUTH_SERVICE_URL` is reachable (Step 3B). |
 | Initiator's SessionStart is rejected with `Forbidden` | `can_start_sessions: false` on the identity | Static bearer: flip it to `true` in `MACP_AUTH_TOKENS_JSON`. JWT: check the minted token's `allowed_modes`/`can_start_sessions` scopes. |
-| Agent sends envelopes but they're rejected with `sender does not match identity` | Sender string mismatch | The string in `bootstrap.participant.participantId`, the envelope's `sender` field, and the runtime-resolved identity `sender` must all be identical byte-for-byte. Check for stray `agent://` prefixes. |
-| Cancel from UI doesn't take effect | Missing or unreachable cancel-callback listener | Verify the SDK's auto-bound listener is reachable from the control-plane and `bootstrap.cancelCallback` is populated. |
+| Agent sends envelopes but they're rejected with `sender does not match identity` | Sender string mismatch | The string in `bootstrap.participant_id`, the envelope's `sender` field, and the runtime-resolved identity `sender` must all be identical byte-for-byte. Check for stray `agent://` prefixes. |
+| Cancel from UI doesn't take effect | Missing or unreachable cancel-callback listener | Verify the SDK's auto-bound listener is reachable from the control-plane and `bootstrap.cancel_callback` is populated. |
 
 ---
 

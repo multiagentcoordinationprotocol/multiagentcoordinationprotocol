@@ -1,26 +1,23 @@
 {
   "$comment": "Bootstrap payload written to MACP_BOOTSTRAP_FILE before spawning the initiator agent of a Decision Mode run. See macp-agent-bootstrap.schema.json.",
-  "run": {
-    "runId": "run:checkout-48000:2026-03-02T12:00:00Z",
-    "sessionId": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
-    "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-  },
-  "participant": {
-    "participantId": "agent://checkout.orchestrator",
-    "agentId": "checkout-orchestrator",
-    "displayName": "Checkout Orchestrator",
-    "role": "initiator"
-  },
-  "runtime": {
-    "address": "runtime.internal:50051",
-    "bearerToken": "macp-dev-token-REDACTED",
-    "tls": true,
-    "allowInsecure": false,
-    "controlPlaneBaseUrl": "https://control-plane.internal",
-    "controlPlaneApiKey": "cp-key-REDACTED"
-  },
+  "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
+  "participant_id": "agent://checkout.orchestrator",
+  "mode": "macp.mode.decision.v1",
+  "runtime_url": "runtime.internal:50051",
+  "auth_token": "macp-dev-token-REDACTED",
+  "secure": true,
+  "allow_insecure": false,
+  "participants": [
+    "agent://checkout.orchestrator",
+    "agent://fraud",
+    "agent://growth",
+    "agent://compliance"
+  ],
+  "mode_version": "1.0.0",
+  "configuration_version": "runtime-2026.03.02",
+  "policy_version": "banking-policy-2026.03",
   "initiator": {
-    "sessionStart": {
+    "session_start": {
       "intent": "Evaluate high-value transfer",
       "participants": [
         "agent://checkout.orchestrator",
@@ -28,22 +25,22 @@
         "agent://growth",
         "agent://compliance"
       ],
-      "ttlMs": 15000,
-      "modeVersion": "1.0.0",
-      "configurationVersion": "runtime-2026.03.02",
-      "policyVersion": "banking-policy-2026.03",
-      "contextId": "ctx:txn:TXN-48000-SaoPaulo",
+      "ttl_ms": 15000,
+      "max_suspend_ms": 60000,
+      "mode_version": "1.0.0",
+      "configuration_version": "runtime-2026.03.02",
+      "policy_version": "banking-policy-2026.03",
+      "context_id": "ctx:txn:TXN-48000-SaoPaulo",
       "extensions": {
         "x-tracing": "eyJ0cmFjZXBhcmVudCI6IjAwLTRiZjkyZjM1NzdiMzRkYTZhM2NlOTI5ZDBlMGU0NzM2LTAwZjA2N2FhMGJhOTAyYjctMDEifQ=="
-      },
-      "maxSuspendMs": 60000
+      }
     },
     "kickoff": {
-      "messageType": "Proposal",
-      "payload": "CgVwcm9wMRIWUmVxdWlyZSBzdGVwLXVwIHZlcmlmeQ=="
+      "message_type": "Proposal",
+      "payload": { "proposalId": "p1", "option": "step-up-verify" }
     }
   },
-  "cancelCallback": {
+  "cancel_callback": {
     "host": "checkout-orchestrator.internal",
     "port": 8080,
     "path": "/macp/cancel"
