@@ -1,0 +1,21 @@
+{
+  "_invalid_because": "supersedes.commitment_hash MUST be a syntactically valid canonical commitment hash: \"sha256:\" followed by 64 lowercase hex characters (RFC-MACP-0001 §7.3.1, RFC-MACP-0013).",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "Commitment",
+  "message_id": "msg-invalid-011",
+  "session_id": "sess-jkl012",
+  "sender": "agent://orchestrator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "commitment_id": "commit-002",
+    "outcome_positive": true,
+    "mode_version": "1.0.0",
+    "policy_version": "org-2026.07",
+    "configuration_version": "runtime-2026.07.01",
+    "supersedes": {
+      "session_id": "sess-original-001",
+      "commitment_hash": "not-a-valid-hash"
+    }
+  }
+}

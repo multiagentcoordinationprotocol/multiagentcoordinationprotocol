@@ -384,6 +384,25 @@
         "outcome_positive": {
           "type": "boolean",
           "description": "True for positive/successful outcomes; false for definitive negative outcomes. Modes that allow negative commitments MUST set this field explicitly."
+        },
+        "supersedes": {
+          "$ref": "#/$defs/CommitmentRef",
+          "description": "Cross-session supersession (RFC-MACP-0001 §7.3.1): when present, this commitment supersedes a prior one identified by {session_id, commitment_hash}. Always emitted in a NEW session — a RESOLVED session accepts no further messages."
+        }
+      }
+    },
+    "CommitmentRef": {
+      "type": "object",
+      "required": ["session_id", "commitment_hash"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commitment_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Canonical commitment hash of the superseded CommitmentPayload (RFC-MACP-0013)."
         }
       }
     },

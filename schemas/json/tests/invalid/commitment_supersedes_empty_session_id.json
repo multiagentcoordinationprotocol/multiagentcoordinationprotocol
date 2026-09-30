@@ -1,0 +1,21 @@
+{
+  "_invalid_because": "supersedes.session_id MUST be non-empty (RFC-MACP-0001 §7.3.1: \"if supersedes is present, its fields MUST be well-formed\").",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "Commitment",
+  "message_id": "msg-invalid-012",
+  "session_id": "sess-jkl012",
+  "sender": "agent://orchestrator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "commitment_id": "commit-003",
+    "outcome_positive": true,
+    "mode_version": "1.0.0",
+    "policy_version": "org-2026.07",
+    "configuration_version": "runtime-2026.07.01",
+    "supersedes": {
+      "session_id": "",
+      "commitment_hash": "sha256:03f8ac2b8172958504092ce9fe5154dbcfe300fd30a350453d4e4bd715822ab2"
+    }
+  }
+}

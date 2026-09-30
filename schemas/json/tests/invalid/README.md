@@ -25,6 +25,8 @@ itself never causes the rejection.
 | `session_start_missing_versions.json` | SessionStart MUST bind `ttl_ms`, `mode_version`, `configuration_version` (RFC-MACP-0001 §7, RFC-MACP-0003) |
 | `session_start_negative_max_suspend_ms.json` | `max_suspend_ms` MUST be non-negative (RFC-MACP-0001 §7.5, RFC-MACP-0003 §2) |
 | `session_start_max_suspend_ms_not_integer.json` | `max_suspend_ms` MUST be an integer (RFC-MACP-0001 §7.5) |
+| `commitment_supersedes_bad_hash_format.json` | `supersedes.commitment_hash` MUST be a syntactically valid canonical commitment hash: `sha256:` + 64 lowercase hex characters (RFC-MACP-0001 §7.3.1, RFC-MACP-0013) |
+| `commitment_supersedes_empty_session_id.json` | `supersedes.session_id` MUST be non-empty when `supersedes` is present (RFC-MACP-0001 §7.3.1) |
 
 `signal_with_session_id.json`/`signal_with_mode.json` and
 `session_scoped_empty_session_id.json`/`session_scoped_empty_mode.json` are
