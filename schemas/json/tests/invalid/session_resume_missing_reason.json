@@ -1,0 +1,14 @@
+{
+  "_invalid_because": "SessionResume's payload MUST carry a non-empty reason: a schema-level requirement mirroring SessionCancelPayload's existing convention, not itself stated by RFC-MACP-0001 §7.5 (which governs when the runtime emits SessionResume but never mentions a reason field).",
+  "macp_version": "1.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "SessionResume",
+  "message_id": "msg-invalid-015",
+  "session_id": "sess-mno345",
+  "sender": "runtime://macp.example",
+  "timestamp": "2026-07-07T00:05:00Z",
+  "payload": {
+    "resumed_by": "user://alice",
+    "banked_ms": 1200
+  }
+}
