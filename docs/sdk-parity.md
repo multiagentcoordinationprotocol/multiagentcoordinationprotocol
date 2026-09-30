@@ -147,6 +147,41 @@ renames, two split out as separate shape questions rather than decided as naming
 hadn't been confirmed for either. See #135's closing comment for the full per-pair table and
 the follow-up issues tracking each SDK's actual rename work.
 
+## Shape Gaps
+
+Not every cross-SDK divergence that looks like a naming question actually is one. R0 above
+already says so: a pair only qualifies as a naming divergence if both symbols carry the same
+shape and the same role; a pair that doesn't is a contract gap, to be settled on its own terms
+before any naming decision applies to it.
+
+This repo has now settled one such gap, and the underlying principle generalizes, so it is
+recorded here rather than left to be re-derived the next time a shape question surfaces:
+
+**The rule:** where an SDK's own sibling projections already carry a keyed entity's derived
+lifecycle state (status, assignee, progress) directly on that entity's record — rather than in
+a parallel side-table keyed by the same id — a newly diverging projection should match that
+established internal convention rather than stand as a lone exception. This is an R2-style
+question, not R1: the wire protocol and RFCs are silent on in-memory projection shape
+(`schemas/parity/README.md` items 1 and 6 already leave it unpinned), so the deciding evidence
+is the convention an SDK already follows elsewhere in its own codebase, not a single external
+reference point.
+
+A narrower, adjacent point is worth separating out rather than folding in: a field whose scope
+is genuinely the *session* — a cross-entity exclusivity slot, not a property of any one entity —
+belongs on the containing session/mode state, not forced onto a per-entity record it doesn't
+describe, even when that record is a session-scoped singleton (at most one instance per
+session). This narrower point does not extend to ordinary per-entity derived state like status
+or progress, which this rule's main clause already covers.
+
+**Decision record:** issue #165 applied this rule to `macp-sdk-python`'s Task Mode projection.
+`TaskRequestRecord`/`get_task()`/`active_tasks()` carried only the original `TaskRequest`
+fields, with status/progress/assignee tracked in three separate dicts on the projection —
+inconsistent with Python's own `HandoffRecord`/`ProposalRecord` (both already carry derived
+state on the record, each keyed by id) and with `macp-sdk-typescript`'s combined `TaskRecord`.
+Ruled: `macp-sdk-python` enriches its per-task record with the derived fields, matching its own
+other projections. See #165's closing comment for the full evidence table and the routed
+follow-up issue.
+
 ## Sync Mechanisms
 
 ### Proto Sync
