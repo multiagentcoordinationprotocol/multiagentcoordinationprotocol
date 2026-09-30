@@ -2,94 +2,93 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://macp.dev/schemas/macp-agent-bootstrap.schema.json",
   "title": "MACP Agent Bootstrap Payload",
-  "description": "Canonical schema for the bootstrap payload written to MACP_BOOTSTRAP_FILE before an agent process is spawned. Consumed by the agent at startup to learn its runId, sessionId, runtime address + Bearer token, and — for the initiator agent only — the SessionStart payload and the first kickoff envelope template. See direct-agent-auth architecture (§Invariants).",
+  "description": "Canonical schema for the bootstrap payload written to MACP_BOOTSTRAP_FILE before an agent process is spawned. Consumed by the agent at startup to learn its session_id, participant_id, mode, runtime address + Bearer token, and — for the initiator agent only — the SessionStart payload and the first kickoff envelope template. Flat, snake_case top level: this is the shape every real producer emits and both SDK readers (macp-sdk-python's from_bootstrap(), macp-sdk-typescript's fromBootstrap()) accept. See direct-agent-auth architecture (§Invariants).",
   "type": "object",
-  "required": ["run", "participant", "runtime"],
+  "required": ["session_id", "participant_id", "mode"],
   "additionalProperties": true,
+  "anyOf": [
+    { "required": ["runtime_url"] },
+    { "required": ["runtime_address"] }
+  ],
   "properties": {
-    "run": {
-      "type": "object",
-      "required": ["runId", "sessionId"],
-      "additionalProperties": true,
-      "properties": {
-        "runId": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Control-plane run identifier."
-        },
-        "sessionId": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Pre-allocated session identifier the initiator will bind at SessionStart. Satisfies runtime validation: UUID v4/v7 or base64url 22+ chars.",
-          "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[4|7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[A-Za-z0-9_-]{22,})$"
-        },
-        "traceId": {
-          "type": "string",
-          "description": "Optional OpenTelemetry trace id."
-        }
-      }
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Pre-allocated session identifier the initiator will bind at SessionStart. Satisfies runtime validation: UUID v4/v7 or base64url 22+ chars.",
+      "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[4|7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[A-Za-z0-9_-]{22,})$"
     },
-    "participant": {
-      "type": "object",
-      "required": ["participantId"],
-      "additionalProperties": true,
-      "properties": {
-        "participantId": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The agent's sender id. Must match the authenticated identity on the runtime (RFC-MACP-0004 §4)."
-        },
-        "agentId": {
-          "type": "string",
-          "description": "Agent catalog reference (e.g. 'fraud-agent'). May equal participantId."
-        },
-        "displayName": { "type": "string" },
-        "role": { "type": "string" }
-      }
+    "participant_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The agent's sender id. Must match the authenticated identity on the runtime (RFC-MACP-0004 §4)."
     },
-    "runtime": {
+    "mode": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical mode identifier for the session this agent participates in (e.g. 'macp.mode.decision.v1')."
+    },
+    "runtime_url": {
+      "type": "string",
+      "minLength": 1,
+      "description": "gRPC endpoint of the MACP runtime, e.g. '127.0.0.1:50051' or 'runtime.internal:50051'. Alias of runtime_address; a caller sends one or the other (an empty string on the one present is treated as absent by both SDK readers, same as omitting it — hence the anyOf below is paired with minLength on both)."
+    },
+    "runtime_address": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Alias of runtime_url, accepted by both SDK readers. Only runtime_url is emitted by the reference producer; runtime_address exists for callers that prefer that name."
+    },
+    "auth_token": {
+      "type": "string",
+      "description": "This agent's own Bearer token. Must match an identity in the runtime's MACP_AUTH_TOKENS_JSON whose 'sender' equals participant_id. When absent, the two SDK readers diverge, not fall back the same way: macp-sdk-typescript's runner always builds a dev-agent identity via Auth.devAgent(agent_id ?? participant_id) — see agent_id below; macp-sdk-python's runner only builds a dev-agent identity when agent_id (or the legacy auth alias's agent_id) is present, and otherwise leaves auth unset entirely."
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Agent catalog reference (e.g. 'fraud-agent'). Used only as an auth_token-absent dev-agent identity fallback, per both SDK readers. May equal participant_id."
+    },
+    "secure": {
+      "type": "boolean",
+      "description": "If true, use a secure (TLS) transport for the gRPC channel. Default true in production: RFC-MACP-0004 Section 2 (Transport Security) requires encrypted transport, and for gRPC over HTTP/2 requires TLS 1.2 or higher."
+    },
+    "allow_insecure": {
+      "type": "boolean",
+      "description": "Dev-only escape hatch permitting a plaintext channel. Must be false in production. NON-NORMATIVE note: within this bootstrap document the two fields are separate inputs -- secure states whether a secure transport is wanted, allow_insecure whether plaintext is tolerated -- but how an SDK combines them (whether allow_insecure alone may select plaintext, or only permit it) is NOT settled here. The two SDKs currently differ, and that default is each SDK's connection-security behavior, so it is theirs to reconcile; see the cross-SDK transport issue."
+    },
+    "participants": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Non-authoritative session-participant hint at the top level, distinct from initiator.session_start.participants (the authoritative list the initiator sends). Used by agent frameworks for display/setup only."
+    },
+    "mode_version": {
+      "type": "string",
+      "description": "Non-authoritative mode-version hint at the top level, distinct from initiator.session_start.mode_version."
+    },
+    "configuration_version": {
+      "type": "string",
+      "description": "Non-authoritative configuration-version hint at the top level, distinct from initiator.session_start.configuration_version."
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Non-authoritative policy-version hint at the top level, distinct from initiator.session_start.policy_version."
+    },
+    "auth": {
       "type": "object",
-      "required": ["address", "bearerToken"],
+      "description": "Legacy alias accepted by macp-sdk-python's runner only, for backwards compatibility. The primary path — and what the reference producer emits — is the top-level auth_token field above.",
       "additionalProperties": true,
       "properties": {
-        "address": {
-          "type": "string",
-          "minLength": 1,
-          "description": "gRPC endpoint of the MACP runtime, e.g. '127.0.0.1:50051' or 'runtime.internal:50051'."
-        },
-        "bearerToken": {
-          "type": "string",
-          "minLength": 1,
-          "description": "This agent's own Bearer token. Must match an identity in the runtime's MACP_AUTH_TOKENS_JSON whose 'sender' equals participant.participantId."
-        },
-        "tls": {
-          "type": "boolean",
-          "description": "If true, use TLS for the gRPC channel. Default true in production: RFC-MACP-0004 Section 2 (Transport Security) requires encrypted transport, and for gRPC over HTTP/2 requires TLS 1.2 or higher."
-        },
-        "allowInsecure": {
-          "type": "boolean",
-          "description": "Dev-only escape hatch permitting a plaintext channel. Must be false in production. NON-NORMATIVE note: within this bootstrap document the two fields are separate inputs -- tls states whether TLS is wanted, allowInsecure whether plaintext is tolerated -- but how an SDK combines them (whether allowInsecure alone may select plaintext, or only permit it) is NOT settled here. The two SDKs currently differ, and that default is each SDK's connection-security behavior, so it is theirs to reconcile; see the cross-SDK transport issue."
-        },
-        "controlPlaneBaseUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "HTTP URL for read-only observability: GET /runs/:id, /runs/:id/events. Not used for envelope emission (agents emit via gRPC)."
-        },
-        "controlPlaneApiKey": {
-          "type": "string",
-          "description": "Optional API key for the control-plane HTTP reads above."
-        }
+        "bearer_token": { "type": "string" },
+        "agent_id": { "type": "string" },
+        "expected_sender": { "type": "string" }
       }
     },
     "initiator": {
       "type": "object",
-      "description": "Populated ONLY on the initiator agent's bootstrap. The initiator calls MacpClient.send(SessionStart) with sessionStart, awaits ack, then emits kickoff (when present) as its first mode-scoped envelope.",
-      "required": ["sessionStart"],
+      "description": "Populated ONLY on the initiator agent's bootstrap. The initiator sends SessionStart using session_start, awaits ack, then emits kickoff (when present) as its first mode-scoped envelope.",
+      "required": ["session_start"],
       "additionalProperties": false,
       "properties": {
-        "sessionStart": {
+        "session_start": {
           "type": "object",
-          "required": ["intent", "participants", "ttlMs", "modeVersion", "configurationVersion"],
+          "required": ["intent", "participants", "ttl_ms"],
           "additionalProperties": false,
           "properties": {
             "intent": { "type": "string" },
@@ -100,31 +99,31 @@
               "maxItems": 1000,
               "uniqueItems": true
             },
-            "ttlMs": {
+            "ttl_ms": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 86400000
+              "description": "Session TTL in milliseconds. Mirrors macp-envelope.schema.json's SessionStartPayload.ttl_ms."
             },
-            "modeVersion": { "type": "string", "minLength": 1 },
-            "configurationVersion": { "type": "string", "minLength": 1 },
-            "policyVersion": { "type": "string" },
-            "contextId": {
+            "max_suspend_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Embedded as SessionStartPayload.max_suspend_ms when the initiator sends SessionStart. Upper bound on cumulative time the session may spend SUSPENDED (RFC-MACP-0001 §7.5). 0 or absent means the runtime's configured default."
+            },
+            "mode_version": { "type": "string", "minLength": 1 },
+            "configuration_version": { "type": "string", "minLength": 1 },
+            "policy_version": { "type": "string" },
+            "context_id": {
               "type": "string",
               "description": "Globally-unique context reference (e.g. ctx:sha256:<hex>, a URI, or any opaque string). The runtime preserves it but MUST NOT interpret it. Embedded as SessionStartPayload.context_id, a proto string, so this is a plain JSON string and is NOT base64-encoded."
             },
             "extensions": {
               "type": "object",
-              "description": "Generic extension blocks keyed by protocol identifier. Values are base64-encoded protocol-specific bytes. Embedded as SessionStartPayload.extensions, a map<string, bytes>; per RFC-MACP-0001 Section 10.3 protobuf bytes fields MUST be represented as base64-encoded strings in JSON. A caller wanting to carry structured data base64-encodes its own serialization, so the inner format is the caller's declared choice rather than the SDK's guess. Note contentEncoding is an annotation in JSON Schema 2020-12, not an assertion: this schema declares the encoding, it does not validate it.",
+              "description": "Generic extension blocks keyed by protocol identifier. Embedded as SessionStartPayload.extensions, a map<string, bytes>; per RFC-MACP-0001 Section 10.3 protobuf bytes fields MUST be represented as base64-encoded strings in JSON. NON-NORMATIVE note on a cross-SDK divergence: macp-sdk-python's reader requires each value to be a string (tried as base64, falling back to raw UTF-8 bytes) and raises on any other JSON type; macp-sdk-typescript's reader accepts arbitrary JSON-serializable values and encodes them itself. This schema describes the narrower, Python-compatible shape — string-typed values — so a document validating here is guaranteed Python-safe but is not proof against a TypeScript-only value type (e.g. a JSON object or number) slipping through; see the cross-SDK extensions-typing issue.",
               "additionalProperties": {
                 "type": "string",
-                "description": "Protobuf bytes mapped to base64 string in JSON.",
+                "description": "Protobuf bytes mapped to a base64 string in JSON (contentEncoding is an annotation in JSON Schema 2020-12, not an assertion: this schema declares the encoding, it does not validate it).",
                 "contentEncoding": "base64"
               }
-            },
-            "maxSuspendMs": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Embedded as SessionStartPayload.max_suspend_ms. Upper bound on cumulative time the session may spend SUSPENDED (RFC-MACP-0001 Section 7.5)."
             },
             "roots": {
               "type": "array",
@@ -143,19 +142,23 @@
         "kickoff": {
           "type": "object",
           "description": "Optional first mode-scoped envelope the initiator emits immediately after SessionStart is accepted (e.g., a Proposal for decision mode, a TaskRequest for task mode). May be absent for modes where the initiator opens the session but any participant may speak first.",
-          "required": ["messageType", "payload"],
+          "required": ["message_type", "payload"],
           "additionalProperties": false,
           "properties": {
-            "messageType": { "type": "string", "minLength": 1 },
-            "payload": {
+            "message_type": { "type": "string", "minLength": 1 },
+            "payload_type": {
               "type": "string",
-              "description": "Pre-encoded payload bytes (base64 / proto-encoded) ready to place in Envelope.payload."
+              "description": "Emitted by the reference producer, but not read by either current SDK reader (declared-but-unmapped in macp-sdk-typescript, wholly unread in macp-sdk-python). Described here because the producer sends it; not to be relied on as consumed."
+            },
+            "payload": {
+              "type": "object",
+              "description": "The kickoff message's payload as a plain JSON object — every real producer and both SDKs' own documented examples send an object here, to be encoded onto Envelope.payload by the reader."
             }
           }
         }
       }
     },
-    "cancelCallback": {
+    "cancel_callback": {
       "type": "object",
       "description": "Local HTTP endpoint the agent exposes so the control-plane's UI-cancel path (direct-agent-auth Option A) can ask the initiator to call CancelSession on the runtime with its own identity (RFC-MACP-0001 §7.2).",
       "required": ["host", "port", "path"],
@@ -166,32 +169,10 @@
         "path": { "type": "string", "minLength": 1, "pattern": "^/" }
       }
     },
-    "session": {
+    "metadata": {
       "type": "object",
-      "description": "Non-authoritative session-context hints. Used by agent frameworks for display/setup only.",
-      "additionalProperties": true,
-      "properties": {
-        "participants": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "metadata": { "type": "object" }
-      }
-    },
-    "execution": {
-      "type": "object",
-      "description": "Scenario metadata surfaced to the agent for framework setup (scenarioRef, modeName, tags, requester). Free-form; opaque to the runtime.",
+      "description": "Free-form scenario metadata surfaced to the agent for framework setup (e.g. run_id, trace_id, scenario_ref, role, framework, agent_ref, policy_hints, session_context). Opaque to the runtime; not validated further here.",
       "additionalProperties": true
-    },
-    "agent": {
-      "type": "object",
-      "description": "Framework-specific bootstrap data (manifest, framework name, framework config).",
-      "additionalProperties": true,
-      "properties": {
-        "manifest": { "type": "object" },
-        "framework": { "type": "string" },
-        "frameworkConfig": { "type": "object" }
-      }
     }
   }
 }

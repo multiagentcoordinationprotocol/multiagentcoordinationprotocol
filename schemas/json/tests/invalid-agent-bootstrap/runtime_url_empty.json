@@ -3,7 +3,7 @@
   "session_id": "01JCN7X6Y5P9V4H0A8E0F4J1D2",
   "participant_id": "agent://checkout.orchestrator",
   "mode": "macp.mode.decision.v1",
-  "runtime_url": "runtime.internal:50051",
+  "runtime_url": "",
   "auth_token": "macp-dev-token-REDACTED",
   "secure": true,
   "allow_insecure": false,
@@ -26,7 +26,7 @@
         "agent://compliance"
       ],
       "ttl_ms": 15000,
-      "max_suspend_ms": -1,
+      "max_suspend_ms": 60000,
       "mode_version": "1.0.0",
       "configuration_version": "runtime-2026.03.02",
       "policy_version": "banking-policy-2026.03",
@@ -45,5 +45,5 @@
     "port": 8080,
     "path": "/macp/cancel"
   },
-  "_invalid_because": "initiator.session_start.max_suspend_ms is negative. It binds a cumulative SUSPENDED-time budget (RFC-MACP-0001 Section 7.5), so a negative budget is meaningless; 0 is legal and means the runtime's configured default applies. Isolates max_suspend_ms's minimum keyword."
+  "_invalid_because": "runtime_url is present but empty. Both real SDK readers treat an empty string as 'not provided' and fall through: macp-sdk-python's runner.py does `ctx.get('runtime_url') or ctx.get('runtime_address')` (a falsy '' is skipped), and macp-sdk-typescript's runner.ts does `runtime_address ?? runtime_url ?? ''` then throws if the result is falsy. The top-level anyOf alone is satisfied by mere key presence (JSON Schema's required checks presence, not truthiness), so this isolates runtime_url's minLength keyword specifically, distinct from missing_runtime_url_and_address.json's anyOf keyword."
 }

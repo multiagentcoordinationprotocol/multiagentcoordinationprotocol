@@ -20,43 +20,67 @@ is needed.
 
 **Put the annotation at the top level only.** Most of this schema's nested objects are closed, and
 putting it inside any of them makes the fixture report two errors. Measured, the objects that are
-`additionalProperties: false` are `initiator`, `initiator.sessionStart`,
-`initiator.sessionStart.roots[]`, `initiator.kickoff` and `cancelCallback`; the ones that are `true`
-are the top level, `run`, `participant`, `runtime`, `session`, `execution` and `agent`. Note that
-`initiator` **itself** is closed, so "anywhere under `initiator`" is off limits, not merely
-`sessionStart` — an earlier draft of this paragraph said otherwise and was wrong.
+`additionalProperties: false` are `initiator`, `initiator.session_start`,
+`initiator.session_start.roots[]`, `initiator.kickoff` and `cancel_callback`; the ones that are `true`
+are the top level, `auth`, and `metadata`. Note that `initiator` **itself** is closed, so "anywhere
+under `initiator`" is off limits, not merely `session_start`.
 
 ## Fixture discipline
 
 **Each fixture MUST isolate exactly one constraint.** Removing that one keyword from the schema
-should make exactly that fixture validate and leave the others rejected. All paths below are under
-`properties.initiator.properties.sessionStart`:
+should make exactly that fixture validate and leave the others rejected. Re-measured against the
+flat, snake_case schema (issue #155) — grown to a 7×7 grid with two new fixtures (`anyOf` and
+`minLength`, two *distinct* keywords, per the correction below). Paths below are under
+`properties.initiator.properties.session_start` except the last two rows, which are top-level:
 
-| mutation | ext-value-not-string | dead-context-field | ext-not-object | maxSuspendMs-negative | maxSuspendMs-fractional |
-|---|---|---|---|---|---|
-| *intact* | reject | reject | reject | reject | reject |
-| drop `properties.extensions.additionalProperties.type` | **PASS** | reject | reject | reject | reject |
-| drop `additionalProperties` | reject | **PASS** | reject | reject | reject |
-| drop `properties.extensions.type` | reject | reject | **PASS** | reject | reject |
-| drop `properties.maxSuspendMs.minimum` | reject | reject | reject | **PASS** | reject |
-| drop `properties.maxSuspendMs.type` | reject | reject | reject | reject | **PASS** |
+| mutation | ext-value-not-string | dead-context-field | ext-not-object | max-suspend-ms-negative | max-suspend-ms-fractional | missing-runtime-url-and-address | runtime-url-empty |
+|---|---|---|---|---|---|---|---|
+| *intact* | reject | reject | reject | reject | reject | reject | reject |
+| drop `properties.extensions.additionalProperties.type` | **PASS** | reject | reject | reject | reject | reject | reject |
+| drop `additionalProperties` | reject | **PASS** | reject | reject | reject | reject | reject |
+| drop `properties.extensions.type` | reject | reject | **PASS** | reject | reject | reject | reject |
+| drop `properties.max_suspend_ms.minimum` | reject | reject | reject | **PASS** | reject | reject | reject |
+| drop `properties.max_suspend_ms.type` | reject | reject | reject | reject | **PASS** | reject | reject |
+| drop top-level `anyOf` | reject | reject | reject | reject | reject | **PASS** | reject |
+| drop `properties.runtime_url.minLength` | reject | reject | reject | reject | reject | reject | **PASS** |
 
-That 5×5 grid is the measured output of running the diagonal, not an intention. Each fixture was
-additionally confirmed to produce exactly **one** `ajv --all-errors` error, and to produce it at the
-`schemaPath` its row names — which matters, see the next paragraph.
+That 7×7 grid is the measured output of running the diagonal, not an intention. Each of the first
+five and the seventh fixture was additionally confirmed to produce exactly **one** `ajv
+--all-errors` error at the `schemaPath` its row names — which matters, see the next paragraph. The
+sixth fixture (`missing_runtime_url_and_address.json`) produces three raw `ajv --all-errors` entries
+(`#/anyOf/0/required`, `#/anyOf/1/required`, `#/anyOf`) — all three collapse to the same group under
+`assert_fixture_isolated`'s own branch-collapsing rule (`oneOf`/`anyOf` branches fold to their
+wrapper's `schemaPath`), so the harness still counts it as isolated to one reason. This is expected
+for any fixture keying on an `anyOf`, not a defect: a document failing every branch of an `anyOf`
+always reports one error per branch plus the wrapper.
 
 **The container type and the value type are two constraints, not one.** `extensions` carries
 `type: "object"` and its `additionalProperties` subschema carries `type: "string"`; an array passes
-the second vacuously and a numeric value passes the first. Likewise `maxSuspendMs` carries both
+the second vacuously and a numeric value passes the first. Likewise `max_suspend_ms` carries both
 `type: "integer"` and `minimum: 0`, and `1.5` and `-1` fail different ones. Four keywords, four
-fixtures. The fifth fixture keys on `sessionStart`'s `additionalProperties: false`, which is what
+fixtures. The fifth fixture keys on `session_start`'s `additionalProperties: false`, which is what
 keeps the removed `bytes context` field (RFC-MACP-0001 Section 7.4.2 records its removal, superseded
-by `context_id` and `extensions`) from being re-added silently.
+by `context_id` and `extensions`) from being re-added silently. The sixth keys on the top-level
+`anyOf` added by issue #155 requiring at least one of `runtime_url`/`runtime_address` present — both
+real SDK readers throw at bootstrap time if neither key is present.
+
+**Presence and non-emptiness are two constraints too — a correction from an earlier draft of this
+paragraph.** That draft claimed the present-but-empty case (`runtime_url: ""`) "has no dedicated
+fixture yet, since it's the same `anyOf` keyword" the sixth fixture isolates. Measured, that's wrong:
+JSON Schema's `required` checks key *presence*, not truthiness, so `runtime_url: ""` satisfies the
+`anyOf` outright (the key is there) and is rejected — if at all — by `runtime_url`'s own
+`minLength: 1` instead, a keyword the `anyOf` fixture's diagonal row never touches. The seventh
+fixture, `runtime_url_empty.json`, isolates exactly that: `runtime_url` present but empty,
+`runtime_address` absent, so the `anyOf` passes and only `minLength` fires. This is the same
+"container vs. value" discipline as the `extensions`/`max_suspend_ms` pairs above, just one keyword
+apart instead of two — presence and non-emptiness are different failure modes of the same field, and
+each earns its own fixture here for the same reason the four `extensions`/`max_suspend_ms` keywords
+each did.
 
 **A known limit of the harness, worth stating because a fixture here is newly exposed to it.**
 `assert_fixture_isolated` in `scripts/validate-json.sh` counts *distinct rejection reasons*; it does
 not pin which one. So deleting the whole `extensions` property would leave
-`extensions_value_not_string.json` rejected — by `sessionStart`'s `additionalProperties`, with
+`extensions_value_not_string.json` rejected — by `session_start`'s `additionalProperties`, with
 exactly one error — and the guard would still say "isolated". That is why the grid above records the
 `schemaPath` expectation in prose: re-run the diagonal rather than trusting a green run when you
 change this schema's shape.
