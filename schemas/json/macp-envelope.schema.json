@@ -182,6 +182,44 @@
       "if": {
         "properties": {
           "message_type": {
+            "const": "SessionSuspend"
+          }
+        },
+        "required": [
+          "message_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/SessionSuspendPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "message_type": {
+            "const": "SessionResume"
+          }
+        },
+        "required": [
+          "message_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/SessionResumePayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "message_type": {
             "const": "Commitment"
           }
         },
@@ -351,6 +389,41 @@
         },
         "cancelled_by": {
           "type": "string"
+        }
+      }
+    },
+    "SessionSuspendPayload": {
+      "type": "object",
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "suspended_by": {
+          "type": "string"
+        }
+      }
+    },
+    "SessionResumePayload": {
+      "type": "object",
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resumed_by": {
+          "type": "string"
+        },
+        "banked_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds of TTL banked during the suspension and restored to the session's absolute deadline on resume (RFC-MACP-0001 §7.5, RFC-MACP-0003 §2). 0 or absent means no TTL was banked (e.g. a suspension recorded with no remaining TTL); a proto3 implicit-presence encoder MAY omit a zero value (RFC-MACP-0001 §10.7 mandates non-omission only for empty string fields)."
         }
       }
     },

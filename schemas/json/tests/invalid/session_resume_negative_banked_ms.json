@@ -1,0 +1,15 @@
+{
+  "_invalid_because": "banked_ms MUST be non-negative (RFC-MACP-0001 §7.5, RFC-MACP-0003 §2).",
+  "macp_version": "1.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "SessionResume",
+  "message_id": "msg-invalid-014",
+  "session_id": "sess-mno345",
+  "sender": "runtime://macp.example",
+  "timestamp": "2026-07-07T00:05:00Z",
+  "payload": {
+    "reason": "Review complete, resuming",
+    "resumed_by": "user://alice",
+    "banked_ms": -1
+  }
+}
