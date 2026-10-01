@@ -147,6 +147,19 @@ renames, two split out as separate shape questions rather than decided as naming
 hadn't been confirmed for either. See #135's closing comment for the full per-pair table and
 the follow-up issues tracking each SDK's actual rename work.
 
+Issue #177 applied the same rule to a single pair found later: `macp-sdk-python`'s
+`ProposalRecord.proposer` (`src/macp_sdk/proposal.py:28`) vs `macp-sdk-typescript`'s
+`ProposalRecord.sender` (`src/projections/proposal.ts:11`) — both set from `envelope.sender`
+on `Proposal`/`CounterProposal`, confirming R0. Ruled: Python renames `proposer` → `sender`.
+R1 governs — the concept both symbols name is the canonical `Envelope.sender` field each SDK
+copies the value from — and R2 independently agrees: Python's own sibling records in the same
+file (`ProposalAcceptRecord.sender`, `ProposalRejectRecord.sender`) already use `sender`,
+making `proposer` the lone outlier against Python's own file. `macp-runtime`'s internal Rust
+struct (`crates/macp-modes/src/mode/proposal.rs:56`) also uses `proposer` — recorded as a
+third-voter dissent, not overridden, per the same no-public-symbol-parity-obligation reasoning
+#135 applied to its own runtime dissent (item 5). See #177's closing comment and
+`macp-sdk-python`'s routed follow-up issue for the rename itself.
+
 ## Shape Gaps
 
 Not every cross-SDK divergence that looks like a naming question actually is one. R0 above
