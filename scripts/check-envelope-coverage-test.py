@@ -21,15 +21,22 @@ same MACP_ROOT seam. They work only because run_checker() executes the REAL
 checker and points MACP_ROOT at the copy: the copy is parsed, never imported
 or run.
 
-Measured, not copied from the plan that first proposed this phase: this
-checker's own source holds **32** fail()/errors.append(...) call sites
-module-wide (`EXPECTED_FAIL_SITES`, check_own_assertion_count's own appends
-excluded -- see that function's docstring for why). This file carries
-**32** content mutations covering **31** of those 32 sites (one site --
-shape_errors' type/$ref comparison -- gets two, since one proves the
-top-level comparison and the other proves the comparison also works through
-the recursive "items" leg), plus 3 source mutations proving the count guard
-itself. The one checker site with no mutation at all is
+Measured, not copied from the plan that first proposed this phase, and not
+restated here as a standing fact either: this checker's own source holds a
+module-wide count of fail()/errors.append(...) call sites pinned by
+`EXPECTED_FAIL_SITES` (`check_own_assertion_count`'s own appends excluded --
+see that function's docstring for why), and `len(MUTATIONS)` /
+`len(SOURCE_MUTATIONS)` are this file's own counts of the same shape. Following
+check-parity-contract-test.py's documented lesson ("No count of either
+quantity is stated anywhere in this file -- deliberately, and this is the
+third attempt at this paragraph"): a figure nothing machine-checks, in the one
+file whose purpose is to stop coverage claims from drifting, is a liability,
+so re-derive these three numbers by running this file rather than trusting
+any number printed in a docstring, including this one. What IS stable prose:
+every site gets at least one mutation except the one named below, and exactly
+one site -- shape_errors' type/$ref comparison -- gets two, since one mutation
+proves the top-level comparison and the other proves it also works through
+the recursive "items" leg. The one checker site with no mutation at all is
 documented, not hidden: `parse_proto`'s `except OSError` branch fires only
 for a proto file that EXISTS but cannot be READ, which needs a permission
 bit (`chmod`) this harness deliberately does not set -- following
