@@ -52,11 +52,14 @@ VALUE that has an in-repo source to that source:
     from what the vectors actually encode is caught inside this one file
   - proposal_disposition.mode_state_dispositions <- the Proposal-mode fixtures'
     own expected_mode_state.proposals.*.disposition values (schemas/conformance/
-    proposal_happy_path.json, proposal_reject_paths.json). acceptance_tracking
-    is held the same way, via expected_mode_state.accepts' sender-keyed,
-    proposal-id-valued shape, rather than to its own literal "per_sender" string.
-    projection_status_values is convention (both SDKs agree) and only
-    count-pinned, same as projection_anomaly.kinds.
+    proposal_happy_path.json, proposal_reject_paths.json). acceptance_tracking is
+    held two ways: structurally, via expected_mode_state.accepts' sender-keyed,
+    proposal-id-valued shape (A6/A7) staying consistent with per-sender tracking;
+    and directly, by equality against the one value RFC-MACP-0008 Section 5 rule
+    5 / Section 7 actually permits (A9) -- the corpus shape alone cannot
+    distinguish "per_sender" from every other legal enum value, so the literal
+    string is pinned too. projection_status_values is convention (both SDKs
+    agree) and only count-pinned, same as projection_anomaly.kinds.
 
 That list is what this script holds to a source. What remains unheld is
 retry.max_retries / backoff_base_seconds / backoff_max_seconds / jitter, and all
@@ -131,6 +134,15 @@ EXPECTED_REJECT_COUNT = 11
 # cannot silently shrink with no external source to catch it. Bump together with
 # contract.json's projection_status_values and the prose in README.md/sdk-parity.md.
 EXPECTED_PROPOSAL_STATUS_COUNT = 3
+
+# proposal_disposition.acceptance_tracking is RFC-sourced (RFC-MACP-0008 Section
+# 5 rule 5, Section 7), not corpus-derived like mode_state_dispositions -- the
+# corpus's accepts maps (A6/A7) are CONSISTENT with "per_sender" tracking but
+# cannot by themselves distinguish it from every other legal enum value, so
+# there is nothing to set-compare against. Held by equality instead (A9): this
+# is the one correct value per the RFC, and the JSON Schema enum alone would
+# let a flip to the other legal-but-wrong value (e.g. "per_proposal") pass.
+EXPECTED_ACCEPTANCE_TRACKING = "per_sender"
 
 # The number of `errors.append` calls reachable from CONTRIBUTE_TREE_ANCHOR.
 # check-parity-contract-test.py PRINTS a claim that every one of them is covered
@@ -842,7 +854,7 @@ def check_proposal_disposition(sections: dict) -> list[str]:
             proposals = state.get("proposals") if isinstance(state, dict) else None
             if isinstance(proposals, dict):
                 for record in proposals.values():
-                    if isinstance(record, dict) and "disposition" in record:
+                    if isinstance(record, dict) and isinstance(record.get("disposition"), str):
                         corpus_dispositions.add(record["disposition"])
             accepts = state.get("accepts") if isinstance(state, dict) else None
             if isinstance(accepts, dict) and accepts:
@@ -928,6 +940,17 @@ def check_proposal_disposition(sections: dict) -> list[str]:
         errors.append(
             "expected %d proposal_disposition.projection_status_values, found %d"
             % (EXPECTED_PROPOSAL_STATUS_COUNT, len(pd["projection_status_values"]))
+        )
+
+    # A9 -- the schema enum alone permits "per_proposal" too; this is the one
+    # correct value per RFC-MACP-0008 Section 5 rule 5 / Section 7, and nothing
+    # else in this function reads acceptance_tracking at all.
+    if pd["acceptance_tracking"] != EXPECTED_ACCEPTANCE_TRACKING:
+        errors.append(
+            "proposal_disposition.acceptance_tracking is %r, expected %r -- "
+            "Proposal mode acceptance is per-sender (RFC-MACP-0008 Section 5 "
+            "rule 5, Section 7), never denormalized onto the proposal record"
+            % (pd["acceptance_tracking"], EXPECTED_ACCEPTANCE_TRACKING)
         )
 
     return errors
