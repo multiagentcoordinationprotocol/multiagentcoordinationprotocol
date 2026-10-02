@@ -53,8 +53,10 @@ Checks:
      ...) have no proto counterpart and are not inspected.
   6. Reverse direction and orphan `$defs`: every property on a reached
      `$defs` entry has a proto field behind it (no allowlist in this
-     direction, by choice), and every `$defs` entry overall is either
-     reached or named in JSON_ONLY_DEFS.
+     direction, by choice), every `$defs` entry overall is either reached
+     or named in JSON_ONLY_DEFS, and every name in JSON_ONLY_DEFS still
+     exists as a `$defs` entry (Base64Bytes is never visited by Check 3's
+     BFS, so this is its only defence against deletion-while-$ref'd).
   7. `Envelope`'s own fields: its 8 proto fields are all held to the
      schema's top-level `properties`, six by identity and two (`timestamp_
      unix_ms`, `payload`) through ENVELOPE_FIELD_MAP's normative
@@ -637,7 +639,13 @@ def check_reverse_and_orphans(
     allowlist in this direction, by choice (a genuine JSON-only property
     needs an RFC updating the canonical mapping, not a dict entry here).
     Then, every $defs entry overall must be either reached or explicitly
-    named in JSON_ONLY_DEFS."""
+    named in JSON_ONLY_DEFS -- and, the other direction, every name in
+    JSON_ONLY_DEFS must still exist. That second half is this check's job,
+    not Check 5's: Base64Bytes is never queued by Check 3's BFS (it is a
+    scalar-mapped $ref, not a message type), so it is the one $defs entry
+    with no reachability-based defence anywhere else in this script against
+    being deleted while still $ref'd -- reported once per allowlisted name,
+    not once per field that happens to $ref it."""
     errors: list[str] = []
     defs = schema.get("$defs", {})
 
@@ -666,6 +674,15 @@ def check_reverse_and_orphans(
             "and is not listed in JSON_ONLY_DEFS -- either wire it up or add "
             "it there with a reason" % name
         )
+
+    for name in sorted(JSON_ONLY_DEFS):
+        if name not in defs:
+            errors.append(
+                "$defs.%s is listed in JSON_ONLY_DEFS (%r) but no longer "
+                "exists in %s -- it was deleted while still $ref'd (restore "
+                "it) or is no longer $ref'd anywhere (remove it from "
+                "JSON_ONLY_DEFS)" % (name, JSON_ONLY_DEFS[name], rel(ENVELOPE_SCHEMA))
+            )
 
     return errors
 
