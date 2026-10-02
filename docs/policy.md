@@ -298,6 +298,13 @@ Eight checks, chosen because they are mechanical:
 an RFC asserting a constraint its schema does not impose, beyond the eight narrow classes above.
 That remains a human job.
 
+A sibling checker, `scripts/check-envelope-coverage.py` (`make envelope-coverage`, issue #173),
+covers an axis this document's eight checks do not: whether every Core payload message and field
+declared in `schemas/proto/macp/v1/core.proto` has a corresponding entry in
+`macp-envelope.schema.json`'s `$defs`. It is a proto↔JSON-Schema coverage check, not a
+prose-vs-artifact check, so it is not one of the eight above and is mutation-tested separately
+(`make envelope-coverage-selftest`) rather than folded into this count.
+
 ## Error Codes
 
 | Code | Description | Reference |

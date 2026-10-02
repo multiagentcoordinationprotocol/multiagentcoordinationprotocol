@@ -305,7 +305,7 @@ See `CONTRIBUTING.md` for the release workflow.
 make validate
 ```
 
-`make validate` meta-validates all JSON Schemas, validates every example and conformance fixture against its schema, asserts the negative envelope fixtures are rejected, lints conformance fixtures for internal consistency, checks the cross-implementation parity-contract manifest against its in-repo sources, lints and compiles all versioned Protobuf definitions, and verifies the raw-proto packages match the canonical schemas. Run `make help` for individual targets; `make install-tools` installs `ajv-cli`, `protoc`, and `buf`.
+`make validate` meta-validates all JSON Schemas, validates every example and conformance fixture against its schema, asserts the negative envelope fixtures are rejected, lints conformance fixtures for internal consistency, checks the cross-implementation parity-contract manifest against its in-repo sources, lints and compiles all versioned Protobuf definitions, verifies the raw-proto packages match the canonical schemas, and holds `macp-envelope.schema.json`'s `$defs` to the Core payload set and field sets declared in `schemas/proto/macp/v1/core.proto` (issue #173). Run `make help` for individual targets; `make install-tools` installs `ajv-cli`, `protoc`, and `buf`.
 
 ## License
 
