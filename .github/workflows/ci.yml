@@ -88,7 +88,9 @@ jobs:
           ./scripts/sync-proto-packages.sh --check
 
       - name: Check envelope schema covers core.proto's Core payloads (issue #173)
-        run: python3 scripts/check-envelope-coverage.py
+        run: |
+          echo "Checking macp-envelope.schema.json's \$defs cover core.proto's Core payloads..."
+          python3 scripts/check-envelope-coverage.py
 
       - name: Check SDK proto parity (W3a / direct-agent-auth)
         run: |

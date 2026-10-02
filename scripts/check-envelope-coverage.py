@@ -158,10 +158,12 @@ def strip_comment(line: str) -> str:
     return line if idx == -1 else line[:idx]
 
 
-def parse_proto(path: Path) -> tuple[dict[str, list[Field]], list[tuple[str, str, int, str]]]:
+def parse_proto(
+    path: Path,
+) -> tuple[dict[str, list[Field]], list[tuple[str, str, int, str]], str]:
     """Parse one .proto file into {message_name: [Field, ...]}.
 
-    Returns (messages, unknown), where `unknown` is every unrecognised
+    Returns (messages, unknown, raw_text). `unknown` is every unrecognised
     construct found inside a message body, as (message_name, file, line,
     raw_line) -- NOT yet filtered to in-scope messages. The caller decides,
     after the reachability walks below, which of these are worth fail()ing:
@@ -169,6 +171,12 @@ def parse_proto(path: Path) -> tuple[dict[str, list[Field]], list[tuple[str, str
     plus any message-typed field reached from one) are reported, so a
     hypothetical future odd construct inside an RPC-only message (never
     reached by that walk) does not fail a run it has nothing to do with.
+
+    `raw_text` is returned so a caller needing the whole file's text (Check
+    4's RPC harvest, over core.proto) can reuse it instead of re-reading the
+    file a second time outside this function's guard -- a second raw read
+    would crash unguarded on exactly the unreadable-file case this one exists
+    to handle cleanly.
 
     State is tracked only via `^message Name {` and its own matching `^}` --
     deliberately not a general brace-depth counter, which would mis-attribute
@@ -179,10 +187,11 @@ def parse_proto(path: Path) -> tuple[dict[str, list[Field]], list[tuple[str, str
     closed by its distinct 2-indent `}`, never changing `current`).
     """
     try:
-        raw_lines = path.read_text(encoding="utf-8").splitlines()
+        full_text = path.read_text(encoding="utf-8")
     except OSError as exc:
         fail("%s could not be read: %s" % (rel(path), exc))
-        return {}, []
+        return {}, [], ""
+    raw_lines = full_text.splitlines()
 
     messages: dict[str, list[Field]] = {}
     unknown: list[tuple[str, str, int, str]] = []
@@ -258,7 +267,7 @@ def parse_proto(path: Path) -> tuple[dict[str, list[Field]], list[tuple[str, str
 
         unknown.append((current, rel(path), lineno, raw))
 
-    return messages, unknown
+    return messages, unknown, full_text
 
 
 def field_type_name(field_type: str) -> str | None:
@@ -271,14 +280,23 @@ def field_type_name(field_type: str) -> str | None:
     return None if candidate in SCALAR_TYPES else candidate
 
 
-def load_schema() -> dict:
+def load_schema() -> dict | None:
+    """Returns None on failure, never {} -- a schema that genuinely parses to
+    an empty object is a separate, real failure (every check below would then
+    find no $defs/allOf/properties), not the same case as a read/parse error.
+    Conflating the two would exit non-zero with zero FAIL lines printed."""
     try:
-        return json.loads(ENVELOPE_SCHEMA.read_text(encoding="utf-8"))
+        data = json.loads(ENVELOPE_SCHEMA.read_text(encoding="utf-8"))
     except OSError as exc:
         fail("%s could not be read: %s" % (rel(ENVELOPE_SCHEMA), exc))
+        return None
     except json.JSONDecodeError as exc:
         fail("%s is not valid JSON: %s" % (rel(ENVELOPE_SCHEMA), exc))
-    return {}
+        return None
+    if not isinstance(data, dict):
+        fail("%s does not contain a JSON object at its top level" % rel(ENVELOPE_SCHEMA))
+        return None
+    return data
 
 
 def check_three_way_agreement(
@@ -393,7 +411,11 @@ def check_defs_existence(proto_set: set[str], schema: dict) -> list[str]:
 
 def check_field_coverage(
     proto_set: set[str], all_messages: dict[str, list[Field]], schema: dict
-) -> list[str]:
+) -> tuple[list[str], set[str]]:
+    """Returns (errors, visited) -- `visited` is the exact set this function's
+    own BFS reached (the 7 payloads plus any message-typed field reached from
+    one), returned so the caller can reuse it as the scope for filtering
+    unknown-construct reports, instead of re-running an equivalent BFS."""
     errors: list[str] = []
     defs = schema.get("$defs", {})
 
@@ -421,7 +443,7 @@ def check_field_coverage(
                 "%s has no $defs.%s entry in macp-envelope.schema.json, so its "
                 "field coverage cannot be checked" % (msg_name, msg_name)
             )
-            properties: dict = {}
+            properties = None
         else:
             properties = entry.get("properties")
             if properties is None:
@@ -430,10 +452,20 @@ def check_field_coverage(
                     "empty would report every one of %s's fields missing as "
                     "though they were N separate defects" % (msg_name, msg_name)
                 )
-                properties = {}
 
+        # `properties is None` means the entry (or its properties) is missing
+        # entirely, already reported once above -- skip the per-field check
+        # so that one defect is not reported N times, one per field. The BFS
+        # below still walks every field's TYPE regardless: those come from the
+        # proto side, not the (possibly absent) $defs entry, so a message
+        # missing its own $defs entry must not also truncate reachability for
+        # whatever message-typed fields it points at.
         for field in fields:
-            if field.name not in properties and (msg_name, field.name) not in UNMAPPED_PROTO_FIELDS:
+            if (
+                properties is not None
+                and field.name not in properties
+                and (msg_name, field.name) not in UNMAPPED_PROTO_FIELDS
+            ):
                 errors.append(
                     "%s.%s (%s:%d) has no corresponding property in "
                     "$defs.%s.properties"
@@ -444,7 +476,7 @@ def check_field_coverage(
             if type_name is not None and type_name not in visited:
                 queue.append(type_name)
 
-    return errors
+    return errors, visited
 
 
 def harvest_rpc_types(core_proto_text: str) -> set[str]:
@@ -499,9 +531,9 @@ def main() -> int:
             print("FAIL %s" % e, file=sys.stderr)
         return 1
 
-    core_messages, core_unknown = parse_proto(CORE_PROTO)
-    envelope_messages, envelope_unknown = parse_proto(ENVELOPE_PROTO)
-    policy_messages, policy_unknown = parse_proto(POLICY_PROTO)
+    core_messages, core_unknown, core_proto_text = parse_proto(CORE_PROTO)
+    envelope_messages, envelope_unknown, _ = parse_proto(ENVELOPE_PROTO)
+    policy_messages, policy_unknown, _ = parse_proto(POLICY_PROTO)
 
     all_messages: dict[str, list[Field]] = {}
     per_file_messages: dict[str, set[str]] = {}
@@ -521,7 +553,7 @@ def main() -> int:
             all_messages[name] = fields
 
     schema = load_schema()
-    if not schema:
+    if schema is None:
         for e in ERRORS:
             print("FAIL %s" % e, file=sys.stderr)
         return 1
@@ -530,28 +562,15 @@ def main() -> int:
     ERRORS.extend(errors)
     ERRORS.extend(check_defs_existence(proto_set, schema))
 
-    field_coverage_reached_before = set(all_messages)  # placeholder, replaced below
-    ERRORS.extend(check_field_coverage(proto_set, all_messages, schema))
+    field_errors, field_reached = check_field_coverage(proto_set, all_messages, schema)
+    ERRORS.extend(field_errors)
 
-    # Recompute the exact reached set for field coverage (payloads + transitive
-    # message-typed fields) to scope unknown-construct reporting -- a message
-    # reached only by the RPC-classification walk (Check 4) but never by this
-    # narrower walk does not get its odd constructs reported (core.proto:343's
-    # oneof inside StreamSessionResponse, :439's enum inside
-    # SessionLifecycleEvent -- neither is reached from a Core payload's own
-    # field graph).
-    field_reach_queue: list[str] = sorted("%sPayload" % name for name in proto_set)
-    field_reached: set[str] = set()
-    while field_reach_queue:
-        name = field_reach_queue.pop(0)
-        if name in field_reached:
-            continue
-        field_reached.add(name)
-        for field in all_messages.get(name, []):
-            type_name = field_type_name(field.type)
-            if type_name is not None and type_name not in field_reached:
-                field_reach_queue.append(type_name)
-
+    # Scope unknown-construct reporting to exactly the set check_field_coverage
+    # reached (payloads + transitive message-typed fields) -- a message reached
+    # only by the RPC-classification walk (Check 4) but never by this narrower
+    # walk does not get its odd constructs reported (core.proto:343's oneof
+    # inside StreamSessionResponse, :439's enum inside SessionLifecycleEvent --
+    # neither is reached from a Core payload's own field graph).
     for msg_name, file_name, lineno, raw in core_unknown + envelope_unknown + policy_unknown:
         if msg_name in field_reached:
             fail(
@@ -560,7 +579,7 @@ def main() -> int:
                 "tolerate it" % (file_name, lineno, msg_name, raw.strip())
             )
 
-    rpc_types = harvest_rpc_types(CORE_PROTO.read_text(encoding="utf-8"))
+    rpc_types = harvest_rpc_types(core_proto_text)
     ERRORS.extend(
         check_classification(proto_set, all_messages, per_file_messages, rpc_types)
     )
@@ -572,13 +591,13 @@ def main() -> int:
         return 1
 
     print(
-        "All envelope-coverage checks passed: %d Core payload(s) (%s) agree "
+        "All 4 envelope-coverage checks passed: %d Core payload(s) (%s) agree "
         "across proto, allOf branches and message_type's description; field "
-        "coverage holds for %d reached $defs entries; %d message(s) classified "
-        "across the three macp/v1 protos."
+        "coverage holds for %d reached $defs entries (%s); %d message(s) "
+        "classified across the three macp/v1 protos."
         % (
             len(proto_set), ", ".join(sorted(proto_set)),
-            len(field_reached),
+            len(field_reached), ", ".join(sorted(field_reached)),
             sum(len(names) for names in per_file_messages.values()),
         )
     )
