@@ -43,6 +43,22 @@ Checks:
      this is what closes the suffix-selector hole: a future Core payload
      added without the `Payload` suffix surfaces here instead of silently
      passing Check 1 as "not a payload".
+  5. Type shapes: every field reached by Check 3 maps to the JSON shape its
+     proto declaration implies -- `repeated T` to a `"type": "array"` with
+     matching `items`, `map<K,V>` to a `"type": "object"` with matching
+     `additionalProperties`, `bytes` to `$defs.Base64Bytes`, a message type
+     to a `$ref` naming it, a scalar to SCALAR_JSON_TYPE's JSON type. Checks
+     only `type`/`items`/`additionalProperties`/`$ref`; JSON-Schema-only
+     authoring keywords (`required`, `minimum`, `pattern`, `description`,
+     ...) have no proto counterpart and are not inspected.
+  6. Reverse direction and orphan `$defs`: every property on a reached
+     `$defs` entry has a proto field behind it (no allowlist in this
+     direction, by choice), and every `$defs` entry overall is either
+     reached or named in JSON_ONLY_DEFS.
+  7. `Envelope`'s own fields: its 8 proto fields are all held to the
+     schema's top-level `properties`, six by identity and two (`timestamp_
+     unix_ms`, `payload`) through ENVELOPE_FIELD_MAP's normative
+     non-identity mapping (RFC-MACP-0001 §10.1, §10.2).
 
 Every failure is accumulated and reported together before exiting non-zero
 (this repo's check-prose.py / check-parity-contract.py convention) -- one bad
@@ -99,6 +115,25 @@ SCALAR_TYPES = frozenset({
     "double", "float", "int32", "int64", "uint32", "uint64", "sint32", "sint64",
     "fixed32", "fixed64", "sfixed32", "sfixed64", "bool", "string", "bytes",
 })
+
+# Narrower than SCALAR_TYPES on purpose, and "bytes" is deliberately absent --
+# it maps to a $ref (Base64Bytes), not a bare "type" value, so Check 5 handles
+# it as its own case. Only the scalar proto types that actually appear on a
+# reached field today are listed; an unlisted scalar (or an enum) must hit the
+# "unknown proto type" branch and fail loudly rather than silently guess a
+# JSON type for a case nobody has reasoned about yet.
+SCALAR_JSON_TYPE = {
+    "string": "string",
+    "bool": "boolean",
+    "int32": "integer",
+    "int64": "integer",
+    "uint32": "integer",
+    "uint64": "integer",
+    "double": "number",
+    "float": "number",
+}
+
+MAP_TYPE_RE = re.compile(r"^map<\s*([\w.]+)\s*,\s*([\w.]+)\s*>$")
 
 MESSAGE_OPEN_RE = re.compile(r"^message\s+(\w+)\s*\{$")
 MESSAGE_EMPTY_RE = re.compile(r"^message\s+(\w+)\s*\{\}$")
@@ -275,7 +310,7 @@ def field_type_name(field_type: str) -> str | None:
     None if it names a proto3 scalar. For `map<K, V>`, resolves V (the value
     type) -- map keys are always scalar in proto3, and this repo's JSON
     mapping never needs the key type to walk reachability."""
-    m = re.match(r"^map<\s*([\w.]+)\s*,\s*([\w.]+)\s*>$", field_type)
+    m = MAP_TYPE_RE.match(field_type)
     candidate = m.group(2) if m else field_type
     return None if candidate in SCALAR_TYPES else candidate
 
@@ -479,6 +514,217 @@ def check_field_coverage(
     return errors, visited
 
 
+def base_shape(type_name: str) -> dict | None:
+    """Expected JSON-Schema shape for one occurrence of `type_name`, ignoring
+    any repeated/map wrapper -- expected_shape applies that. Returns None for
+    a proto type this table has no JSON mapping for (an enum, or a scalar
+    missing from SCALAR_JSON_TYPE): callers must treat None as a reportable
+    error, never as "no constraint"."""
+    if type_name == "bytes":
+        return {"$ref": "#/$defs/Base64Bytes"}
+    if type_name in SCALAR_JSON_TYPE:
+        return {"type": SCALAR_JSON_TYPE[type_name]}
+    if type_name in SCALAR_TYPES:
+        return None
+    return {"$ref": "#/$defs/%s" % type_name}
+
+
+def expected_shape(field: Field) -> dict | None:
+    """Expected JSON-Schema shape for `field` as a whole, repeated/map
+    wrapper included. None propagates from base_shape -- an unmapped base
+    type under a repeated/map wrapper is still unmapped, not "an array of
+    anything"."""
+    m = MAP_TYPE_RE.match(field.type)
+    if m:
+        value_shape = base_shape(m.group(2))
+        if value_shape is None:
+            return None
+        return {"type": "object", "additionalProperties": value_shape}
+    if field.repeated:
+        item_shape = base_shape(field.type)
+        if item_shape is None:
+            return None
+        return {"type": "array", "items": item_shape}
+    return base_shape(field.type)
+
+
+def shape_errors(expected: dict, actual: dict, context: str) -> list[str]:
+    """Compare `actual` ($defs.<Msg>.properties.<field>) against `expected`
+    on exactly type/items/additionalProperties/$ref -- the only keys
+    expected_shape ever produces. Every other JSON-Schema authoring keyword
+    on `actual` (required, minimum, minLength, pattern, description, format)
+    has no proto counterpart and is deliberately not inspected."""
+    errors: list[str] = []
+    for key in ("type", "$ref"):
+        if key in expected and expected[key] != actual.get(key):
+            errors.append(
+                "%s: expected %s %r, found %r"
+                % (context, key, expected[key], actual.get(key))
+            )
+    if "items" in expected:
+        actual_items = actual.get("items")
+        if not isinstance(actual_items, dict):
+            errors.append(
+                "%s: expected an \"items\" object, found %r" % (context, actual_items)
+            )
+        else:
+            errors.extend(shape_errors(expected["items"], actual_items, context + ".items"))
+    if "additionalProperties" in expected:
+        actual_ap = actual.get("additionalProperties")
+        if not isinstance(actual_ap, dict):
+            errors.append(
+                "%s: expected an \"additionalProperties\" object, found %r"
+                % (context, actual_ap)
+            )
+        else:
+            errors.extend(
+                shape_errors(
+                    expected["additionalProperties"], actual_ap,
+                    context + ".additionalProperties",
+                )
+            )
+    return errors
+
+
+def check_type_shapes(
+    all_messages: dict[str, list[Field]], field_reached: set[str], schema: dict
+) -> list[str]:
+    """Check 5: every field on a message in `field_reached` maps to the JSON
+    shape expected_shape() derives from its proto declaration. Scoped to
+    field_reached, the set Check 3 already computed -- a message with no
+    $defs entry at all, or a $defs entry with no "properties", or a field
+    with no matching property, is already reported once by Check 3/4 and is
+    skipped here rather than reported again under a different name."""
+    errors: list[str] = []
+    defs = schema.get("$defs", {})
+
+    for msg_name in sorted(field_reached):
+        entry = defs.get(msg_name)
+        if entry is None:
+            continue
+        properties = entry.get("properties")
+        if properties is None:
+            continue
+        for field in all_messages.get(msg_name, []):
+            actual = properties.get(field.name)
+            if actual is None:
+                continue
+            context = "%s.%s (%s:%d)" % (msg_name, field.name, rel(CORE_PROTO), field.line)
+            expected = expected_shape(field)
+            if expected is None:
+                errors.append(
+                    "%s has proto type %r, which has no JSON-shape mapping -- "
+                    "teach SCALAR_JSON_TYPE or base_shape about it, do not "
+                    "assume a shape for it" % (context, field.type)
+                )
+                continue
+            if not isinstance(actual, dict):
+                errors.append(
+                    "%s: $defs.%s.properties.%s is not an object (%r)"
+                    % (context, msg_name, field.name, actual)
+                )
+                continue
+            errors.extend(shape_errors(expected, actual, context))
+
+    return errors
+
+
+def check_reverse_and_orphans(
+    all_messages: dict[str, list[Field]], field_reached: set[str], schema: dict
+) -> list[str]:
+    """Check 6: the mirror image of Check 3. For every reached $defs entry,
+    every JSON property must correspond to a real proto field -- no
+    allowlist in this direction, by choice (a genuine JSON-only property
+    needs an RFC updating the canonical mapping, not a dict entry here).
+    Then, every $defs entry overall must be either reached or explicitly
+    named in JSON_ONLY_DEFS."""
+    errors: list[str] = []
+    defs = schema.get("$defs", {})
+
+    for msg_name in sorted(field_reached):
+        entry = defs.get(msg_name)
+        if entry is None:
+            continue
+        properties = entry.get("properties")
+        if not properties:
+            continue
+        proto_field_names = {field.name for field in all_messages.get(msg_name, [])}
+        for prop_name in sorted(properties):
+            if prop_name not in proto_field_names:
+                errors.append(
+                    "$defs.%s.properties.%s has no corresponding field on "
+                    "message %s -- there is no allowlist for this direction; "
+                    "a genuine JSON-only property needs an RFC updating the "
+                    "canonical mapping, not a dict entry here"
+                    % (msg_name, prop_name, msg_name)
+                )
+
+    orphans = set(defs) - field_reached - set(JSON_ONLY_DEFS)
+    for name in sorted(orphans):
+        errors.append(
+            "$defs.%s is not reachable from any Core payload's field graph "
+            "and is not listed in JSON_ONLY_DEFS -- either wire it up or add "
+            "it there with a reason" % name
+        )
+
+    return errors
+
+
+# The ONLY two non-identity proto->JSON mappings in this repo, both normative
+# and both envelope-level: RFC-MACP-0001 Section 10.1 (the only
+# Protobuf-to-JSON field rename in the MACP envelope) and Section 10.2
+# (payload bytes map to EITHER a decoded `payload` object OR `payload_b64`).
+ENVELOPE_FIELD_MAP = {
+    "timestamp_unix_ms": ("timestamp",),
+    "payload": ("payload", "payload_b64"),
+}
+
+
+def check_envelope_fields(
+    envelope_messages: dict[str, list[Field]], schema: dict
+) -> list[str]:
+    """Check 7: Envelope's own proto fields are all held to the schema's
+    top-level `properties`. Six map by identity; the two in
+    ENVELOPE_FIELD_MAP have a normative non-identity mapping. Does not check
+    `required` or the `oneOf` -- those encode RFC-MACP-0001 §10.2's
+    exactly-one rule, already enforced on instances by
+    scripts/validate-json.sh."""
+    errors: list[str] = []
+    fields = envelope_messages.get("Envelope")
+    if fields is None:
+        errors.append(
+            "message Envelope not found in envelope.proto -- Check 7 cannot "
+            "run without it"
+        )
+        return errors
+
+    top_properties = schema.get("properties", {})
+    proto_field_names = {field.name for field in fields}
+
+    for key in ENVELOPE_FIELD_MAP:
+        if key not in proto_field_names:
+            errors.append(
+                "ENVELOPE_FIELD_MAP's key %r is not a field on message "
+                "Envelope -- the proto field it named was renamed or "
+                "removed; update the map, do not leave a dead entry "
+                "silently satisfying this check" % key
+            )
+
+    for field in fields:
+        targets = ENVELOPE_FIELD_MAP.get(field.name, (field.name,))
+        if not any(target in top_properties for target in targets):
+            errors.append(
+                "Envelope.%s (%s:%d) has no corresponding top-level property "
+                "in %s (looked for %s)"
+                % (
+                    field.name, rel(ENVELOPE_PROTO), field.line, rel(ENVELOPE_SCHEMA),
+                    " or ".join(repr(t) for t in targets),
+                )
+            )
+
+    return errors
+
+
 def harvest_rpc_types(core_proto_text: str) -> set[str]:
     rpc_types: set[str] = set()
     for m in RPC_RE.finditer(core_proto_text):
@@ -584,6 +830,10 @@ def main() -> int:
         check_classification(proto_set, all_messages, per_file_messages, rpc_types)
     )
 
+    ERRORS.extend(check_type_shapes(all_messages, field_reached, schema))
+    ERRORS.extend(check_reverse_and_orphans(all_messages, field_reached, schema))
+    ERRORS.extend(check_envelope_fields(envelope_messages, schema))
+
     if ERRORS:
         for e in ERRORS:
             print("FAIL %s" % e, file=sys.stderr)
@@ -591,10 +841,11 @@ def main() -> int:
         return 1
 
     print(
-        "All 4 envelope-coverage checks passed: %d Core payload(s) (%s) agree "
+        "All 7 envelope-coverage checks passed: %d Core payload(s) (%s) agree "
         "across proto, allOf branches and message_type's description; field "
-        "coverage holds for %d reached $defs entries (%s); %d message(s) "
-        "classified across the three macp/v1 protos."
+        "coverage and shapes hold for %d reached $defs entries (%s); %d "
+        "message(s) classified across the three macp/v1 protos; Envelope's "
+        "own fields agree with the schema's top-level properties."
         % (
             len(proto_set), ", ".join(sorted(proto_set)),
             len(field_reached), ", ".join(sorted(field_reached)),
