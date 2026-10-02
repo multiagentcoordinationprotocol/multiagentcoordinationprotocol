@@ -1,5 +1,5 @@
 {
-  "_invalid_because": "Adds an unrecognized `sections.bogus` key. macp-parity-contract.schema.json sets `additionalProperties: false` on `sections`, so a section name outside the 10 declared ones is rejected. All 10 real sections are present and unmodified, so this fixture isolates the `sections`-level `additionalProperties` constraint alone.",
+  "_invalid_because": "Sets `sections.proposal_disposition.acceptance_tracking` to `\"per_proposal_record\"`, a value outside the schema's `[\"per_sender\", \"per_proposal\"]` enum. Every other value in the manifest is untouched, so this fixture isolates that field's `enum` constraint alone.",
   "$comment": "This file is NON-NORMATIVE: it projects values whose actual normative homes (where one exists) are named per-section via that section's `source` field. This manifest MUST NOT itself be cited as a normative source -- cite the named RFC/registry/proto file instead. See schemas/parity/README.md for full context, the applies_to/source semantics, and the versioning rules.",
   "contract_version": "1.0.0",
   "sections": {
@@ -203,10 +203,7 @@
         "rejected",
         "withdrawn"
       ],
-      "acceptance_tracking": "per_sender"
-    },
-    "bogus": {
-      "note": "an unrecognized section"
+      "acceptance_tracking": "per_proposal_record"
     }
   }
 }

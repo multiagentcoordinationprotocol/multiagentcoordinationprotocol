@@ -459,6 +459,54 @@
             "source",
             "empty_payload"
           ]
+        },
+        "proposal_disposition": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(_|\\$comment)": {}
+          },
+          "properties": {
+            "applies_to": {
+              "$ref": "#/$defs/appliesTo"
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mode_state_dispositions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Za-z]*$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "projection_status_values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z_]*$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "acceptance_tracking": {
+              "type": "string",
+              "enum": [
+                "per_sender",
+                "per_proposal"
+              ]
+            }
+          },
+          "required": [
+            "applies_to",
+            "source",
+            "mode_state_dispositions",
+            "projection_status_values",
+            "acceptance_tracking"
+          ]
         }
       },
       "required": [
@@ -470,7 +518,8 @@
         "projection_anomaly",
         "commitment_hash",
         "contribute_payload",
-        "contribute_acceptance"
+        "contribute_acceptance",
+        "proposal_disposition"
       ]
     }
   }

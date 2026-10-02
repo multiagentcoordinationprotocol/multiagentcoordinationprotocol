@@ -187,6 +187,24 @@
       ],
       "source": "convention -- macp-runtime rejects an empty Contribute payload; this is not yet a confirmed cross-SDK agreement (see schemas/parity/README.md Open items and the follow-up issue tracked in Open Questions)",
       "empty_payload": "reject"
+    },
+    "proposal_disposition": {
+      "applies_to": [
+        "macp-runtime",
+        "macp-sdk-python",
+        "macp-sdk-typescript"
+      ],
+      "source": "RFC-MACP-0008 Section 5 rule 2a and rule 4 ground mode_state_dispositions, held to the Proposal-mode conformance corpus. projection_status_values is convention (both SDKs agree). acceptance_tracking is grounded in RFC-MACP-0008 Section 5 rule 5 and Section 7, and held to the corpus.",
+      "mode_state_dispositions": [
+        "Live",
+        "Withdrawn"
+      ],
+      "projection_status_values": [
+        "open",
+        "rejected",
+        "withdrawn"
+      ],
+      "acceptance_tracking": "per_sender"
     }
   }
 }

@@ -18,16 +18,17 @@ key) and fail the isolation guard for the wrong reason.
 **Each fixture MUST isolate exactly one constraint.** Removing that one constraint from the
 schema should make exactly that fixture validate and leave the others rejected:
 
-| mutation | unknown-section | missing-section-retry | error-code-lowercase | contribute-hex-odd-length | applies-to-unknown-consumer |
-|---|---|---|---|---|---|
-| *intact* | reject | reject | reject | reject | reject |
-| drop `sections.additionalProperties` | **PASS** | reject | reject | reject | reject |
-| drop `retry` from `sections.required` | reject | **PASS** | reject | reject | reject |
-| drop `error_codes.permanent.items.pattern` | reject | reject | **PASS** | reject | reject |
-| drop `contribute_payload.vectors.items.properties.protobuf_hex.pattern` | reject | reject | reject | **PASS** | reject |
-| drop `$defs.appliesTo.items.enum` | reject | reject | reject | reject | **PASS** |
+| mutation | unknown-section | missing-section-retry | error-code-lowercase | contribute-hex-odd-length | applies-to-unknown-consumer | proposal-acceptance-tracking-unknown |
+|---|---|---|---|---|---|---|
+| *intact* | reject | reject | reject | reject | reject | reject |
+| drop `sections.additionalProperties` | **PASS** | reject | reject | reject | reject | reject |
+| drop `retry` from `sections.required` | reject | **PASS** | reject | reject | reject | reject |
+| drop `error_codes.permanent.items.pattern` | reject | reject | **PASS** | reject | reject | reject |
+| drop `contribute_payload.vectors.items.properties.protobuf_hex.pattern` | reject | reject | reject | **PASS** | reject | reject |
+| drop `$defs.appliesTo.items.enum` | reject | reject | reject | reject | **PASS** | reject |
+| drop `proposal_disposition.properties.acceptance_tracking.enum` | reject | reject | reject | reject | reject | **PASS** |
 
-Proven by running the diagonal (see "Adding a fixture" below); the 5×5 grid above is
+Proven by running the diagonal (see "Adding a fixture" below); the 6×6 grid above is
 exactly that proof's output.
 
 **The granularity here is one `required` MEMBER, not one keyword**, matching

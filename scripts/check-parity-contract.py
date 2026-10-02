@@ -50,6 +50,13 @@ VALUE that has an in-repo source to that source:
     describes: every protobuf_hex must lead with the pinned proto marker and
     every legacy_json_hex with the pinned JSON one, so a marker edited away
     from what the vectors actually encode is caught inside this one file
+  - proposal_disposition.mode_state_dispositions <- the Proposal-mode fixtures'
+    own expected_mode_state.proposals.*.disposition values (schemas/conformance/
+    proposal_happy_path.json, proposal_reject_paths.json). acceptance_tracking
+    is held the same way, via expected_mode_state.accepts' sender-keyed,
+    proposal-id-valued shape, rather than to its own literal "per_sender" string.
+    projection_status_values is convention (both SDKs agree) and only
+    count-pinned, same as projection_anomaly.kinds.
 
 That list is what this script holds to a source. What remains unheld is
 retry.max_retries / backoff_base_seconds / backoff_max_seconds / jitter, and all
@@ -114,10 +121,16 @@ CMT_HASH_VECTOR_SCHEMA = ROOT / "schemas" / "conformance" / "cmt-hash" / "vector
 # for the same idiom. A silently deleted section/vector/reject case must fail
 # loudly rather than shrink what is checked while staying green. Bump these
 # when the manifest legitimately grows.
-EXPECTED_SECTION_COUNT = 9
+EXPECTED_SECTION_COUNT = 10
 EXPECTED_VECTOR_COUNT = 8
 EXPECTED_ACCEPT_COUNT = 1
 EXPECTED_REJECT_COUNT = 11
+
+# proposal_disposition.projection_status_values is convention-sourced (both SDKs
+# agree, held by check_proposal_disposition's A8) -- a fixed count so the list
+# cannot silently shrink with no external source to catch it. Bump together with
+# contract.json's projection_status_values and the prose in README.md/sdk-parity.md.
+EXPECTED_PROPOSAL_STATUS_COUNT = 3
 
 # The number of `errors.append` calls reachable from CONTRIBUTE_TREE_ANCHOR.
 # check-parity-contract-test.py PRINTS a claim that every one of them is covered
@@ -794,6 +807,132 @@ def check_collision_vectors(vectors: list) -> list[str]:
     return errors
 
 
+def check_proposal_disposition(sections: dict) -> list[str]:
+    """Hold proposal_disposition to the Proposal-mode conformance corpus.
+
+    Selects fixtures by their own `mode` field (the same content-based selection
+    check_modes uses, robust to a renamed fixture), not by filename glob.
+
+    Reads ONLY expected_mode_state.proposals.*.disposition and
+    expected_mode_state.accepts -- never the whole expected_mode_state object,
+    which also carries `phase` (e.g. "Committed", "Negotiating"). A walk that
+    harvested every string under expected_mode_state would silently fold `phase`
+    into mode_state_dispositions, pinning the one value proposal_disposition.source
+    says is deliberately NOT pinned: macp-runtime's ProposalPhase reaches Converged,
+    which neither SDK's projection represents -- a three-way disagreement
+    schemas/parity/README.md forbids this manifest from hosting.
+    """
+    errors: list[str] = []
+    pd = sections["proposal_disposition"]
+    manifest_dispositions = set(pd["mode_state_dispositions"])
+
+    corpus_dispositions: set[str] = set()
+    accepts_fixtures: list[dict] = []
+    handoff_accepted_seen = False
+    for f in sorted(CONFORMANCE_DIR.glob("*.json")):
+        try:
+            data = load_json(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        mode = data.get("mode")
+        state = data.get("expected_mode_state")
+        if mode == "macp.mode.proposal.v1":
+            proposals = state.get("proposals") if isinstance(state, dict) else None
+            if isinstance(proposals, dict):
+                for record in proposals.values():
+                    if isinstance(record, dict) and "disposition" in record:
+                        corpus_dispositions.add(record["disposition"])
+            accepts = state.get("accepts") if isinstance(state, dict) else None
+            if isinstance(accepts, dict) and accepts:
+                accepts_fixtures.append({
+                    "file": f.name,
+                    "accepts": accepts,
+                    "participants": set(data.get("participants") or []),
+                    "proposal_ids": set(proposals) if isinstance(proposals, dict) else set(),
+                })
+        elif mode == "macp.mode.handoff.v1":
+            offers = state.get("offers") if isinstance(state, dict) else None
+            if isinstance(offers, dict):
+                for record in offers.values():
+                    if isinstance(record, dict) and record.get("disposition") == "Accepted":
+                        handoff_accepted_seen = True
+
+    # A1/A2: an empty corpus would make A2 vacuously true (set() == set()) if it
+    # ran unconditionally, so A1 is checked first -- same shape as
+    # check_macp_version's "if not seen" branch.
+    if not corpus_dispositions:
+        errors.append(
+            "no schemas/conformance/*.json Proposal-mode fixture has an "
+            "expected_mode_state.proposals.*.disposition -- proposal_disposition."
+            "mode_state_dispositions has nothing to be held to"
+        )
+    elif corpus_dispositions != manifest_dispositions:
+        errors.append(
+            "proposal_disposition.mode_state_dispositions %s does not match the "
+            "disposition values found in the Proposal-mode conformance corpus %s"
+            % (sorted(manifest_dispositions), sorted(corpus_dispositions))
+        )
+
+    # A3 -- the #176 invariant itself: a coordinated manifest+corpus edit that
+    # denormalized acceptance onto the record cannot quietly satisfy this one.
+    lowered = {v.lower() for v in manifest_dispositions} | {
+        v.lower() for v in pd["projection_status_values"]
+    }
+    if "accept" in lowered or "accepted" in lowered:
+        errors.append(
+            "proposal_disposition.mode_state_dispositions/projection_status_values "
+            "contains an accept/accepted-shaped value -- Proposal mode acceptance is "
+            "a separate per-sender relation (RFC-MACP-0008 Section 5 rule 5, Section "
+            "7), never a per-proposal disposition/status value"
+        )
+
+    # A4 -- the cross-mode contrast this section's source cites must stay true.
+    if not handoff_accepted_seen:
+        errors.append(
+            "no schemas/conformance/*.json Handoff-mode fixture has an "
+            "expected_mode_state.offers.*.disposition of \"Accepted\" -- "
+            "proposal_disposition.source's cross-mode contrast is no longer true "
+            "of the corpus"
+        )
+
+    # A5
+    if not accepts_fixtures:
+        errors.append(
+            "no schemas/conformance/*.json Proposal-mode fixture has a non-empty "
+            "expected_mode_state.accepts -- acceptance_tracking's per_sender claim "
+            "has nothing to be held to"
+        )
+    for entry in accepts_fixtures:
+        # A6
+        for sender in entry["accepts"]:
+            if sender not in entry["participants"]:
+                errors.append(
+                    "%s: expected_mode_state.accepts key %r is not a declared "
+                    "participant -- acceptance_tracking claims this map is keyed by "
+                    "sender" % (entry["file"], sender)
+                )
+        # A7
+        for proposal_id in entry["accepts"].values():
+            if proposal_id not in entry["proposal_ids"]:
+                errors.append(
+                    "%s: expected_mode_state.accepts value %r is not a known "
+                    "proposal_id in the same fixture's expected_mode_state.proposals "
+                    "-- the map's values should be proposal ids, not sender ids"
+                    % (entry["file"], proposal_id)
+                )
+
+    # A8
+    if len(pd["projection_status_values"]) != EXPECTED_PROPOSAL_STATUS_COUNT:
+        errors.append(
+            "expected %d proposal_disposition.projection_status_values, found %d"
+            % (EXPECTED_PROPOSAL_STATUS_COUNT, len(pd["projection_status_values"]))
+        )
+
+    return errors
+
+
 def check_own_contribute_error_paths(sections: dict) -> list[str]:
     """Pin the number of `errors.append` calls in the contribute_payload check tree.
 
@@ -936,6 +1075,7 @@ CHECKS = (
     check_retry_schedule,
     check_commitment_hash,
     check_contribute_payload,
+    check_proposal_disposition,
     check_own_contribute_error_paths,
 )
 
