@@ -236,7 +236,9 @@ patched over:
   produced. And the corpus asserts `Committed` as a
   value, not as a floor: no fixture replays anything after it. So this is the half that needs
   fixing rather than deciding, but it is defense in depth, not a broken wire contract.
-  Tracked as issue #145.
+  Tracked as issue #145. (Proposal mode's own `phase`/`Converged` gap, below, looks the
+  same at a glance but is a closed, three-way vocabulary disagreement rather than an
+  unpinned window — see issue #176.)
 
   **Proposal mode's `phase` field is a different case entirely, and closed rather than
   tracked.** Like Decision's, `macp-runtime`'s Proposal-mode state machine
