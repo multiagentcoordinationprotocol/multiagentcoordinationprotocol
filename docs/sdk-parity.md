@@ -186,6 +186,22 @@ describe, even when that record is a session-scoped singleton (at most one insta
 session). This narrower point does not extend to ordinary per-entity derived state like status
 or progress, which this rule's main clause already covers.
 
+A third, categorically different case: some derived state is not a property of the entity at
+all, but a **per-sender, multi-party, supersedable relation** — each participant holds (and may
+change) its own value independently of every other participant's and of the entity's own
+lifecycle state. Such state belongs in a collection keyed by the relation's own subject (the
+sender), never denormalized onto the entity record as a single value, even where sibling
+projections in the same SDK do denormalize their own single-claimant derived state onto their
+own records. RFC-MACP-0008 Section 5 (Validation rules) rule 5 — "A participant MAY change its
+acceptance target by sending a later `Accept` for a different live proposal. The latest accepted
+`Accept` from a participant supersedes earlier accepts from the same participant." — and Section
+7 (Determinism class) — implementations "MUST derive the same live proposal set, the same
+acceptance set, and the same commitment eligibility" — both describe Proposal mode acceptance
+this way: a set of independently-mutable per-sender facts, not a single proposal-level status
+value. Like the exclusivity-slot point above, this does not extend to ordinary per-entity derived
+state such as a proposal's own `Live`/`Withdrawn` disposition, which the rule's main clause
+already covers.
+
 **Decision record:** issue #165 applied this rule to `macp-sdk-python`'s Task Mode projection.
 `TaskRequestRecord`/`get_task()`/`active_tasks()` carried only the original `TaskRequest`
 fields, with status/progress/assignee tracked in three separate dicts on the projection —
@@ -194,6 +210,19 @@ state on the record, each keyed by id) and with `macp-sdk-typescript`'s combined
 Ruled: `macp-sdk-python` enriches its per-task record with the derived fields, matching its own
 other projections. See #165's closing comment for the full evidence table and the routed
 follow-up issue.
+
+Issue #176 applied the third clause above to Proposal mode's acceptance tracking, settled
+upstream as `macp-sdk-python` issue #112. `macp-sdk-python`'s `ProposalRecord.status`
+(`src/macp_sdk/proposal.py:45`) and `macp-sdk-typescript`'s `ProposalRecord.status`
+(`src/projections/proposal.ts:30`) both type the field as a 3-value
+`open`/`rejected`/`withdrawn` domain with no `accepted` member; `macp-runtime`'s
+`ProposalDisposition` enum (`crates/macp-modes/src/mode/proposal.rs`) agrees at `Live`/
+`Withdrawn`, and all three track acceptance separately, keyed by sender. Ruled: acceptance is
+tracked out-of-band per sender, never denormalized onto the proposal record, matching the
+third clause's rule by design rather than as a gap to fix. `schemas/parity/contract.json`'s new
+`proposal_disposition` section pins the value domain this settles; it does not originate the
+decision. See `macp-sdk-python` issue #112's closing comment for the original reasoning and
+this repo's issue #176 for the parity-manifest follow-up.
 
 ## Sync Mechanisms
 
@@ -218,7 +247,8 @@ follow-up issue.
   already agree — with matching values but no shared source of truth — across
   `macp-runtime`, `macp-sdk-python`, and `macp-sdk-typescript` (error codes, retry
   defaults, mode/version constants, the commitment-hash format, `Contribute` payload byte
-  vectors, and `ProjectionAnomaly`'s shape). It is non-normative: where a value has an
+  vectors, `ProjectionAnomaly`'s shape, and Proposal mode's per-proposal disposition and
+  acceptance-tracking domain). It is non-normative: where a value has an
   actual normative home, the manifest's `source` field names it — e.g. `policy_version`
   traces to RFC-MACP-0012 Section 5.1, and the commitment-hash format traces to
   RFC-MACP-0013 Section 7 — and the manifest MUST NOT itself be cited as that home.
@@ -258,9 +288,9 @@ follow-up issue.
   and the two unpinned ones are the time-sensitive half. Note "any", not "any that adds a vector or a
   section": `verify-parity` is a byte-level diff in both SDKs, and each additionally hard-asserts the
   exact `contract_version` string as a deliberate tripwire, so even an annotation-only PATCH bump
-  turns both repos red. The 1.1.1 → 1.2.0 bump (`projection_anomaly.kinds` gaining
-  `duplicate_task_accept` and `settled_handoff`) is the current one; the issues filed for the
-  preceding 1.1.0 → 1.1.1 bump, including `macp-sdk-typescript` #125, are closed. See
+  turns both repos red. The 1.2.0 → 1.3.0 bump (`proposal_disposition`, pinning Proposal mode's
+  per-proposal disposition and acceptance-tracking domain) is the current one; the issues filed
+  for the preceding 1.1.1 → 1.2.0 bump, including `macp-sdk-typescript` #135, are closed. See
   `schemas/parity/README.md` for the full section list and versioning rules.
 
 ## Conformance Test Suite

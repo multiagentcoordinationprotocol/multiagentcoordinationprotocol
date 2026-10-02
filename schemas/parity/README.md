@@ -38,6 +38,7 @@ rather than inventing a citation, and pinning the value here does not create one
 | `commitment_hash` | runtime, both SDKs | The commitment-hash format, pinned as an accept/reject behavior table (not a shared regex string, since `macp-runtime` implements this as a hand-written byte check, not a regex) |
 | `contribute_payload` | runtime, both SDKs | The `Contribute` payload's proto vs. legacy-JSON byte disambiguation: decode order, first-byte facts, and generated round-trip vectors, including the `collision_*` vectors at the value byte-lengths where a canonical-proto payload also parses as JSON |
 | `contribute_acceptance` | runtime only | Whether an empty `Contribute` payload is rejected — a runtime-only acceptance gate by design, not an unconfirmed value: both SDKs deliberately decode without raising instead of gating (see the section's own `source`) |
+| `proposal_disposition` | runtime, both SDKs | Proposal mode's per-proposal `mode_state_dispositions` (`Live`/`Withdrawn`) and projection `projection_status_values` (`open`/`rejected`/`withdrawn`), plus `acceptance_tracking` (`per_sender`) — acceptance is a separate per-sender relation, never denormalized onto the proposal record |
 
 Every section carries:
 - `applies_to` — which of `macp-runtime` / `macp-sdk-python` / `macp-sdk-typescript` MUST
@@ -235,4 +236,21 @@ patched over:
   produced. And the corpus asserts `Committed` as a
   value, not as a floor: no fixture replays anything after it. So this is the half that needs
   fixing rather than deciding, but it is defense in depth, not a broken wire contract.
-  Tracked as issue #145.
+  Tracked as issue #145. (Proposal mode's own `phase`/`Converged` gap, below, looks the
+  same at a glance but is a closed, three-way vocabulary disagreement rather than an
+  unpinned window — see issue #176.)
+
+  **Proposal mode's `phase` field is a different case entirely, and closed rather than
+  tracked.** Like Decision's, `macp-runtime`'s Proposal-mode state machine
+  (`crates/macp-modes/src/mode/proposal.rs`) carries a `phase` that reaches a `Converged`
+  value neither SDK's projection represents in its own `status`/`disposition` field. But
+  where the window above is an *unpinned slice inside an agreed vocabulary* — both SDKs
+  agree down to the message that moves `phase`, and only the boundary between two agreed
+  values is undocumented — Proposal's is a **three-way disagreement on the vocabulary
+  itself**: the runtime's `phase` enum has a value (`Converged`) categorically absent from
+  both SDKs' `status` domains, not merely unasserted by either of them. "What this
+  manifest does not pin, and why" above says a disagreement is inadmissible here, so this
+  is not an unpinned window awaiting resolution the way issue #145's is — it is closed:
+  `proposal_disposition.mode_state_dispositions` and `.projection_status_values`
+  deliberately exclude `phase`/`Converged` entirely, and `proposal_disposition`'s own
+  `source` field states this omission in the manifest itself. Tracked as issue #176.

@@ -4,20 +4,24 @@ the contribute_payload ones re-derivation alone cannot make.
 
 Scope note, because it changed: this file was written for `contribute_payload`
 alone, and the exhaustive-coverage claim below is still scoped to that tree. It
-is no longer the only thing here. Two AREAS elsewhere in the checker now carry
-mutations -- `retry.retryable_error_codes` and `check_own_contribute_error_paths` --
-which is **four** covered out-of-tree `errors.append` sites, not two: the retry
-membership loop is one site, and the guard contributes three of its four. They are as
-real as the rest; they are
+is no longer the only thing here. Three AREAS elsewhere in the checker now carry
+mutations -- `retry.retryable_error_codes`, `check_own_contribute_error_paths`,
+and (issue #176) `check_proposal_disposition` -- which is **seven** covered
+out-of-tree `errors.append` sites, not three: the retry membership loop is one
+site, the guard contributes three of its four, and `check_proposal_disposition`
+contributes three of its nine (A2, A3, A9 -- A8 also fires alongside A3 on the
+same mutation, but is not itself credited; see the credit-rule paragraph below).
+They are as real as the rest; they are
 just outside what the "every append is covered" count counts, for the reason
 spelled out under "The `contribute_payload` check tree" below.
 
 Do NOT read that as a policy this file follows. It is not "every assertion that
 would pass silently if deleted has a mutation" -- measured at this commit, the
-checker holds **35** `errors.append` sites and this file covers **19** of them.
-The 16 uncovered ones are all outside the contribute tree, and they include the
+checker holds **44** `errors.append` sites and this file covers **22** of them.
+The 22 uncovered ones are all outside the contribute tree, and they include the
 backoff-schedule assertion in the very same function as the covered retry
-membership check. Out-of-tree coverage here is opportunistic, added where a phase
+membership check, and six of `check_proposal_disposition`'s nine (A1, A4, A5,
+A6, A7, A8). Out-of-tree coverage here is opportunistic, added where a phase
 touched the assertion anyway. The only exhaustive claim is the tree one.
 
 `contribute_payload`'s `collision_*` vectors pin the value byte-lengths at
@@ -41,11 +45,16 @@ assertion; see the lines-vs-sites note below.)
 Every `errors.append` in the `contribute_payload` check tree is covered: 15
 error paths, covered by 17 of this script's mutations. Read "of" literally, and
 here is the arithmetic in full so no remainder is left unexplained: the script
-carries **22** mutations = 17 tree + 1 `retry` + 4 for the count guard. The two
+carries **25** mutations = 17 tree + 1 `retry` + 4 for the count guard + 3 for
+`check_proposal_disposition` (issue #176: A2, A3, A9 -- see below). The two
 numbers 15 and 17 are not equal and are not meant to be -- some appends need more
 than one mutation (see `check_first_byte_markers` above), and no mutation is
 *credited* with covering two appends, so the designated cover map stays
-one-directional and a deleted append always orphans a mutation.
+one-directional and a deleted append always orphans a mutation. That last rule
+is why `mutate_proposal_accepted_denormalized` credits only A3 even though
+running it also makes A8's count guard fire: its `expect` substring names A3's
+message, so deleting A8 alone would not turn this mutation red, which is the
+exact test the credit is supposed to pass.
 
 `check_own_contribute_error_paths()` in the checker pins that 15, and this file
 carries four mutations of a second kind for it, `SOURCE_MUTATIONS`, which edit the
@@ -614,6 +623,63 @@ def mutate_retryable_code_not_permanent(data: dict) -> str:
     return "retryable_error_codes"
 
 
+def mutate_proposal_accepted_denormalized(data: dict) -> str:
+    """Append "accepted" to projection_status_values -- literally the regression
+    issue #176 exists to catch: Proposal mode acceptance denormalized onto the
+    per-proposal record as a status value, rather than kept as the separate
+    per-sender relation RFC-MACP-0008 Section 5 rule 5 / Section 7 requires.
+
+    Trips TWO sites, not one, and the overlap is unavoidable: A8's count guard
+    also fires (3 -> 4), since the append grows the very list it counts. The
+    `expect` substring below names A3's message specifically -- the one
+    assertion that exists BECAUSE of this exact mistake, not the count guard,
+    which would fire on any unrelated growth too.
+    """
+    values = data["sections"]["proposal_disposition"]["projection_status_values"]
+    if "accepted" in values:
+        raise SystemExit(
+            'FAIL: "accepted" already in projection_status_values -- mutation is stale'
+        )
+    data["sections"]["proposal_disposition"]["projection_status_values"] = values + ["accepted"]
+    return "projection_status_values"
+
+
+def mutate_proposal_disposition_set_drift(data: dict) -> str:
+    """Narrow mode_state_dispositions to a proper subset of what the
+    Proposal-mode conformance corpus actually contains -- A2's set-equality
+    comparison, not A1's emptiness guard.
+
+    "Withdrawn" is dropped rather than renamed or invented, so the mutated
+    value is not accept/accepted-shaped and A3 has nothing to say about it --
+    measured: isolated to A2 alone.
+    """
+    pd = data["sections"]["proposal_disposition"]
+    if pd["mode_state_dispositions"] != ["Live", "Withdrawn"]:
+        raise SystemExit(
+            'FAIL: mode_state_dispositions is not ["Live", "Withdrawn"] -- mutation is stale'
+        )
+    pd["mode_state_dispositions"] = ["Live"]
+    return "mode_state_dispositions"
+
+
+def mutate_proposal_acceptance_tracking_flipped(data: dict) -> str:
+    """Flip acceptance_tracking to the other schema-legal value.
+
+    This is the exact mutation the Phase 1 verification gate used to discover
+    A9 was missing: "per_proposal" passes macp-parity-contract.schema.json's
+    enum (both values are legal there), so only check-parity-contract.py's own
+    A9 -- not the schema -- can catch it. Isolated to A9 alone: nothing else in
+    check_proposal_disposition reads this field.
+    """
+    pd = data["sections"]["proposal_disposition"]
+    if pd["acceptance_tracking"] != "per_sender":
+        raise SystemExit(
+            'FAIL: acceptance_tracking is not "per_sender" -- mutation is stale'
+        )
+    pd["acceptance_tracking"] = "per_proposal"
+    return "acceptance_tracking"
+
+
 MUTATIONS = (
     (
         "a retryable error code is not a member of error_codes.permanent",
@@ -704,6 +770,21 @@ MUTATIONS = (
         "a vector was removed, dropping the total below the pinned count",
         mutate_vector_count_guard,
         "contribute_payload.vectors, found",
+    ),
+    (
+        "Proposal mode acceptance denormalized onto projection_status_values",
+        mutate_proposal_accepted_denormalized,
+        "accept/accepted-shaped value",
+    ),
+    (
+        "proposal_disposition.mode_state_dispositions drifts from the corpus",
+        mutate_proposal_disposition_set_drift,
+        "does not match the disposition values found in the Proposal-mode conformance corpus",
+    ),
+    (
+        "acceptance_tracking flipped to the other schema-legal value",
+        mutate_proposal_acceptance_tracking_flipped,
+        "never denormalized onto the proposal record",
     ),
 )
 
