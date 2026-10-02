@@ -66,6 +66,16 @@ Every failure is accumulated and reported together before exiting non-zero
 (this repo's check-prose.py / check-parity-contract.py convention) -- one bad
 value must never mask another.
 
+One check here is about this script rather than the schema/proto:
+check_own_assertion_count() parses this file's own source -- under the same
+MACP_ROOT-relative ROOT, which is what makes it mutation-testable -- and pins
+how many fail()/errors.append(...) call sites this module holds, module-wide.
+scripts/check-envelope-coverage-test.py prints a claim that every one of them
+(except one documented exception) is covered by a mutation, and nothing
+previously made that claim fail when a site was added without one. Same
+idiom as scripts/check-parity-contract.py's check_own_contribute_error_paths()
+and, before that, scripts/check-prose.py's check_check_count().
+
 Run: `python3 scripts/check-envelope-coverage.py` (exits non-zero on any
 mismatch, missing $defs entry, uncovered field, unclassified message, or
 unrecognised construct inside an in-scope message).
@@ -73,6 +83,7 @@ unrecognised construct inside an in-scope message).
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -103,6 +114,12 @@ EXPECTED_CORE_PAYLOAD_COUNT = 7
 JSON_ONLY_DEFS = {
     "Base64Bytes": "JSON encoding of proto `bytes` (RFC-MACP-0001 Section 10.3); not a message",
 }
+
+# Pins the number of fail()/errors.append(...) call sites in this file's own
+# source, MODULE-WIDE -- re-derive by measurement (see
+# check_own_assertion_count's docstring and scripts/check-envelope-coverage-
+# test.py), never hand-compute or copy a number from a plan.
+EXPECTED_FAIL_SITES = 32
 
 # EMPTY ON PURPOSE, and the emptiness is the point. A (message, field) pair
 # here declares a proto field deliberately absent from the canonical JSON
@@ -785,6 +802,110 @@ def check_classification(
     return errors
 
 
+def check_own_assertion_count() -> list[str]:
+    """Pin the number of `fail(...)`/`errors.append(...)` call sites in this
+    checker's own source, MODULE-WIDE rather than call-graph-anchored.
+
+    Modelled directly on scripts/check-parity-contract.py's
+    check_own_contribute_error_paths() -- same read-under-ROOT indirection
+    (what makes this mutation-testable: scripts/check-envelope-coverage-
+    test.py points MACP_ROOT at a copy, so the copy's source is what gets
+    parsed), same "why not redundant with the self-test" reasoning (that
+    file enumerates the mutations it HAS, not the sites that exist, so a
+    site added with no mutation would leave its printed coverage claim
+    false), same refusal to accept a measured count of zero.
+
+    WHY MODULE-WIDE AND NOT A CALL-GRAPH WALK FROM ONE ANCHOR, UNLIKE THE
+    FUNCTION THIS IS MODELLED ON. check_own_contribute_error_paths() scopes
+    to ONE check among several check-parity-contract.py makes (the
+    contribute_payload tree), because that file has other, unrelated
+    sections outside it. This file has no such second area: every function
+    in it exists to serve the one coverage check issue #173 asked for, so
+    there is no sub-tree worth isolating from the rest -- the right scope is
+    the whole module, and a hardcoded function-name tuple would reintroduce
+    the exact decay this guard exists to stop (a new top-level function
+    added with its own fail-reporting call, silently outside the counted
+    set).
+
+    WHY BOTH `fail(...)` AND `errors.append(...)`. This file reports
+    failures two ways: a handful of top-level guard clauses that short-
+    circuit before any per-check `errors` list exists call the module-level
+    `fail()` helper directly (unreadable/missing files, a schema that is not
+    a JSON object, a message defined twice, an unrecognised proto
+    construct); every Check function instead builds its own local `errors`
+    list and returns it for `main()` to extend into the global `ERRORS`.
+    Both are the same semantic act -- "report one failure" -- so both are
+    counted; counting only one name would silently exempt whichever check
+    functions use the other spelling.
+
+    ONE SITE IS DELIBERATELY LEFT WITHOUT A MUTATION, and this guard does not
+    hide that: `parse_proto`'s `except OSError` branch fires only for a proto
+    file that EXISTS but cannot be READ (a permission bit), since a MISSING
+    proto file is caught earlier, by `main`'s own `is_file()` guard, before
+    `parse_proto` is ever called. Reaching it needs `chmod`, and this file's
+    plan deliberately has no root-skip machinery for that (unlike
+    scripts/check-prose-test.py) -- so, following scripts/check-parity-
+    contract.py's own precedent of leaving an analogous OSError half
+    uncovered "for a harness reason rather than a principled one", this
+    site is the one exception to "every site has a mutation", stated here
+    rather than hidden.
+
+    THIS FUNCTION'S OWN fail-reporting CALLS ARE NOT IN THE COUNT IT PINS --
+    same rule as the function it is modelled on, for the same reason: a
+    module-wide walk that was not careful would count its own
+    `errors.append(...)` calls below, making the pin self-referential. The
+    walk explicitly skips this function's own top-level body.
+    """
+    errors: list[str] = []
+    src_path = ROOT / "scripts" / "check-envelope-coverage.py"
+    try:
+        tree = ast.parse(src_path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError) as exc:
+        errors.append(
+            "check-envelope-coverage.py could not be read or parsed at %s, so the "
+            "number of fail()/errors.append(...) call sites in it is unknown: %s"
+            % (src_path, exc)
+        )
+        return errors
+
+    found = 0
+    for top in tree.body:
+        if isinstance(top, ast.FunctionDef) and top.name == "check_own_assertion_count":
+            continue
+        for node in ast.walk(top):
+            if not isinstance(node, ast.Call):
+                continue
+            if (
+                isinstance(node.func, ast.Attribute) and node.func.attr == "append"
+                and isinstance(node.func.value, ast.Name) and node.func.value.id == "errors"
+            ):
+                found += 1
+            elif isinstance(node.func, ast.Name) and node.func.id == "fail":
+                found += 1
+
+    if found == 0:
+        errors.append(
+            "check-envelope-coverage.py's own source contains no fail()/"
+            "errors.append(...) call at all -- a count of 0 is never right for a "
+            "checker whose whole job is to report mismatches, so this is a broken "
+            "measurement rather than a real result"
+        )
+        return errors
+
+    if found != EXPECTED_FAIL_SITES:
+        errors.append(
+            "check-envelope-coverage.py's own source has %d fail()/errors.append(...) "
+            "call site(s), but EXPECTED_FAIL_SITES pins %d. "
+            "check-envelope-coverage-test.py prints a claim that every one of them "
+            "(except the one documented exception) is covered by a mutation; adding "
+            "or removing a site without touching that file would leave the claim "
+            "printed and false. Add the mutation, then bump the constant -- in that "
+            "order." % (found, EXPECTED_FAIL_SITES)
+        )
+
+    return errors
+
+
 def main() -> int:
     for path in PROTO_FILES:
         if not path.is_file():
@@ -793,6 +914,8 @@ def main() -> int:
         for e in ERRORS:
             print("FAIL %s" % e, file=sys.stderr)
         return 1
+
+    ERRORS.extend(check_own_assertion_count())
 
     core_messages, core_unknown, core_proto_text = parse_proto(CORE_PROTO)
     envelope_messages, envelope_unknown, _ = parse_proto(ENVELOPE_PROTO)
