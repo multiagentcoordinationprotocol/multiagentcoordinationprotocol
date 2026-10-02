@@ -1,6 +1,6 @@
 .PHONY: prose-check prose-check-selftest parity-contract-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors parity-contract check-indexes clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync envelope-coverage envelope-coverage-selftest
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -24,6 +24,8 @@ help:
 	@echo "  make prose-check-selftest  Prove check-prose.py survives an unreadable file (issue #129)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
 	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
+	@echo "  make envelope-coverage     Check envelope schema covers core.proto's Core payloads (issue #173)"
+	@echo "  make envelope-coverage-selftest  Prove the envelope-coverage assertions reject what they promise"
 	@echo ""
 	@echo "Code Generation (per-language into packages/):"
 	@echo "  make gen-go                Generate Go into packages/proto-go/"
@@ -44,7 +46,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync envelope-coverage envelope-coverage-selftest
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -115,6 +117,16 @@ sync-protos:
 check-proto-sync:
 	@echo "Checking proto package sync..."
 	@./scripts/sync-proto-packages.sh --check
+
+envelope-coverage:
+	@echo "Checking envelope schema covers core.proto's Core payloads..."
+	@python3 scripts/check-envelope-coverage.py
+
+# Regression proof (issue #173): every assertion in check-envelope-coverage.py
+# must reject what it promises -- mutate a copy, run the real checker against it
+envelope-coverage-selftest:
+	@echo "Checking the envelope-coverage assertions actually bite..."
+	@python3 scripts/check-envelope-coverage-test.py
 
 # Compile protobuf to validate syntax
 proto-compile:
