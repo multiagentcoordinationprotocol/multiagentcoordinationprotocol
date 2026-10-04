@@ -8,7 +8,7 @@ Under the **direct-agent-auth** architecture:
 - The control-plane **never** emits envelopes on behalf of agents — it is a scenario-agnostic observer.
 - The initiator agent of a session calls `Send(SessionStart)` itself; non-initiator participants open their own `StreamSession` to receive events and emit their own envelopes.
 
-This satisfies RFC-MACP-0004 §4 (sender MUST be derived from authenticated identity) and RFC-MACP-0001 §5.3 (no MACP bypass). The reference deployment (`macp-playground`) documents its own side of this — bootstrap files, JWT minting, policy registration — in [`docs/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-playground/blob/main/docs/direct-agent-auth.md); the SDKs document the agent-side patterns (initiator/non-initiator code, the `expected_sender` guardrail, `session.cancel()`) in [`macp-sdk-python/docs/guides/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-python/blob/main/docs/guides/direct-agent-auth.md) and [`macp-sdk-typescript/docs/guides/authentication.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript/blob/main/docs/guides/authentication.md).
+This satisfies RFC-MACP-0004 §3 (sender MUST be derived from authenticated identity) and RFC-MACP-0001 §5.3 (no MACP bypass). The reference deployment (`macp-playground`) documents its own side of this — bootstrap files, JWT minting, policy registration — in [`docs/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-playground/blob/main/docs/direct-agent-auth.md); the SDKs document the agent-side patterns (initiator/non-initiator code, the `expected_sender` guardrail, `session.cancel()`) in [`macp-sdk-python/docs/guides/direct-agent-auth.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-python/blob/main/docs/guides/direct-agent-auth.md) and [`macp-sdk-typescript/docs/guides/authentication.md`](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript/blob/main/docs/guides/authentication.md).
 
 This page shows two ways to get a Bearer credential to your agent — pick whichever matches your scenario-producing tier:
 
@@ -125,24 +125,26 @@ Skip this step if you're wiring an agent into your own scenario-producing tier �
   name: 'My New Agent',
   role: 'evaluator',
   description: 'What this agent evaluates.',
-  framework: 'python', // or 'langgraph' | 'langchain' | 'crewai' | 'node'
+  framework: 'custom', // or 'langgraph' | 'langchain' | 'crewai'
   supportedScenarioRefs: ['fraud/high-value-new-device@1.0.0'],
 }
 ```
 
-2. Create a matching manifest at `agents/manifests/my-new-agent.json`:
+2. Create a matching launch manifest at `agents/manifests/my-new-agent.json`:
 
 ```json
 {
   "id": "my-new-agent",
   "name": "My New Agent",
-  "framework": "python",
+  "framework": "custom",
   "version": "1.0.0",
   "entrypoint": { "type": "python_file", "value": "agents/my_new_agent/main.py" },
   "host": { "python": "python3", "cwd": ".", "env": {}, "startupTimeoutMs": 30000 },
   "macp": { "role": "evaluator", "supportedMessageTypes": ["Evaluation"], "capabilities": [] }
 }
 ```
+
+This `AgentManifest` (`macp-playground`'s own `src/hosting/contracts/manifest.types.ts` shape — framework, entrypoint, host process config) is a different document from the protocol's `AgentManifest`: the discovery/capability document defined in [RFC-MACP-0005 §3 (Manifest Structure)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md) and [`schemas/json/macp-agent-manifest.schema.json`](../schemas/json/macp-agent-manifest.schema.json) (see [`docs/discovery.md`](discovery.md)/[`docs/agent-manifest-schema.md`](agent-manifest-schema.md)). The two share a name and nothing else — neither field set overlaps the other.
 
 Then add the agent to the scenario's `participants` list in its YAML.
 
@@ -216,6 +218,21 @@ Same non-initiator behavior as Python: `agent.fromBootstrap()` only drives `Sess
 ### Cancellation (Option A — RFC-pure default)
 
 Both SDKs auto-bind a local HTTP `POST <cancel_callback.path>` listener for you on the bootstrap path — you don't need to hand-roll one. They bind at different moments, which matters only if your integration never starts the participant: the Python SDK binds while building the participant from the bootstrap, so the listener is live as soon as you hold the object, whereas the TypeScript SDK stores the config at construction and starts the listener when the participant begins running. A TypeScript integration that constructs a participant and never runs it therefore has no listener auto-bound (it can still attach one itself), and the troubleshooting row below is what that looks like from the runtime's side. (Either SDK's binding timing is a library choice, not a protocol requirement — see `sdk-parity.md`'s `## MAY Implement`.) The control-plane's UI-triggered cancel calls that listener; the SDK responds by calling `session.cancel(reason)` on the runtime with its own identity. Runtime enforces RFC-MACP-0001 §7.3 (Termination) — only the initiator (or a policy-delegated role) may cancel. See the SDK guides linked above if you need to override the default cancel behavior.
+
+### Suspension and Resume
+
+Suspension and resume are runtime/control-plane-driven, not something your agent code
+triggers or reacts to directly — neither SDK's agent framework exposes an `on_suspend`/`on_resume`
+handler. While a session is **SUSPENDED** the runtime rejects Mode messages (it is not OPEN);
+your agent's `send`/`evaluate`/`vote` calls during that window fail the same way a late message to
+a terminal session would, and normal handling resumes once the session is back to OPEN. See
+[`docs/lifecycle.md`](lifecycle.md#suspension-and-resume) for the full model.
+
+The one piece an **initiator** agent configures is `max_suspend_ms` — an optional per-session cap
+on cumulative suspended duration (0/absent selects the runtime default). Both SDKs read it from
+the bootstrap document's `initiator.session_start.max_suspend_ms` field identically; pass it to
+your own `start_session()`/`startSession()` call if you're not using a bootstrap-driven initiator.
+See [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md).
 
 ---
 
