@@ -22,7 +22,7 @@ stateDiagram-v2
   SUSPENDED --> OPEN: ResumeSession (TTL restored)
   OPEN --> RESOLVED: first accepted terminal message
   OPEN --> EXPIRED: TTL / deterministic runtime policy
-  SUSPENDED --> EXPIRED: banked TTL / MAX_SUSPEND_MS exceeded
+  SUSPENDED --> EXPIRED: banked TTL elapses / session-bound suspension cap exceeded
   OPEN --> CANCELLED: CancelSession accepted
   SUSPENDED --> CANCELLED: CancelSession accepted
   RESOLVED --> [*]
@@ -54,15 +54,15 @@ All validation, authentication, authorization, deduplication, session-state chec
 
 ## Cancellation Authority
 
-The default cancellation authority is the session initiator. Deployments may extend this through policy, but cancellation always requires authentication and authorization. An accepted `CancelSession` transitions the session to the terminal **CANCELLED** state (distinct from EXPIRED) and appends a `SessionCancel` annotation to the accepted history.
+The default cancellation authority is the session initiator. Deployments may extend this through policy, but cancellation always requires authentication and authorization. An accepted `CancelSession` transitions the session to the terminal **CANCELLED** state (distinct from EXPIRED) and appends a `SessionCancel` annotation to the accepted history. This is an **internal annotation**: it consumes no passive-subscribe ordinal and is not delivered on a `StreamSession` subscribe stream ([RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md)).
 
 ## Suspension and Resume
 
-An OPEN session can be paused and later resumed via the `SuspendSession` and `ResumeSession` control-plane RPCs (same authority model as `CancelSession`; see [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md)). While **SUSPENDED**, the session rejects Mode messages (it is not OPEN) and its TTL is *banked* rather than running: suspend records the remaining time, resume restores it (`SessionResumePayload.banked_ms`). A maximum-suspension cap bounds indefinite pauses — exceeding it expires the session. The cap is **session-bound**, not a fixed runtime constant: it is resolved at `SessionStart` from `SessionStartPayload.max_suspend_ms` (0 or absent selects the runtime's configured default), and the resolved value MUST be recorded on the session for replay. Because suspend/resume are recorded events on the append-only history, a suspended-then-resumed session replays to the identical terminal state ([RFC-MACP-0003 §2](../rfcs/RFC-MACP-0003-determinism.md)).
+An OPEN session can be paused and later resumed via the `SuspendSession` and `ResumeSession` control-plane RPCs (same authority model as `CancelSession`; see [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md)). While **SUSPENDED**, the session rejects Mode messages (it is not OPEN) and its TTL is *banked* rather than running: suspend records the remaining time, resume restores it (`SessionResumePayload.banked_ms`). A maximum-suspension cap bounds indefinite pauses — exceeding it expires the session. The cap is **session-bound**, not a fixed runtime constant: it is resolved at `SessionStart` from `SessionStartPayload.max_suspend_ms` (0 or absent selects the runtime's configured default), and the resolved value MUST be recorded on the session for replay. Because suspend/resume are recorded events on the append-only history, a suspended-then-resumed session replays to the identical terminal state ([RFC-MACP-0003 §2](../rfcs/RFC-MACP-0003-determinism.md)). Like `SessionCancel`, these are **internal annotations**: they consume no passive-subscribe ordinal and are not delivered on a `StreamSession` subscribe stream ([RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md)). `SessionSuspendPayload` and `SessionResumePayload` are defined in [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json); single-envelope examples are at [`examples/json/session_suspend.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/json/session_suspend.json) and [`examples/json/session_resume.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/json/session_resume.json).
 
 ## Commitment Supersession
 
-A `CommitmentPayload` may carry a `supersedes` reference (`{session_id, commitment_hash}`) marking it as a revision of an earlier commitment. Since a RESOLVED session accepts no further messages, a superseding commitment lives in a **new** session pointing back at the prior one — supersession is inherently cross-session. The runtime only checks structural well-formedness and this-session authority; chain resolution and supersession policy are consumer governance ([RFC-MACP-0001 §7.3.1](../rfcs/RFC-MACP-0001-core.md)).
+A `CommitmentPayload` may carry a `supersedes` reference (`{session_id, commitment_hash}`) marking it as a revision of an earlier commitment. Since a RESOLVED session accepts no further messages, a superseding commitment lives in a **new** session pointing back at the prior one — supersession is inherently cross-session. The runtime only checks structural well-formedness and this-session authority; chain resolution and supersession policy are consumer governance ([RFC-MACP-0001 §7.3.1](../rfcs/RFC-MACP-0001-core.md)). `CommitmentPayload.supersedes` and the `CommitmentRef` shape it references are defined in [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
 
 ## Terminal races
 

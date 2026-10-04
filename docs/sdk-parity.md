@@ -11,7 +11,10 @@ Every official MACP SDK MUST provide:
 - **MacpStream** — bidirectional streaming wrapper for `StreamSession`
 - **Authentication** — dev-agent and bearer-token modes, both bearer-only (no identity header: no
   supported runtime reads one, and `macp-runtime` carries tests asserting it rejects or ignores the
-  header it once accepted)
+  header it once accepted — four `#[cfg(test)]` cases in `crates/macp-auth/src/security.rs`
+  (e.g. `dev_sender_header_rejected_without_chain`, `dev_sender_header_ignored_when_not_allowed`,
+  `bearer_token_takes_priority_over_dev_header`) plus
+  `src/server.rs::initialize_instructions_do_not_advertise_removed_header`)
 
 ### Session Helpers
 - One session class per standards-track mode (Decision, Proposal, Task, Handoff, Quorum)
@@ -148,17 +151,21 @@ hadn't been confirmed for either. See #135's closing comment for the full per-pa
 the follow-up issues tracking each SDK's actual rename work.
 
 Issue #177 applied the same rule to a single pair found later: `macp-sdk-python`'s
-`ProposalRecord.proposer` (`src/macp_sdk/proposal.py:28`) vs `macp-sdk-typescript`'s
-`ProposalRecord.sender` (`src/projections/proposal.ts:11`) — both set from `envelope.sender`
-on `Proposal`/`CounterProposal`, confirming R0. Ruled: Python renames `proposer` → `sender`.
+`ProposalRecord.proposer` vs `macp-sdk-typescript`'s `ProposalRecord.sender`
+(`src/projections/proposal.ts:11`) — both set from `envelope.sender` on
+`Proposal`/`CounterProposal`, confirming R0. Ruled: Python renames `proposer` → `sender`.
 R1 governs — the concept both symbols name is the canonical `Envelope.sender` field each SDK
 copies the value from — and R2 independently agrees: Python's own sibling records in the same
 file (`ProposalAcceptRecord.sender`, `ProposalRejectRecord.sender`) already use `sender`,
 making `proposer` the lone outlier against Python's own file. `macp-runtime`'s internal Rust
 struct (`crates/macp-modes/src/mode/proposal.rs:56`) also uses `proposer` — recorded as a
 third-voter dissent, not overridden, per the same no-public-symbol-parity-obligation reasoning
-#135 applied to its own runtime dissent (item 5). See #177's closing comment and
-`macp-sdk-python`'s routed follow-up issue for the rename itself.
+#135 applied to its own runtime dissent (item 5). `macp-sdk-python`'s routed follow-up issue
+(#120) is closed and the rename has landed: `ProposalRecord.sender` is now the real field
+(`src/macp_sdk/proposal.py:28`), and `proposer` is kept as a deprecated, read-only,
+instance-level property alias that emits a `DeprecationWarning` on access. (A code comment on
+the alias says it is removed at the SDK's next major version; that horizon is not itself an
+enforced or tested constraint.) See #177's closing comment for the full ruling.
 
 ## Shape Gaps
 
@@ -208,8 +215,9 @@ fields, with status/progress/assignee tracked in three separate dicts on the pro
 inconsistent with Python's own `HandoffRecord`/`ProposalRecord` (both already carry derived
 state on the record, each keyed by id) and with `macp-sdk-typescript`'s combined `TaskRecord`.
 Ruled: `macp-sdk-python` enriches its per-task record with the derived fields, matching its own
-other projections. See #165's closing comment for the full evidence table and the routed
-follow-up issue.
+other projections. See #165's closing comment for the full evidence table. The routed
+follow-up issue (#108) is closed: the enrichment has landed, bundled with the
+`TaskRequestRecord` → `TaskRecord` rename.
 
 Issue #176 applied the third clause above to Proposal mode's acceptance tracking, settled
 upstream as `macp-sdk-python` issue #112. `macp-sdk-python`'s `ProposalRecord.status`
@@ -289,9 +297,12 @@ this repo's issue #176 for the parity-manifest follow-up.
   section": `verify-parity` is a byte-level diff in both SDKs, and each additionally hard-asserts the
   exact `contract_version` string as a deliberate tripwire, so even an annotation-only PATCH bump
   turns both repos red. The 1.2.0 → 1.3.0 bump (`proposal_disposition`, pinning Proposal mode's
-  per-proposal disposition and acceptance-tracking domain) is the current one; the issues filed
-  for the preceding 1.1.1 → 1.2.0 bump, including `macp-sdk-typescript` #135, are closed. See
-  `schemas/parity/README.md` for the full section list and versioning rules.
+  per-proposal disposition and acceptance-tracking domain) is the most recent one; its re-vendor
+  issues — `macp-sdk-python` #146 and `macp-sdk-typescript` #156, both titled "Re-vendor parity
+  contract 1.3.0: assert `ProposalRecord.status` against the new `proposal_disposition`
+  section" — are closed, as are the issues filed for the preceding 1.1.1 → 1.2.0 bump, including
+  `macp-sdk-typescript` #135. See `schemas/parity/README.md` for the full section list and
+  versioning rules.
 
 ## Conformance Test Suite
 
