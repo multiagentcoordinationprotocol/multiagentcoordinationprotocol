@@ -139,7 +139,7 @@ Skip this step if you're wiring an agent into your own scenario-producing tier �
   "framework": "custom",
   "version": "1.0.0",
   "entrypoint": { "type": "python_file", "value": "agents/my_new_agent/main.py" },
-  "host": { "python": "python3", "cwd": ".", "env": {}, "startupTimeoutMs": 30000 },
+  "host": { "cwd": ".", "env": {}, "startupTimeoutMs": 30000 },
   "macp": { "role": "evaluator", "supportedMessageTypes": ["Evaluation"], "capabilities": [] }
 }
 ```
@@ -221,18 +221,21 @@ Both SDKs auto-bind a local HTTP `POST <cancel_callback.path>` listener for you 
 
 ### Suspension and Resume
 
-Suspension and resume are runtime/control-plane-driven, not something your agent code
-triggers or reacts to directly — neither SDK's agent framework exposes an `on_suspend`/`on_resume`
-handler. While a session is **SUSPENDED** the runtime rejects Mode messages (it is not OPEN);
-your agent's `send`/`evaluate`/`vote` calls during that window fail the same way a late message to
-a terminal session would, and normal handling resumes once the session is back to OPEN. See
+Neither SDK's agent framework exposes an `on_suspend`/`on_resume` handler — there's nothing to
+register a reactive callback for, the way `on_phase_change`/`on_terminal` work. Either SDK does
+let you trigger suspension directly, same authority model as `session.cancel(reason)`:
+`session.suspend(reason)` / `session.resume(reason)`. While a session is **SUSPENDED** the
+runtime rejects Mode messages (it is not OPEN); your agent's `send`/`evaluate`/`vote` calls during
+that window fail the same way a late message to a terminal session would, and normal handling
+resumes once the session is back to OPEN. See
 [`docs/lifecycle.md`](lifecycle.md#suspension-and-resume) for the full model.
 
 The one piece an **initiator** agent configures is `max_suspend_ms` — an optional per-session cap
 on cumulative suspended duration (0/absent selects the runtime default). Both SDKs read it from
-the bootstrap document's `initiator.session_start.max_suspend_ms` field identically; pass it to
-your own `start_session()`/`startSession()` call if you're not using a bootstrap-driven initiator.
-See [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md).
+the bootstrap document's `initiator.session_start.max_suspend_ms` field identically; pass it
+yourself — `participant.start_session(max_suspend_ms=...)` (Python) or
+`session.start({ maxSuspendMs: ... })` (TypeScript) — if you're not using a bootstrap-driven
+initiator. See [RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md).
 
 ---
 
