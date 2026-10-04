@@ -12,13 +12,26 @@ Modes (RFC-MACP-0002) define coordination semantics but intentionally do not pre
 
 ## Policy Identifiers
 
-Policy identifiers use the form `policy.{namespace}.{name}`:
+Policy identifiers use the form `policy.{namespace}.{name}`, per
+[RFC-MACP-0012 Section 2](../rfcs/RFC-MACP-0012-policy.md):
 
 - `policy.default` — the built-in default policy (reserved)
 - `policy.fraud.majority-veto` — a domain-specific policy
 - `policy.lending.unanimous` — another domain-specific policy
 
-The `policy.default` identifier is reserved and always pre-registered. Registered policy identifiers are immutable — to change governance rules, register a new policy with a new identifier. This ensures that `policy_version` in historical sessions always resolves to the same rules.
+The `policy.default` identifier is reserved and always pre-registered. The whole
+`policy.std.` namespace is also reserved — as a **collision guarantee, not a provisioning
+requirement**: a runtime MAY pre-register any subset of the built-in profiles (or none), but
+if it does, the rules MUST match the canonical definition exactly; short unnamespaced forms
+such as `policy.majority` are explicitly **not** reserved. See
+[RFC-MACP-0012 Section 2.2](../rfcs/RFC-MACP-0012-policy.md) for the full reservation rules,
+[RFC-MACP-0012 Section 5.2](../rfcs/RFC-MACP-0012-policy.md) for the canonical definitions of
+the three reserved `policy.std.*` profiles (`majority`, `supermajority`, `unanimous`), and
+[`registries/policies.md`](../registries/policies.md) for the authoritative reserved-identifier
+table, which also lists the per-mode rule-schema set this document's own table (below) covers
+with a distinct Key Parameters column. Registered policy identifiers are immutable — to change
+governance rules, register a new policy with a new identifier. This ensures that
+`policy_version` in historical sessions always resolves to the same rules.
 
 ## Policy Descriptor
 
@@ -136,6 +149,13 @@ negatively on an empty tally, at every `schema_version` from `2` onward: if the 
 `objection_handling.critical_objection_action` to `finalize_decline` and a critical `Objection` is
 standing, the decline is **objection-authorized** — the objection is itself the attributable
 dissent the decline guard exists to require, so neither the guard nor the empty-tally rule applies.
+`critical_objection_action` is a three-value enum (`deny` | `finalize_decline` | `hold`, default
+`deny`): `deny` and `hold` are **observationally identical** — both reject the `Commitment` with
+`POLICY_DENIED` and leave the session `OPEN`, and a runtime MUST NOT expose a wire-visible
+distinction between them. `hold` is purely an operator-facing annotation on the denial, not a
+distinct protocol outcome, which is why the conformance corpus pins `deny` and `finalize_decline`
+only — a `hold` fixture would assert nothing a `deny` fixture does not already assert. See
+[RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md).
 The guard is waived **whole**: its `commitment.require_vote_quorum` conjunct goes with it, as do the
 `evaluation.*` prerequisites, because all three gate outcomes that derive their authority from the
 voting result and this decline derives none. A runtime that keeps the quorum applying here
@@ -158,6 +178,17 @@ even when a newer one exists. Implementations MUST keep this arm and MUST NOT ap
 **If you are writing a new policy, declare `schema_version: 3`.** If you must stay on `1` or `2` and
 want the voting algorithm to be binding, set `commitment.require_vote_quorum` to `true` — that is the
 only remedy available before version `3`.
+
+Two companion rules govern `commitment.require_vote_quorum` and `voting.quorum` themselves, both
+normative at [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md). First,
+**`voting.quorum` is inert on its own** — it states a participation bar but gates nothing unless
+`commitment.require_vote_quorum` is `true`; a policy that sets one without the other imposes no
+participation requirement. Second, under `schema_version ≥ 3` the *only* effect
+`require_vote_quorum` still has is that same participation floor (the algorithm is already binding
+on its own at that version). So when the floor is effectively zero — `voting.quorum` absent, or an
+explicit `value: 0` under either `count` or `percentage` — `require_vote_quorum: true` becomes
+equivalent to `false`: the flag gates nothing. This is an authoring smell, not an admission error —
+a runtime MUST NOT reject the descriptor and MUST NOT substitute a floor the policy did not declare.
 
 ## Default Policy
 
@@ -203,7 +234,14 @@ Policies are managed through five gRPC RPCs on `MACPRuntimeService`:
 | `ListPolicies` | List registered policies, optionally filtered by mode |
 | `WatchPolicies` | Stream policy registry change notifications |
 
-Registration constraints: `policy.default` cannot be registered or unregistered; `policy_id` must be unique; `rules` must validate against the target mode's rule schema.
+Registration constraints, summarized — see
+[RFC-MACP-0012 Section 7](../rfcs/RFC-MACP-0012-policy.md) for the full normative list:
+`policy.default` cannot be registered or unregistered, and a `policy_id` under the reserved
+`policy.std.` namespace cannot be registered unless it is the canonical definition for that
+identifier, nor unregistered once pre-registered; `policy_id` must otherwise be unique. Rule-schema
+validation against `rules` is an **admission-time** gate only — it runs when a descriptor enters
+the runtime and never again, so a later tightening of a rule schema bars *new* admissions without
+retroactively invalidating a descriptor already stored.
 
 Canonical proto definitions: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
 

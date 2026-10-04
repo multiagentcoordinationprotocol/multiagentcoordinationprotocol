@@ -9,9 +9,9 @@
 
 ## What belongs in the main repo
 
-The main MACP RFC repo should contain only coordination primitives that are broadly reusable across runtimes. In practice, that means a small standard mode set:
+The main MACP RFC repo should contain only coordination primitives that are broadly reusable across runtimes, per [RFC-MACP-0002 §2](../rfcs/RFC-MACP-0002-modes.md). In practice, that means a small standard mode set:
 
-| Mode | Use it when you need | Participant model | Determinism | RFC |
+| Mode | Use it when you need | Participant model (§5) | Determinism (§7) | RFC |
 |------|----------------------|-------------------|-------------|-----|
 | `macp.mode.decision.v1` | structured choice among proposals | declared | semantic-deterministic | [RFC-MACP-0007](../rfcs/RFC-MACP-0007-decision-mode.md) |
 | `macp.mode.proposal.v1` | offer / counteroffer negotiation | peer | semantic-deterministic | [RFC-MACP-0008](../rfcs/RFC-MACP-0008-proposal-mode.md) |
@@ -35,11 +35,11 @@ They are primitive enough to be reused across products and domains, but concrete
 
 ## Why Broadcast is not a main-repo mode
 
-MACP already has **Signals** for ambient, non-binding dissemination. A broadcast-style session mode usually fights the core MACP model because Sessions are supposed to be bounded and convergent. If you need one-to-many notifications, prefer Signals or an external pub/sub system. If you later discover a bounded acknowledgment workflow that truly needs Session semantics, that mode can begin in an incubator repo.
+MACP already has **Signals** for ambient, non-binding dissemination. A broadcast-style session mode usually fights the core MACP model because Sessions are supposed to be bounded and convergent. If you need one-to-many notifications, prefer Signals or an external pub/sub system. If you later discover a bounded acknowledgment workflow that truly needs Session semantics, that mode can begin in an incubator repo, per [RFC-MACP-0002 §2](../rfcs/RFC-MACP-0002-modes.md).
 
 ## Common design rules for standards-track modes
 
-Standards-track modes in the main repo should all do the following:
+Standards-track modes in the main repo should all do the following. This is a summary; [RFC-MACP-0002 §9](../rfcs/RFC-MACP-0002-modes.md) is the normative nine-item list.
 
 1. Bind the participant set and version surface clearly at `SessionStart`.
 2. Define explicit validation rules for message ordering and references.
@@ -47,6 +47,16 @@ Standards-track modes in the main repo should all do the following:
 4. Declare one determinism class.
 5. Provide canonical schemas and at least one transcript.
 6. Avoid embedding product-specific workflows into the base mode.
+
+## Error codes for Mode-rule breaches
+
+When a session-scoped message breaches a Mode's validation rules, the runtime maps the breach to one of three error codes, per [RFC-MACP-0002 §6.1 (Error codes for Mode-rule breaches)](../rfcs/RFC-MACP-0002-modes.md):
+
+- `FORBIDDEN` — the sender is not authorized to emit this message type under the Mode's participant/authority rules.
+- `POLICY_DENIED` — the message passes Mode validation but fails evaluation against a bound governance policy. This is not itself a Mode-rule breach; it is listed here because it sits in the same decision tree.
+- `INVALID_ENVELOPE` — every other Mode validation-rule breach (ordering, reference, schema, or participant-set violations not covered by the two codes above).
+
+See [`registries/error-codes.md`](../registries/error-codes.md) for the full code registry.
 
 ## Quick selection guide
 
@@ -60,9 +70,11 @@ Use this rule of thumb:
 
 ## Standard-mode summaries
 
+Across all five modes, only an accepted `Commitment` transitions a session from `OPEN` to `RESOLVED`; every other mode-defined message (`Evaluation`, `Vote`, `TaskComplete`, `HandoffAccept`, and so on) can make a session *eligible* for `Commitment` but does not itself resolve it, per [RFC-MACP-0002 §6](../rfcs/RFC-MACP-0002-modes.md).
+
 ### Decision Mode
 
-Decision Mode uses `Proposal`, `Evaluation`, `Objection`, `Vote`, and a final `Commitment`. The participant set is declared up front. The session initiator (coordinator) may emit `Proposal` and `Commitment` even if not listed in `participants`. The mode standardizes transcript semantics, while policy/configuration decide the exact decision algorithm.
+Decision Mode uses `Proposal`, `Evaluation`, `Objection`, `Vote`, and a final `Commitment`. The participant set is declared up front. The session initiator (coordinator) may emit `Proposal` and `Commitment` even if not listed in `participants`. The mode standardizes transcript semantics, while policy/configuration decide the exact decision algorithm — see [`docs/policy.md`](policy.md) and [RFC-MACP-0002 §8.1 (Governance Policy Integration)](../rfcs/RFC-MACP-0002-modes.md) for how a bound governance policy determines that algorithm.
 
 ### Proposal Mode
 
