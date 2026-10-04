@@ -9,7 +9,8 @@ MACP guarantees **structural replay integrity**: replaying identical accepted En
 
 ## Core Guarantee
 
-MACP provides this structural guarantee:
+MACP provides this structural guarantee, normatively defined at
+[RFC-MACP-0003 §1 (Structural Replay Integrity)](../rfcs/RFC-MACP-0003-determinism.md):
 
 > Replaying identical accepted Envelope sequences under identical:
 > - `macp_version`
@@ -19,6 +20,9 @@ MACP provides this structural guarantee:
 > MUST produce identical **state transitions** (OPEN → RESOLVED or OPEN → EXPIRED).
 
 ## What is Deterministic in MACP Core
+
+See [RFC-MACP-0003 §2 (What Core Guarantees)](../rfcs/RFC-MACP-0003-determinism.md) for the
+normative statement this section summarizes.
 
 ### Structural Determinism
 
@@ -81,6 +85,11 @@ Replay:
 
 ## Versioning for Determinism
 
+Normative home: [RFC-MACP-0003 §3 (Version Binding)](../rfcs/RFC-MACP-0003-determinism.md),
+whose §3.1 worked example walks a correct replay (identical bound versions) against an
+incorrect one (replaying under a newer `mode_version`, which is a what-if analysis, not
+historical reconstruction) — see that section rather than a parallel example here.
+
 ### macp_version
 
 All Envelopes in a session MUST use the same `macp_version`.
@@ -109,6 +118,24 @@ Sessions MAY reference configuration versions:
 
 **Replay requirement:** Use identical configuration for replay
 
+**Policy replay invariant.** When a session is governed by a policy, the resolved
+`PolicyDescriptor` MUST be persisted on the session snapshot and used on replay — never
+re-resolved from the registry. Policy equality for this purpose is `policy_id` +
+`schema_version` + `rules`, not byte comparison, and a stored policy MUST be evaluated under
+the `schema_version` it declares even when a newer one exists. See
+[RFC-MACP-0012 §8 (Replay Invariant)](../rfcs/RFC-MACP-0012-policy.md) and
+[docs/policy.md](policy.md#replay-invariant).
+
+### Suspension and Resume
+
+Suspend and resume are recorded as accepted events on the session's append-only history, so a
+suspended-then-resumed session replays to the identical terminal state. The resolved
+`max_suspend_ms` cap MUST be recorded on the session at `SessionStart` and replay MUST use that
+recorded cap, never live runtime configuration — otherwise two runtimes (or one runtime
+reconfigured between runs) could produce different terminal states on identical history. See
+[RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md), [RFC-MACP-0003 §2](../rfcs/RFC-MACP-0003-determinism.md),
+and [docs/lifecycle.md](lifecycle.md).
+
 ### Example Version Attribution in Commitment
 
 ```json
@@ -126,7 +153,10 @@ This allows replay verification: "Under these exact versions, this outcome is de
 
 ## Mode-Level Determinism
 
-Modes MAY claim stronger determinism guarantees beyond MACP Core.
+Modes MAY claim stronger determinism guarantees beyond MACP Core, per
+[RFC-MACP-0003 §5 (Determinism Classes)](../rfcs/RFC-MACP-0003-determinism.md). The
+standards-track classes themselves are declared in [RFC-MACP-0002 §7](../rfcs/RFC-MACP-0002-modes.md)
+and summarized per mode in [`docs/modes.md`](modes.md)'s Determinism column.
 
 ### Deterministic Modes
 
@@ -226,6 +256,8 @@ for (let agentId of sortedAgents) {
 
 ## Handling External Side Effects
 
+See [RFC-MACP-0003 §4 (External Side Effects)](../rfcs/RFC-MACP-0003-determinism.md).
+
 ### Tool Invocations
 
 If a Mode coordinates tool execution:
@@ -254,6 +286,8 @@ For financial transactions, database writes, etc.:
 
 ### Cryptographic Verification (Optional)
 
+See [RFC-MACP-0003 §6 (Cryptographic Integrity (Optional))](../rfcs/RFC-MACP-0003-determinism.md).
+
 For high-assurance scenarios:
 
 - **Sign Envelopes**: Agents sign messages (include signature in metadata)
@@ -271,9 +305,19 @@ For high-assurance scenarios:
 }
 ```
 
-`commitment_hash` is now canonically defined by [RFC-MACP-0013](../rfcs/RFC-MACP-0013-commitment-hash.md); `session_hash` remains implementation-defined, as shown above.
+`commitment_hash` is now canonically defined by [RFC-MACP-0013](../rfcs/RFC-MACP-0013-commitment-hash.md); `session_hash` remains implementation-defined, as shown above. The canonical
+commitment-hash vector pack is re-derived and compared against the pinned hashes by `make
+cmt-hash-vectors`, and every conforming implementation MUST reproduce them, per
+[RFC-MACP-0013 §11 (Testing Requirements)](../rfcs/RFC-MACP-0013-commitment-hash.md).
 
 ## Testing Determinism
+
+See [RFC-MACP-0003 §7 (Testing Requirements)](../rfcs/RFC-MACP-0003-determinism.md). The
+snippets below are illustrative; this repository's machine-checked surface is the canonical
+fixture pack under [`schemas/conformance/`](../schemas/conformance/README.md) — per-message
+accept/reject expectations and an `expected_mode_state`, linted for internal consistency by
+`make conformance-lint` — and the per-SDK runner contract documented in
+[docs/sdk-parity.md](sdk-parity.md#conformance-test-suite).
 
 ### Unit Tests for Modes
 

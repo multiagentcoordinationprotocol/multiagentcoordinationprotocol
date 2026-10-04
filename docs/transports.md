@@ -18,7 +18,7 @@ Advantages:
 - streaming support
 - strong typing via protobuf
 
-The gRPC binding defines three categories of RPCs:
+The gRPC binding defines the following RPC categories:
 
 ### `Send` (Unary)
 
@@ -30,6 +30,21 @@ An optional interactive envelope stream, advertised by `sessions.stream = true`.
 
 `StreamSession` is **not** a replacement for unary `Send` acknowledgements. Clients that need per-message negative acknowledgements SHOULD use `Send`. Session-scoped `Signal` envelopes are invalid as an attach mechanism. For zero-mutation observation of an existing session, use the passive session subscription form defined in [RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md#32-streamsession): send a `StreamSessionRequest` with only `subscribe_session_id` (and optional `after_sequence`) set, and the runtime replays accepted session history and then switches seamlessly to live broadcast on the same stream. A single request MUST NOT set both `envelope` and `subscribe_session_id`; the caller MUST be an authenticated declared participant or an observer identity admitted by deployment policy.
 
+**Sequence semantics:** the passive-subscribe sequence is the 1-based ordinal of accepted
+session-scoped envelopes, and `after_sequence` is exclusive, per
+[RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md).
+
+**Bookkeeping entries:** the `SessionSuspend`/`SessionResume` annotations
+([RFC-MACP-0001 §7.5](../rfcs/RFC-MACP-0001-core.md)), the `SessionCancel` terminal annotation
+([RFC-MACP-0001 §7.3](../rfcs/RFC-MACP-0001-core.md)), TTL expiry, and storage checkpoints
+consume no ordinals, so client-visible ordinals stay contiguous — accepted history is a
+necessary, not sufficient, condition for subscribe delivery, per
+[RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md).
+
+**Redelivery:** a client MUST tolerate redelivery, key duplicate detection on `message_id`, and
+MUST NOT let a repeat advance its sequence position, per
+[RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md).
+
 ### `WatchModeRegistry` / `WatchRoots` (Server Streaming)
 
 Optional discovery hint streams. A runtime MUST advertise the corresponding capability (`mode_registry.list_changed` or `roots.list_changed`) before these can be assumed interoperable. After receiving a change notification, clients SHOULD re-query the full surface (`ListModes` or `ListRoots`). Minimal implementations may send an initial change hint immediately after stream establishment and then stay idle until a later change occurs. Note that `ListModes` returns only standards-track modes; extension mode discovery is implementation-defined.
@@ -40,11 +55,35 @@ An optional server-streaming RPC that broadcasts Ambient Signal Envelopes to all
 
 ### `GetSession` (Unary)
 
-Returns a `SessionMetadata` snapshot for a given session, including the session's identity, state, timing, bound version fields, the current participant list, and per-participant activity summaries (`ParticipantActivity` with `participant_id`, `last_message_at_unix_ms`, `message_count`).
+Returns a `SessionMetadata` snapshot for a given session. See
+[RFC-MACP-0006 §3.5 (`GetSession`)](../rfcs/RFC-MACP-0006-transport-bindings.md#35-getsession) and
+[`schemas/json/macp-session-metadata.schema.json`](../schemas/json/macp-session-metadata.schema.json)
+for the full field set, including `ParticipantActivity`'s three fields. The response mixes
+bound-at-start immutable version fields with mutable runtime-derived fields (the current
+participant list, `ParticipantActivity`) — the same distinction docs/architecture.md's own §9.3
+draws.
+
+### Extension Mode Lifecycle RPCs
+
+`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, and `PromoteMode` manage the lifecycle of
+non-standards-track (extension) coordination modes. See
+[RFC-MACP-0006 §3.6](../rfcs/RFC-MACP-0006-transport-bindings.md#36-extension-mode-lifecycle-rpcs) and
+[docs/modes.md](modes.md#extension-modes).
+
+### Policy Lifecycle RPCs
+
+Five RPCs — `RegisterPolicy`, `UnregisterPolicy`, `GetPolicy`, `ListPolicies`, `WatchPolicies` —
+manage the governance policy lifecycle. See
+[RFC-MACP-0006 §3.7](../rfcs/RFC-MACP-0006-transport-bindings.md#37-policy-lifecycle-rpcs) and
+[docs/policy.md](policy.md) for the five RPCs and their semantics.
 
 ### `ListSessions` / `WatchSessions` (Session Observation)
 
-Programmatic session lifecycle observation. `ListSessions` returns a page of `SessionMetadata` (bounded by `page_size`, continued via `page_token` / `next_page_token`; advertised by `sessions.list_sessions`); `WatchSessions` is a server-streaming RPC emitting `SessionLifecycleEvent` notifications (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, CANCELLED) in real time (advertised by `sessions.watch_sessions`). Control-planes and UIs typically page through `ListSessions` at startup for a snapshot, then subscribe to `WatchSessions` for incremental updates. Events are ephemeral and not replayed. See [docs/lifecycle.md](lifecycle.md#session-observation).
+Two RPCs for programmatic session lifecycle observation — `ListSessions` for a paginated
+snapshot and `WatchSessions` for real-time lifecycle events — per
+[RFC-MACP-0006 §3.8 (Session Lifecycle Observation RPCs)](../rfcs/RFC-MACP-0006-transport-bindings.md#38-session-lifecycle-observation-rpcs).
+See [docs/lifecycle.md](lifecycle.md#session-observation) for the RPC pair, the event kinds, and
+the typical usage pattern.
 
 ## HTTP
 
@@ -52,11 +91,15 @@ Best for:
 - simple integrations
 - environments where gRPC is restricted
 
+OPTIONAL binding; see [RFC-MACP-0006 §4 (HTTP Binding)](../rfcs/RFC-MACP-0006-transport-bindings.md).
+
 ## WebSockets
 
 Best for:
 - interactive coordination
 - browser environments
+
+OPTIONAL binding; see [RFC-MACP-0006 §5 (WebSocket Binding)](../rfcs/RFC-MACP-0006-transport-bindings.md).
 
 ## Message Buses
 
@@ -67,6 +110,8 @@ Best for:
 
 Examples: Kafka, NATS, RabbitMQ
 
+OPTIONAL binding; see [RFC-MACP-0006 §6 (Message Bus Binding)](../rfcs/RFC-MACP-0006-transport-bindings.md).
+
 ## Transport Identifiers
 
 Each transport binding has a registered identifier:
@@ -76,4 +121,4 @@ Each transport binding has a registered identifier:
 - `macp.transport.websocket.v1`
 - `macp.transport.messagebus.v1`
 
-These identifiers are used in agent manifest `transport_endpoints` to declare how an agent can be reached. See [`registries/transports.md`](../registries/transports.md).
+These identifiers are used in agent manifest `transport_endpoints` to declare how an agent can be reached. [`registries/transports.md`](../registries/transports.md) is authoritative for the identifier set; the list above is a convenience copy.

@@ -12,13 +12,26 @@ Modes (RFC-MACP-0002) define coordination semantics but intentionally do not pre
 
 ## Policy Identifiers
 
-Policy identifiers use the form `policy.{namespace}.{name}`:
+Policy identifiers use the form `policy.{namespace}.{name}`, per
+[RFC-MACP-0012 Section 2](../rfcs/RFC-MACP-0012-policy.md):
 
 - `policy.default` — the built-in default policy (reserved)
 - `policy.fraud.majority-veto` — a domain-specific policy
 - `policy.lending.unanimous` — another domain-specific policy
 
-The `policy.default` identifier is reserved and always pre-registered. Registered policy identifiers are immutable — to change governance rules, register a new policy with a new identifier. This ensures that `policy_version` in historical sessions always resolves to the same rules.
+The `policy.default` identifier is reserved and always pre-registered. The whole
+`policy.std.` namespace is also reserved — as a **collision guarantee, not a provisioning
+requirement**: a runtime MAY pre-register any subset of the built-in profiles (or none), but
+if it does, the rules MUST match the canonical definition exactly; short unnamespaced forms
+such as `policy.majority` are explicitly **not** reserved. See
+[RFC-MACP-0012 Section 2.2](../rfcs/RFC-MACP-0012-policy.md) for the full reservation rules,
+[RFC-MACP-0012 Section 5.2](../rfcs/RFC-MACP-0012-policy.md) for the canonical definitions of
+the three reserved `policy.std.*` profiles (`majority`, `supermajority`, `unanimous`), and
+[`registries/policies.md`](../registries/policies.md) for the authoritative reserved-identifier
+table, which also lists the per-mode rule-schema set this document's own table (below) covers
+with a distinct Key Parameters column. Registered policy identifiers are immutable — to change
+governance rules, register a new policy with a new identifier. This ensures that
+`policy_version` in historical sessions always resolves to the same rules.
 
 ## Policy Descriptor
 
@@ -43,21 +56,29 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 
 | Mode | Rule Schema | Key Parameters |
 |------|-------------|----------------|
-| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, `threshold`, `weights`, quorum, objection handling, evaluation constraints, commitment authority |
-| Quorum | [`quorum-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority |
-| Proposal | [`proposal-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior |
-| Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority |
-| Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority |
+| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, `threshold`, `weights`, quorum, objection handling, evaluation constraints, commitment authority, `designated_roles` |
+| Quorum | [`quorum-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority, `designated_roles` |
+| Proposal | [`proposal-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior, commitment authority, `designated_roles` |
+| Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority, `designated_roles` |
+| Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority, `designated_roles` |
+
+`commitment.authority` is shared vocabulary across all five standard modes, over the same
+three values: `initiator_only`, `any_participant`, `designated_role`. A policy selecting
+`designated_role` MUST also supply `commitment.designated_roles` naming at least one role, and
+a runtime MUST reject such a descriptor at admission when the list is missing or empty — stated
+once for all five modes, rather than repeated per mode, in
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md), and enforced structurally by each
+rule schema above.
 
 **Rule objects are closed.** Every object level in every rule schema above sets
 `additionalProperties: false`, so a key the schema does not define is rejected when the
-policy is registered rather than quietly ignored. This matters more than it sounds: a
-misspelled parameter used to validate clean and leave the real parameter at its default, so a
-session ran under a policy nobody wrote and nothing reported an error. Two concrete cases —
-`objection_handling.veto_threshhold: 3` left `veto_threshold` at `1`, so one blocking objection
-vetoed a commitment whose author required three; and under `majority`,
-`voting.thresold: 0.67` left `threshold` at `0.5`, turning a two-thirds bar into a bare
-majority.
+policy is registered rather than quietly ignored. See
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md) for the normative closure rule,
+the `^[_$]` annotation namespace, and the `voting.weights` exception below. This matters
+more than it sounds: a misspelled parameter used to validate clean and leave the real
+parameter at its default, so a session ran under a policy nobody wrote and nothing reported
+an error — `objection_handling.veto_threshhold: 3` left `veto_threshold` at `1`, so one
+blocking objection vetoed a commitment whose author required three.
 
 Keys beginning with `_` or `$` are a reserved **annotation namespace**. They are legal at
 every nesting level, carry no governance semantics, and evaluators must ignore them, so
@@ -128,6 +149,13 @@ negatively on an empty tally, at every `schema_version` from `2` onward: if the 
 `objection_handling.critical_objection_action` to `finalize_decline` and a critical `Objection` is
 standing, the decline is **objection-authorized** — the objection is itself the attributable
 dissent the decline guard exists to require, so neither the guard nor the empty-tally rule applies.
+`critical_objection_action` is a three-value enum (`deny` | `finalize_decline` | `hold`, default
+`deny`): `deny` and `hold` are **observationally identical** — both reject the `Commitment` with
+`POLICY_DENIED` and leave the session `OPEN`, and a runtime MUST NOT expose a wire-visible
+distinction between them. `hold` is purely an operator-facing annotation on the denial, not a
+distinct protocol outcome, which is why the conformance corpus pins `deny` and `finalize_decline`
+only — a `hold` fixture would assert nothing a `deny` fixture does not already assert. See
+[RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md).
 The guard is waived **whole**: its `commitment.require_vote_quorum` conjunct goes with it, as do the
 `evaluation.*` prerequisites, because all three gate outcomes that derive their authority from the
 voting result and this decline derives none. A runtime that keeps the quorum applying here
@@ -150,6 +178,17 @@ even when a newer one exists. Implementations MUST keep this arm and MUST NOT ap
 **If you are writing a new policy, declare `schema_version: 3`.** If you must stay on `1` or `2` and
 want the voting algorithm to be binding, set `commitment.require_vote_quorum` to `true` — that is the
 only remedy available before version `3`.
+
+Two companion rules govern `commitment.require_vote_quorum` and `voting.quorum` themselves, both
+normative at [RFC-MACP-0012 Section 4.1](../rfcs/RFC-MACP-0012-policy.md). First,
+**`voting.quorum` is inert on its own** — it states a participation bar but gates nothing unless
+`commitment.require_vote_quorum` is `true`; a policy that sets one without the other imposes no
+participation requirement. Second, under `schema_version ≥ 3` the *only* effect
+`require_vote_quorum` still has is that same participation floor (the algorithm is already binding
+on its own at that version). So when the floor is effectively zero — `voting.quorum` absent, or an
+explicit `value: 0` under either `count` or `percentage` — `require_vote_quorum: true` becomes
+equivalent to `false`: the flag gates nothing. This is an authoring smell, not an admission error —
+a runtime MUST NOT reject the descriptor and MUST NOT substitute a floor the policy did not declare.
 
 ## Default Policy
 
@@ -195,7 +234,14 @@ Policies are managed through five gRPC RPCs on `MACPRuntimeService`:
 | `ListPolicies` | List registered policies, optionally filtered by mode |
 | `WatchPolicies` | Stream policy registry change notifications |
 
-Registration constraints: `policy.default` cannot be registered or unregistered; `policy_id` must be unique; `rules` must validate against the target mode's rule schema.
+Registration constraints, summarized — see
+[RFC-MACP-0012 Section 7](../rfcs/RFC-MACP-0012-policy.md) for the full normative list:
+`policy.default` cannot be registered or unregistered, and a `policy_id` under the reserved
+`policy.std.` namespace cannot be registered unless it is the canonical definition for that
+identifier, nor unregistered once pre-registered; `policy_id` must otherwise be unique. Rule-schema
+validation against `rules` is an **admission-time** gate only — it runs when a descriptor enters
+the runtime and never again, so a later tightening of a rule schema bars *new* admissions without
+retroactively invalidating a descriptor already stored.
 
 Canonical proto definitions: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
 
@@ -217,13 +263,27 @@ no known rule schema is a hard failure rather than a silent skip.
 
 This reaches rules objects wherever they sit — discovery descriptors, conformance fixtures,
 the nested descriptor in `examples/policy-registration-exchange.json`, and the fenced JSON
-blocks in the RFCs and in this document.
+blocks in the RFCs and in this document. The total instance count across the repository is
+pinned by `EXPECTED_RULES_INSTANCES` in `scripts/validate-json.sh`, so adding or removing any
+`mode`+`rules` JSON block anywhere in `rfcs/` or `docs/` — this document's own Default Policy
+block above included, even though its `mode: "*"` is skipped rather than validated — turns
+`make json-validate` red until that variable is updated.
 
-**What it does not yet check.** None of the five rule schemas sets `additionalProperties: false`
-or a top-level `required`, so an empty `rules` object validates against all of them, and an
-unrecognized rule field is accepted and ignored. Decision Mode carries real constraints and
-Quorum Mode carries one conditional arm; Proposal, Task, and Handoff are enum-and-type only.
-A green run means nothing on disk contradicts its schema — not that the schemas are complete.
+Every object level in every rule schema sets `additionalProperties: false`, per
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md) and "Rule objects are closed" above,
+so an unrecognized rule field is rejected at admission, not accepted and ignored. **What it
+still does not check:** none of the five rule schemas sets a top-level `required`, so an empty
+`rules` object `{}` validates against all five — a green run means nothing on disk contradicts
+its schema, not that the schemas are complete or that every mode enforces a non-empty rule set.
+
+Beside the negative corpus below, `schemas/json/tests/valid-policy-rules/` holds one
+**maximal** fixture per mode, asserted to VALIDATE. Maximality is derived from the schema
+itself: the suite walks every subschema declaring its own `properties` and requires the
+fixture to exercise all of them, so adding an object-valued property to a rule schema turns
+the run red until the fixture grows. Each fixture also carries a top-level `$comment` and a
+nested `_note` (proving the annotation namespace survives closure) and sets
+`commitment.authority: "designated_role"` with a non-empty `designated_roles` (see
+[`schemas/json/tests/valid-policy-rules/README.md`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/tests/valid-policy-rules/README.md)).
 
 Policies for extension modes (`ext.*` and reverse-domain identifiers) are logged and skipped:
 they have no standards-track rule schema by design. Only an unrecognized `macp.mode.*`
@@ -303,14 +363,18 @@ covers an axis this document's eight checks do not: whether every Core payload m
 declared in `schemas/proto/macp/v1/core.proto` has a corresponding entry in
 `macp-envelope.schema.json`'s `$defs`. It is a proto↔JSON-Schema coverage check, not a
 prose-vs-artifact check, so it is not one of the eight above and is mutation-tested separately
-(`make envelope-coverage-selftest`) rather than folded into this count.
+(`make envelope-coverage-selftest`) rather than folded into this count. `check-prose.py` itself
+has the same kind of regression proof — `make prose-check-selftest`
+(`scripts/check-prose-test.py`, issues #128/#129) asserts it survives an unreadable file rather
+than crashing the whole suite — and both self-tests are their own targets among the 14 that
+`make validate` runs.
 
 ## Error Codes
 
 | Code | Description | Reference |
 |------|-------------|-----------|
 | `UNKNOWN_POLICY_VERSION` | Policy not found in registry at SessionStart | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
-| `POLICY_DENIED` | Commitment rejected by governance policy rules | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
+| `POLICY_DENIED` | Commitment rejected by governance policy rules (except a `commitment.authority`/`designated_roles` breach, which is a sender-authorization failure and uses `FORBIDDEN` instead, per [RFC-MACP-0002 §6.1](../rfcs/RFC-MACP-0002-modes.md)) | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
 | `INVALID_POLICY_DEFINITION` | Policy descriptor fails validation | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
 
 Full error code registry: [`registries/error-codes.md`](../registries/error-codes.md)

@@ -5,6 +5,9 @@
 
 MACP is deployment-agnostic at the protocol level, but certain deployment shapes preserve its guarantees better than others.
 
+For the fuller treatment of routing, scaling, and deployment-topology invariants — including failover, ownership transfer, and cross-session isolation — see docs/architecture.md's own §10 (Routing and scaling: sessions as the sharding key) and §17 (Deployment topologies); this document is the compact three-topology reference, not a restatement.
+The normative transport baseline every topology assumes is [RFC-MACP-0001 §9 (Transport Requirements)](../rfcs/RFC-MACP-0001-core.md).
+
 ## 1. Single Runtime
 
 The simplest deployment hosts a single runtime and a small set of agents.
@@ -35,7 +38,7 @@ flowchart TB
   S3 --> L3[(Partition 3)]
 ```
 
-The critical invariant is that a single OPEN session has exactly one owner at a time.
+The single-owner-per-OPEN-session invariant this topology depends on — and how failover preserves it across shards — is docs/architecture.md's own §10; it is not restated here.
 
 ## 3. Federated Coordination
 
@@ -48,7 +51,7 @@ flowchart LR
   B --> BAgents[Org B Agents]
 ```
 
-Federation works best when manifests, mode descriptors, and registries are stable and discoverable.
+Federation depends on manifests ([docs/discovery.md](discovery.md)), mode descriptors, and [`registries/`](../registries/) being stable and discoverable across trust domains.
 
 ## 4. Operational recommendations
 
@@ -56,3 +59,8 @@ Federation works best when manifests, mode descriptors, and registries are stabl
 - propagate backpressure rather than buffering indefinitely,  
 - treat registries as cacheable but versioned,  
 - expose health, latency, and rejection metrics per shard.
+
+Backpressure carries its own SHOULD-level requirement, not just operational advice: see [RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
+docs/architecture.md's own §11 (Flow control and resource limits) covers the full backpressure and quota model this recommendation summarizes.
+Treating registries as cacheable but versioned is this document's own operational guidance, not a restatement of an RFC requirement; [RFC-MACP-0005 §10 (Registries)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md) names the registry types it applies to.
+Rejection metrics support the auditability [RFC-MACP-0004 §8 (Auditability)](../rfcs/RFC-MACP-0004-security.md) expects.

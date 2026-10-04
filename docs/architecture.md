@@ -2,7 +2,6 @@
 
 > **Status:** Non-normative (explanatory). In case of conflict, [RFC-MACP-0001](../rfcs/RFC-MACP-0001-core.md) is authoritative.
 
-**Protocol Revision:** 2026-04-20
 **Normative transport:** gRPC over HTTP/2
 **Canonical wire format:** Protocol Buffers
 **Required JSON mapping:** Yes
@@ -165,6 +164,8 @@ A runtime MUST validate that:
 - the sender is authorized to participate per session policy / Mode rules.
 
 If any of these checks fails, the runtime MUST reject the message and MUST NOT create side effects.
+This mirrors the admission rules in [RFC-MACP-0001 §6 (Envelope Model), §8.3 (Accepted-History
+Discipline)](../rfcs/RFC-MACP-0001-core.md).
 
 ### 4.3 Session ownership and routing
 
@@ -179,23 +180,19 @@ In a distributed deployment, the standard approach is to shard by `session_id`. 
 Every MACP message is encapsulated in an Envelope. The Envelope exists to keep coordination transport-independent, replayable, and versioned.
 
 The canonical representation is Protocol Buffers; a JSON mapping is required for interoperability.
+Canonical definition: [`schemas/proto/macp/v1/envelope.proto`](../schemas/proto/macp/v1/envelope.proto).
 
-```protobuf
-syntax = "proto3";
+The Envelope carries eight fields: `macp_version`, `mode`, `message_type`, `message_id`,
+`session_id`, `sender`, `timestamp_unix_ms` (informational only, MUST NOT be used for ordering),
+and `payload` (Core or Mode-specific content, serialized as bytes). `mode` and `session_id` are
+both empty for Ambient Signals; for `Progress`, the two fields MUST agree — both empty (ambient
+form) or both non-empty (session-scoped form) — an Envelope with exactly one of the two empty
+MUST be rejected, per [RFC-MACP-0001 §6](../rfcs/RFC-MACP-0001-core.md).
 
-package macp.v1;
-
-message Envelope {
-  string macp_version = 1;
-  string mode = 2;                // empty for Ambient Signals; empty or non-empty for Progress (§6)
-  string message_type = 3;
-  string message_id = 4;
-  string session_id = 5;          // empty for Signals; empty or non-empty for Progress (§6)
-  string sender = 6;
-  int64  timestamp_unix_ms = 7;   // informational
-  bytes  payload = 8;             // mode-defined
-}
-```
+The MACP Core protocol version this specification defines is `1.0`, distinct from this document's
+own revision history: a Core-only `Initialize` exchange MUST negotiate `selected_protocol_version`
+to `1.0`, and every Envelope's `macp_version` MUST equal `1.0` for that negotiated version, per
+[RFC-MACP-0001 §6](../rfcs/RFC-MACP-0001-core.md).
 
 ### 5.1 Structural vs semantic validation
 
@@ -207,7 +204,8 @@ This division is essential: the runtime must be able to enforce boundaries witho
 
 ### 5.2 Core message categories
 
-MACP defines two primary categories of messages:
+MACP defines two primary categories of messages, per [RFC-MACP-0001 §5.1 (Ambient Plane), §5.2
+(Coordination Plane)](../rfcs/RFC-MACP-0001-core.md):
 
 **Signals (ambient)**  
 Signals MUST have an empty `session_id` and an empty `mode`. If correlation with a session is needed, it SHOULD be carried in `SignalPayload.correlation_session_id` or another payload field. Signals MUST NOT mutate session state.
@@ -215,7 +213,12 @@ Signals MUST have an empty `session_id` and an empty `mode`. If correlation with
 **Session-scoped messages (coordinated)**
 Session-scoped messages MUST include a non-empty `session_id` and a non-empty `mode`, and MUST be admitted only if the session exists and is OPEN.
 
-Modes define additional message types inside sessions, but the session boundary remains invariant.
+Modes define additional message types inside sessions, but the session boundary remains
+invariant. The Core payload set itself — `Signal`, `Progress`, `SessionStart`, `SessionCancel`,
+`SessionSuspend`, `SessionResume`, and `Commitment` — is fixed independent of Mode, per
+[RFC-MACP-0001 §6](../rfcs/RFC-MACP-0001-core.md), which also binds `Progress` to the same
+agreement rule as the two categories above: its `session_id` and `mode` MUST agree, both empty
+(ambient form) or both non-empty (session-scoped form).
 
 ---
 
@@ -232,9 +235,13 @@ Once created, a session is governed by a monotonic lifecycle:
 - It terminates as RESOLVED (Mode-defined terminal condition), EXPIRED (TTL/policy), or CANCELLED (CancelSession).
 - Once terminal, it can never return to OPEN.
 
+See [RFC-MACP-0001 §7.1 (Session Creation), §7.2 (Session States)](../rfcs/RFC-MACP-0001-core.md)
+for the normative creation and state-machine rules this section summarizes.
+
 ### 6.1 Session-scoped communication rule
 
-When a session is OPEN, compliant participants MUST NOT bypass MACP to advance binding outcomes.
+When a session is OPEN, compliant participants MUST NOT bypass MACP to advance binding outcomes,
+per [RFC-MACP-0001 §5.3 (Session-Scoped Communication Rule)](../rfcs/RFC-MACP-0001-core.md).
 
 Participants MAY communicate out-of-band for ambient reasoning or side-channel coordination, but any such communication MUST be treated as non-binding unless it is reintroduced into the session as a valid, accepted Envelope.
 
@@ -257,7 +264,7 @@ stateDiagram-v2
   OPEN --> RESOLVED: accept first terminal message
   OPEN --> EXPIRED: TTL elapsed
   OPEN --> EXPIRED: runtime policy
-  SUSPENDED --> EXPIRED: banked TTL / MAX_SUSPEND_MS
+  SUSPENDED --> EXPIRED: banked TTL elapses / max-suspension cap exceeded
   OPEN --> CANCELLED: CancelSession
   SUSPENDED --> CANCELLED: CancelSession
 
@@ -265,6 +272,12 @@ stateDiagram-v2
   EXPIRED --> [*]
   CANCELLED --> [*]
 ```
+
+The max-suspension cap is **session-bound, not a fixed runtime constant**: it is resolved at
+`SessionStart` from `SessionStartPayload.max_suspend_ms` (0 or absent selects the runtime's
+configured default), and the resolved value MUST be recorded on the session for replay, per
+[RFC-MACP-0001 §7.5 (Suspension and Resume)](../rfcs/RFC-MACP-0001-core.md). The field's JSON
+Schema home is [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
 
 ### 7.1 Acceptance rules in OPEN
 
@@ -276,7 +289,8 @@ For any Envelope with a non-empty `session_id`, the runtime MUST enforce:
 4. the Envelope is structurally valid,
 5. the Envelope is not a duplicate within that session.
 
-If any check fails, the runtime MUST reject the Envelope and MUST NOT create side effects.
+If any check fails, the runtime MUST reject the Envelope and MUST NOT create side effects. See
+[RFC-MACP-0001 §7.2 (Session States), §8.3 (Accepted-History Discipline)](../rfcs/RFC-MACP-0001-core.md).
 
 ### 7.2 Duplicate SessionStart handling
 
@@ -285,15 +299,17 @@ The runtime MUST prevent session ambiguity:
 - If the same `message_id` is received again for a previously accepted SessionStart, it MUST be treated as an idempotent duplicate and MUST NOT create a second session.
 - If the same `session_id` is reused with a different `message_id`, the runtime MUST reject it.
 
+See [RFC-MACP-0001 §7.1 (Session Creation), §8.2 (Idempotency)](../rfcs/RFC-MACP-0001-core.md).
+
 ### 7.3 Terminal races
 
-If multiple terminal messages arrive concurrently, the runtime MUST define the session’s outcome as the first terminal message accepted into the append-only log. All later terminal messages MUST be rejected because the session is no longer OPEN.
+If multiple terminal messages arrive concurrently, the runtime MUST define the session’s outcome as the first terminal message accepted into the append-only log. All later terminal messages MUST be rejected because the session is no longer OPEN. See [RFC-MACP-0001 §7.3 (Termination)](../rfcs/RFC-MACP-0001-core.md).
 
 ### 7.4 Expiration semantics
 
 Every session MUST have a finite TTL. Unbounded sessions are not permitted.
 
-When TTL elapses, the session MUST transition to EXPIRED deterministically based on the runtime clock. Messages received after expiration MUST be rejected and MUST NOT retroactively alter session state.
+When TTL elapses, the session MUST transition to EXPIRED deterministically based on the runtime clock. Messages received after expiration MUST be rejected and MUST NOT retroactively alter session state. See [RFC-MACP-0001 §7.2 (Session States), §7.3 (Termination)](../rfcs/RFC-MACP-0001-core.md).
 
 ---
 
@@ -311,7 +327,8 @@ This defines a total order per session that is:
 - replayable (because the same sequence can be applied),
 - independent of sender timing quirks.
 
-Cross-session ordering is not guaranteed and MUST NOT be relied upon.
+Cross-session ordering is not guaranteed and MUST NOT be relied upon. See
+[RFC-MACP-0001 §8.1 (Ordering)](../rfcs/RFC-MACP-0001-core.md).
 
 ### 8.2 At-least-once delivery and deduplication
 
@@ -322,6 +339,8 @@ Therefore, the runtime MUST enforce idempotency using `message_id`:
 - If an Envelope with a previously accepted `message_id` is received within the same session, it MUST be treated as a duplicate and MUST NOT produce side effects.
 - The runtime SHOULD return an Ack that indicates duplication rather than treating it as an error, to simplify client retry behavior.
 
+See [RFC-MACP-0001 §8.2 (Idempotency)](../rfcs/RFC-MACP-0001-core.md).
+
 ### 8.3 Idempotency boundaries
 
 Idempotency must exist at two levels:
@@ -329,7 +348,7 @@ Idempotency must exist at two levels:
 - **Core idempotency:** `message_id` deduplication prevents duplicated session events.
 - **Semantic idempotency:** Modes MUST define how duplicate semantic actions are handled when the external world is involved (e.g., tool execution).
 
-The core can guarantee the first. The mode must address the second.
+The core can guarantee the first, per [RFC-MACP-0001 §8.2 (Idempotency)](../rfcs/RFC-MACP-0001-core.md). The mode must address the second, per [RFC-MACP-0002 §8 (Semantic idempotency)](../rfcs/RFC-MACP-0002-modes.md).
 
 ---
 
@@ -341,7 +360,8 @@ MACP achieves replay integrity by treating accepted session history as an append
 
 ### 9.1 Append-only session log
 
-For each session, the runtime MUST persist an ordered list of accepted Envelopes. This log is immutable once written.
+For each session, the runtime MUST persist an ordered list of accepted Envelopes. This log is
+immutable once written, per [RFC-MACP-0001 §8.3 (Accepted-History Discipline)](../rfcs/RFC-MACP-0001-core.md).
 
 A practical implementation uses event sourcing:
 
@@ -388,7 +408,8 @@ Replaying the same accepted Envelope sequence under the same:
 
 MUST reproduce the same **state transitions** and the same terminal lifecycle outcome (RESOLVED vs EXPIRED).
 
-MACP Core does not guarantee semantic determinism unless the Mode claims it.
+MACP Core does not guarantee semantic determinism unless the Mode claims it. See
+[RFC-MACP-0003 §1 (Structural Replay Integrity), §2 (What Core Guarantees)](../rfcs/RFC-MACP-0003-determinism.md).
 
 ### 9.3 Binding versions at session start
 
@@ -404,7 +425,9 @@ as immutable session metadata. These values MUST NOT change within an OPEN sessi
 
 `SessionMetadata` also carries mutable runtime-derived fields — the current participant list and per-participant activity summaries (`ParticipantActivity`) — that reflect evolving session state rather than bound-at-start configuration. Session lifecycle RPCs (`ListSessions`, `WatchSessions`) return these mutable fields; replay integrity depends only on the immutable version fields.
 
-If policies evolve over time, they evolve between sessions, not within one.
+If policies evolve over time, they evolve between sessions, not within one. See
+[RFC-MACP-0003 §3 (Version Binding)](../rfcs/RFC-MACP-0003-determinism.md); [RFC-MACP-0001 §7.1
+(Session Creation)](../rfcs/RFC-MACP-0001-core.md).
 
 ### 9.4 Mode-level determinism claims
 
@@ -414,7 +437,10 @@ Modes MAY claim stronger guarantees beyond MACP Core. When they do, they SHOULD 
 - what inputs are considered part of the determinism boundary,
 - what sources of nondeterminism are excluded.
 
-A voting mode with a fixed quorum threshold can be fully deterministic. A mode that calls external APIs in real time may not be.
+A voting mode with a fixed quorum threshold can be fully deterministic. A mode that calls external APIs in real time may not be. The determinism classes themselves are defined by
+[RFC-MACP-0002 §7 (Determinism claims)](../rfcs/RFC-MACP-0002-modes.md), with the replay
+guarantee each class provides spelled out in
+[RFC-MACP-0003 §5 (Determinism Classes)](../rfcs/RFC-MACP-0003-determinism.md).
 
 ### 9.5 External side effects: keeping replay honest
 
@@ -431,7 +457,8 @@ Practical patterns include:
 - making external tools idempotent via transaction IDs,
 - logging external results as session messages so replay can use recorded outputs rather than calling the external world again.
 
-If a Mode claims semantic determinism while also performing external I/O without logging results, that claim is not credible.
+If a Mode claims semantic determinism while also performing external I/O without logging results, that claim is not credible. See
+[RFC-MACP-0003 §4 (External Side Effects)](../rfcs/RFC-MACP-0003-determinism.md).
 
 ### 9.6 Optional cryptographic verification
 
@@ -441,7 +468,11 @@ For high-assurance deployments, implementations MAY add cryptographic integrity:
 - The session log may form a hash chain.
 - The final session state may include a session hash committed alongside the terminal message.
 
-These mechanisms strengthen tamper evidence without changing MACP Core invariants.
+These mechanisms strengthen tamper evidence without changing MACP Core invariants, per
+[RFC-MACP-0003 §6 (Cryptographic Integrity (Optional))](../rfcs/RFC-MACP-0003-determinism.md).
+When a terminal record's `commitment_hash` chains to a superseded commitment, it MUST be
+computed with the canonical algorithm in
+[RFC-MACP-0013](../rfcs/RFC-MACP-0013-commitment-hash.md), not an implementation-specific digest.
 
 ---
 
@@ -491,7 +522,8 @@ If a Mode requires cross-session coordination, it MUST define that topology expl
 
 A coordination kernel that buffers unboundedly becomes the instability it was built to prevent.
 
-Therefore, implementations MUST treat flow control and resource limits as structural features, not tuning knobs.
+Therefore, implementations MUST treat flow control and resource limits as structural features, not
+tuning knobs, per [RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
 
 ### 11.1 Backpressure
 
@@ -526,7 +558,7 @@ Cancellation is where many systems degrade into ambiguity. MACP treats cancellat
 
 A compliant runtime MUST support deterministic cancellation that transitions a session to the terminal CANCELLED state (distinct from EXPIRED) without mutating history. By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority through policy.
 
-A runtime SHOULD emit a session-scoped cancellation event (`SessionCancel` Envelope) into the append-only log so that replay preserves the cause of termination.
+Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` Envelope into the append-only log so that replay preserves the cause of termination, per [RFC-MACP-0001 §7.3 (Termination)](../rfcs/RFC-MACP-0001-core.md). `SessionCancel` MUST NOT be submitted directly via `Send` — the runtime is the sole emitter. It is also an **internal annotation**: it consumes no passive-subscribe ordinal and is not delivered on a `StreamSession` subscribe stream ([RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md)).
 
 ```mermaid
 sequenceDiagram
@@ -563,7 +595,11 @@ A Mode specification SHOULD define:
 - payload schemas (Protobuf and/or JSON Schema),
 - security and privacy considerations.
 
-Modes MUST NOT violate MACP Core invariants: session isolation, append-only history, monotonic lifecycle.
+This mirrors the Mode Descriptor fields in [RFC-MACP-0002 §4 (Mode Descriptor)](../rfcs/RFC-MACP-0002-modes.md).
+
+Modes MUST NOT violate MACP Core invariants: session isolation, append-only history, monotonic
+lifecycle. Standards-track Modes additionally carry the nine requirements of
+[RFC-MACP-0002 §9](../rfcs/RFC-MACP-0002-modes.md).
 
 ### 13.1 A Mode is a contract, not a code module
 
@@ -599,7 +635,7 @@ A common pattern is:
 
 This split keeps MACP coherent: it coordinates commitments, not ad-hoc effects.
 
-Modes that coordinate tool execution SHOULD treat tool calls as side effects and apply one of the replay-safe patterns described in §9.5.
+Modes that coordinate tool execution SHOULD treat tool calls as side effects and apply one of the replay-safe patterns described in this document's §9.5.
 
 ---
 
@@ -616,29 +652,33 @@ A compliant MACP deployment MUST enforce:
 - isolation against cross-session injection,
 - resource exhaustion defenses.
 
+This chapter-level summary mirrors [RFC-MACP-0001 §13 (Security Considerations)](../rfcs/RFC-MACP-0001-core.md), whose full threat model and mitigations are specified in RFC-MACP-0004; see [docs/security.md](security.md).
+
 ### 15.1 Transport security
 
-All MACP deployments MUST use encrypted transport. For gRPC, TLS is required.
+All MACP deployments MUST use encrypted transport. For gRPC, TLS is required. See
+[RFC-MACP-0004 §2 (Transport Security)](../rfcs/RFC-MACP-0004-security.md).
 
 ### 15.2 Authentication
 
-Implementations MUST support at least one authentication mechanism suitable for machine-to-machine coordination (e.g., mTLS or JWT-based identity). The `sender` field MUST be derived from authenticated identity.
+Implementations MUST support at least one authentication mechanism suitable for machine-to-machine coordination (e.g., mTLS or JWT-based identity). The `sender` field MUST be derived from authenticated identity. See [RFC-MACP-0004 §3 (Authentication)](../rfcs/RFC-MACP-0004-security.md).
 
 ### 15.3 Authorization
 
 Before processing any session-scoped message, the runtime MUST verify that the sender is authorized for that session according to Mode rules and deployment policy.
 
-SessionStart SHOULD be subject to admission control, including rate limits and mode authorization.
+SessionStart SHOULD be subject to admission control, including rate limits and mode authorization. See [RFC-MACP-0004 §4 (Authorization)](../rfcs/RFC-MACP-0004-security.md).
 
 ### 15.4 Replay protection
 
 `message_id` deduplication is both an idempotency mechanism and a replay-attack mitigation.
 
-Session IDs MUST be cryptographically strong and unguessable.
+Session IDs MUST be cryptographically strong and unguessable. See
+[RFC-MACP-0004 §5 (Replay Protection)](../rfcs/RFC-MACP-0004-security.md).
 
 ### 15.5 DoS mitigation
 
-The runtime SHOULD enforce quotas and rate limits to prevent SessionStart flooding, payload amplification, and unbounded buffering.
+The runtime SHOULD enforce quotas and rate limits to prevent SessionStart flooding, payload amplification, and unbounded buffering. See [RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
 
 ---
 
@@ -653,7 +693,8 @@ Implementations SHOULD support:
 - tracing: correlation IDs propagated without compromising isolation,
 - metrics: session rates, latency, rejection counts, dedup hits, expiration counts.
 
-Replay is the ultimate observability feature: it turns debugging into reading.
+Replay is the ultimate observability feature: it turns debugging into reading. See
+[RFC-MACP-0004 §8 (Auditability)](../rfcs/RFC-MACP-0004-security.md).
 
 ---
 
@@ -663,7 +704,8 @@ MACP is compatible with multiple deployment shapes:
 
 A single runtime can host sessions for a single application. A shared runtime can coordinate a fleet of agents. A federated design can route sessions across organizational boundaries. These are deployment decisions; the kernel invariant stays the same.
 
-The protocol remains transport-independent at the architecture level, but the normative transport provides a shared baseline for interoperability.
+The protocol remains transport-independent at the architecture level, but the normative transport provides a shared baseline for interoperability. See
+[RFC-MACP-0001 §9 (Transport Requirements)](../rfcs/RFC-MACP-0001-core.md).
 
 ---
 
