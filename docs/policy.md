@@ -43,21 +43,29 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 
 | Mode | Rule Schema | Key Parameters |
 |------|-------------|----------------|
-| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, `threshold`, `weights`, quorum, objection handling, evaluation constraints, commitment authority |
-| Quorum | [`quorum-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority |
-| Proposal | [`proposal-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior |
-| Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority |
-| Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority |
+| Decision | [`decision-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/decision-rules.schema.json) | Voting algorithm, `threshold`, `weights`, quorum, objection handling, evaluation constraints, commitment authority, `designated_roles` |
+| Quorum | [`quorum-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/quorum-rules.schema.json) | Threshold override, abstention handling, commitment authority, `designated_roles` |
+| Proposal | [`proposal-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/proposal-rules.schema.json) | Acceptance criterion, max negotiation rounds, rejection behavior, commitment authority, `designated_roles` |
+| Task | [`task-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/task-rules.schema.json) | Reassignment on reject, output requirement, commitment authority, `designated_roles` |
+| Handoff | [`handoff-rules.schema.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/policy/handoff-rules.schema.json) | Implicit accept timeout, commitment authority, `designated_roles` |
+
+`commitment.authority` is shared vocabulary across all five standard modes, over the same
+three values: `initiator_only`, `any_participant`, `designated_role`. A policy selecting
+`designated_role` MUST also supply `commitment.designated_roles` naming at least one role, and
+a runtime MUST reject such a descriptor at admission when the list is missing or empty — stated
+once for all five modes, rather than repeated per mode, in
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md), and enforced structurally by each
+rule schema above.
 
 **Rule objects are closed.** Every object level in every rule schema above sets
 `additionalProperties: false`, so a key the schema does not define is rejected when the
-policy is registered rather than quietly ignored. This matters more than it sounds: a
-misspelled parameter used to validate clean and leave the real parameter at its default, so a
-session ran under a policy nobody wrote and nothing reported an error. Two concrete cases —
-`objection_handling.veto_threshhold: 3` left `veto_threshold` at `1`, so one blocking objection
-vetoed a commitment whose author required three; and under `majority`,
-`voting.thresold: 0.67` left `threshold` at `0.5`, turning a two-thirds bar into a bare
-majority.
+policy is registered rather than quietly ignored. See
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md) for the normative closure rule,
+the `^[_$]` annotation namespace, and the `voting.weights` exception below. This matters
+more than it sounds: a misspelled parameter used to validate clean and leave the real
+parameter at its default, so a session ran under a policy nobody wrote and nothing reported
+an error — `objection_handling.veto_threshhold: 3` left `veto_threshold` at `1`, so one
+blocking objection vetoed a commitment whose author required three.
 
 Keys beginning with `_` or `$` are a reserved **annotation namespace**. They are legal at
 every nesting level, carry no governance semantics, and evaluators must ignore them, so
@@ -217,13 +225,27 @@ no known rule schema is a hard failure rather than a silent skip.
 
 This reaches rules objects wherever they sit — discovery descriptors, conformance fixtures,
 the nested descriptor in `examples/policy-registration-exchange.json`, and the fenced JSON
-blocks in the RFCs and in this document.
+blocks in the RFCs and in this document. The total instance count across the repository is
+pinned by `EXPECTED_RULES_INSTANCES` in `scripts/validate-json.sh`, so adding or removing any
+`mode`+`rules` JSON block anywhere in `rfcs/` or `docs/` — this document's own Default Policy
+block above included, even though its `mode: "*"` is skipped rather than validated — turns
+`make json-validate` red until that variable is updated.
 
-**What it does not yet check.** None of the five rule schemas sets `additionalProperties: false`
-or a top-level `required`, so an empty `rules` object validates against all of them, and an
-unrecognized rule field is accepted and ignored. Decision Mode carries real constraints and
-Quorum Mode carries one conditional arm; Proposal, Task, and Handoff are enum-and-type only.
-A green run means nothing on disk contradicts its schema — not that the schemas are complete.
+Every object level in every rule schema sets `additionalProperties: false`, per
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md) and "Rule objects are closed" above,
+so an unrecognized rule field is rejected at admission, not accepted and ignored. **What it
+still does not check:** none of the five rule schemas sets a top-level `required`, so an empty
+`rules` object `{}` validates against all five — a green run means nothing on disk contradicts
+its schema, not that the schemas are complete or that every mode enforces a non-empty rule set.
+
+Beside the negative corpus below, `schemas/json/tests/valid-policy-rules/` holds one
+**maximal** fixture per mode, asserted to VALIDATE. Maximality is derived from the schema
+itself: the suite walks every subschema declaring its own `properties` and requires the
+fixture to exercise all of them, so adding an object-valued property to a rule schema turns
+the run red until the fixture grows. Each fixture also carries a top-level `$comment` and a
+nested `_note` (proving the annotation namespace survives closure) and sets
+`commitment.authority: "designated_role"` with a non-empty `designated_roles` (see
+[`schemas/json/tests/valid-policy-rules/README.md`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/json/tests/valid-policy-rules/README.md)).
 
 Policies for extension modes (`ext.*` and reverse-domain identifiers) are logged and skipped:
 they have no standards-track rule schema by design. Only an unrecognized `macp.mode.*`
@@ -303,7 +325,11 @@ covers an axis this document's eight checks do not: whether every Core payload m
 declared in `schemas/proto/macp/v1/core.proto` has a corresponding entry in
 `macp-envelope.schema.json`'s `$defs`. It is a proto↔JSON-Schema coverage check, not a
 prose-vs-artifact check, so it is not one of the eight above and is mutation-tested separately
-(`make envelope-coverage-selftest`) rather than folded into this count.
+(`make envelope-coverage-selftest`) rather than folded into this count. `check-prose.py` itself
+has the same kind of regression proof — `make prose-check-selftest`
+(`scripts/check-prose-test.py`, issues #128/#129) asserts it survives an unreadable file rather
+than crashing the whole suite — and both self-tests are their own targets among the 14 that
+`make validate` runs.
 
 ## Error Codes
 
