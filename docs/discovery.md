@@ -29,15 +29,13 @@ validated in CI by `make json-validate`.
 
 Agents SHOULD publish there regardless: this is this guide's own interoperability recommendation, stronger than the RFC's floor.
 
-Content types SHOULD use registered MACP media types from [`registries/media-types.md`](../registries/media-types.md).
-
 ## Transport Endpoints
 
 Manifests MAY include `transport_endpoints` to describe how MACP messages can be delivered. Each endpoint MUST include:
 
 - a registered transport identifier (e.g., `macp.transport.grpc.v1`),
 - a concrete URI,
-- one or more supported content types.
+- one or more supported content types. Content types SHOULD use registered MACP media types from [`registries/media-types.md`](../registries/media-types.md).
 
 per [RFC-MACP-0005 §6 (Transport Endpoints)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md).
 Transport identifiers are listed in [`registries/transports.md`](../registries/transports.md). Directly connected `GetManifest` responses may omit `transport_endpoints` when the serving channel already establishes the relevant delivery coordinates or when deployment policy intentionally withholds them.
