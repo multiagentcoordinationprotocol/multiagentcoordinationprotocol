@@ -18,6 +18,8 @@ Security is a foundational requirement for MACP. This document outlines the secu
 
 ## Transport Security
 
+See [RFC-MACP-0004 §2 (Transport Security)](../rfcs/RFC-MACP-0004-security.md).
+
 ### Requirement: TLS
 
 All MACP deployments MUST use **encrypted transport (TLS)**.
@@ -35,6 +37,8 @@ All MACP deployments MUST use **encrypted transport (TLS)**.
 **Rationale:** Prevent eavesdropping, tampering, and man-in-the-middle attacks.
 
 ## Authentication
+
+See [RFC-MACP-0004 §3 (Authentication)](../rfcs/RFC-MACP-0004-security.md).
 
 ### Supported Mechanisms
 
@@ -77,6 +81,8 @@ The `sender` field in MACP Envelopes MUST be derived from the authenticated iden
 
 ## Authorization
 
+See [RFC-MACP-0004 §4 (Authorization)](../rfcs/RFC-MACP-0004-security.md).
+
 ### Session-Level Authorization
 
 Before processing any session-scoped message, the runtime MUST verify:
@@ -100,9 +106,11 @@ Runtimes SHOULD implement admission control for `SessionStart`:
 
 ### CancelSession Authorization
 
-By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority, but cancellation MUST always require authentication and authorization.
+By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority, but cancellation MUST always require authentication and authorization. `SuspendSession` and `ResumeSession` share the same authority model and the same authentication requirement as `CancelSession`, per [RFC-MACP-0001 §7.5 (Suspension and Resume)](../rfcs/RFC-MACP-0001-core.md).
 
 ### Signal Authorization
+
+See [RFC-MACP-0004 §4.1 (Signal Authentication)](../rfcs/RFC-MACP-0004-security.md).
 
 Signals are ambient and non-binding. In the base protocol they carry an empty `session_id` and an empty `mode`; session correlation, if needed, belongs inside `SignalPayload`. Implementations MAY:
 
@@ -111,6 +119,8 @@ Signals are ambient and non-binding. In the base protocol they carry an empty `s
 - Filter/drop Signals based on policy
 
 ## Isolation
+
+See [RFC-MACP-0004 §6 (Isolation and Injection Prevention)](../rfcs/RFC-MACP-0004-security.md).
 
 ### Session Isolation
 
@@ -128,7 +138,17 @@ Runtimes MUST validate:
 - Messages cannot be "replayed" into a different session
 - `message_id` is globally unique (prevents cross-session replay)
 
+### Multi-Tenancy Isolation
+
+Multi-tenant MACP deployments MUST enforce tenant-scoped isolation at the authorization layer:
+session identifiers scoped to a tenant namespace, rejection of a cross-tenant request even when
+the `session_id` itself is valid, and agents bound to one or more tenants. MACP Core does not
+define a `tenant_id` field; tenant scoping is deployment-defined. See
+[RFC-MACP-0004 §11 (Multi-Tenancy Isolation)](../rfcs/RFC-MACP-0004-security.md).
+
 ## Replay Protection
+
+See [RFC-MACP-0004 §5 (Replay Protection)](../rfcs/RFC-MACP-0004-security.md).
 
 ### message_id Deduplication
 
@@ -158,6 +178,8 @@ While `timestamp_unix_ms` is informational and MUST NOT be used for ordering, im
 - Log timestamp anomalies for monitoring
 
 ## Denial-of-Service (DoS) Mitigation
+
+See [RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
 
 ### SessionStart Flooding
 
@@ -199,17 +221,9 @@ While `timestamp_unix_ms` is informational and MUST NOT be used for ordering, im
 
 ### Structured Errors
 
-MACP uses structured errors (`MACPError` message):
-
-```protobuf
-message MACPError {
-  string code = 1;        // Machine-readable error code
-  string message = 2;     // Human-readable description
-  string session_id = 3;  // Optional
-  string message_id = 4;  // Optional
-  bytes details = 5;      // Optional, mode-specific
-}
-```
+MACP uses structured errors (`MACPError` message). Canonical definition:
+[`schemas/proto/macp/v1/envelope.proto`](../schemas/proto/macp/v1/envelope.proto), per
+[RFC-MACP-0001 §12 (Error Model)](../rfcs/RFC-MACP-0001-core.md).
 
 ### Information Leakage Prevention
 
@@ -220,6 +234,8 @@ Error messages SHOULD:
 - Not expose internal system details in `message` field
 
 ## Observability and Security Monitoring
+
+See [RFC-MACP-0004 §8 (Auditability)](../rfcs/RFC-MACP-0004-security.md).
 
 ### Audit Logging
 
@@ -251,10 +267,17 @@ Monitor for:
 
 ## Common Error Codes
 
+[`registries/error-codes.md`](../registries/error-codes.md) is authoritative for the code,
+HTTP status, description, and lifecycle status of every MACP error code. The table below adds
+only the **Security Implication** column, which has no registry home, and covers a
+security-relevant subset; the three governance-policy codes (`UNKNOWN_POLICY_VERSION`,
+`POLICY_DENIED`, `INVALID_POLICY_DEFINITION`) are covered in
+[`docs/policy.md`](policy.md)'s own Error Codes table rather than duplicated a third time here.
+
 | Code | HTTP Status | Description | Security Implication |
 |------|-------------|-------------|---------------------|
 | `UNAUTHENTICATED` | 401 | Authentication failed | Deny access |
-| `FORBIDDEN` | 403 | Authenticated sender not authorized for session or message type | Deny access |
+| `FORBIDDEN` | 403 | Authenticated sender not authorized for the session, message type, role, or claimed authority (see [RFC-MACP-0002 §6.1](../rfcs/RFC-MACP-0002-modes.md) for the Mode-rule mapping) | Deny access |
 | `DUPLICATE_MESSAGE` | 409 | `message_id` already accepted within the session | Possible replay attack |
 | `SESSION_NOT_FOUND` | 404 | Session doesn't exist | May leak session existence |
 | `SESSION_NOT_OPEN` | 409 | Session is RESOLVED/EXPIRED | Normal termination |
@@ -266,7 +289,7 @@ Monitor for:
 | `RATE_LIMITED` | 429 | Too many requests | DoS mitigation |
 | `INVALID_SESSION_ID` | 400 | session_id format does not meet requirements | Possible attack |
 | `INTERNAL_ERROR` | 500 | Unrecoverable internal runtime error | Retry or escalate |
-| `UNAUTHORIZED` | 403 | Deprecated alias for `FORBIDDEN` | Use `FORBIDDEN` instead |
+| `UNAUTHORIZED` | 403 | Historical alias for `FORBIDDEN` (deprecated); new implementations SHOULD use `FORBIDDEN` | Use `FORBIDDEN` instead |
 
 ## Deployment Best Practices
 
@@ -299,8 +322,12 @@ Monitor for:
 
 Mode developers MUST consider:
 
-- **Participant validation**: How are participants authorized?
-- **Commitment authority**: Who can emit binding commitments?
+- **Participant validation**: How are participants authorized? Role-based authority (e.g.
+  `designated_role`/`designated_roles`) has a normative home in
+  [RFC-MACP-0012 §4](../rfcs/RFC-MACP-0012-policy.md); a breach of these rules is `FORBIDDEN`,
+  not `POLICY_DENIED`, per [RFC-MACP-0002 §6.1](../rfcs/RFC-MACP-0002-modes.md).
+- **Commitment authority**: Who can emit binding commitments? See `commitment.authority` in
+  [RFC-MACP-0012 §4](../rfcs/RFC-MACP-0012-policy.md).
 - **Data confidentiality**: Should payloads be encrypted?
 - **Audit requirements**: What must be logged for compliance?
 
@@ -330,6 +357,8 @@ Periodically conduct penetration tests focusing on:
 - Resource exhaustion vectors
 
 ## Compliance and Regulatory Considerations
+
+See [RFC-MACP-0004 §10 (Privacy and Compliance)](../rfcs/RFC-MACP-0004-security.md).
 
 Depending on your deployment, consider:
 

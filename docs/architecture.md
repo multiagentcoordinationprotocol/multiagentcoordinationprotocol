@@ -179,23 +179,19 @@ In a distributed deployment, the standard approach is to shard by `session_id`. 
 Every MACP message is encapsulated in an Envelope. The Envelope exists to keep coordination transport-independent, replayable, and versioned.
 
 The canonical representation is Protocol Buffers; a JSON mapping is required for interoperability.
+Canonical definition: [`schemas/proto/macp/v1/envelope.proto`](../schemas/proto/macp/v1/envelope.proto).
 
-```protobuf
-syntax = "proto3";
+The Envelope carries eight fields: `macp_version`, `mode`, `message_type`, `message_id`,
+`session_id`, `sender`, `timestamp_unix_ms` (informational only, MUST NOT be used for ordering),
+and `payload` (Core or Mode-specific content, serialized as bytes). `mode` and `session_id` are
+both empty for Ambient Signals; for `Progress`, the two fields MUST agree — both empty (ambient
+form) or both non-empty (session-scoped form) — an Envelope with exactly one of the two empty
+MUST be rejected, per [RFC-MACP-0001 §6](../rfcs/RFC-MACP-0001-core.md).
 
-package macp.v1;
-
-message Envelope {
-  string macp_version = 1;
-  string mode = 2;                // empty for Ambient Signals; empty or non-empty for Progress (§6)
-  string message_type = 3;
-  string message_id = 4;
-  string session_id = 5;          // empty for Signals; empty or non-empty for Progress (§6)
-  string sender = 6;
-  int64  timestamp_unix_ms = 7;   // informational
-  bytes  payload = 8;             // mode-defined
-}
-```
+The MACP Core protocol version this specification defines is `1.0`, distinct from this document's
+own revision history: a Core-only `Initialize` exchange MUST negotiate `selected_protocol_version`
+to `1.0`, and every Envelope's `macp_version` MUST equal `1.0` for that negotiated version, per
+[RFC-MACP-0001 §6](../rfcs/RFC-MACP-0001-core.md).
 
 ### 5.1 Structural vs semantic validation
 
@@ -257,7 +253,7 @@ stateDiagram-v2
   OPEN --> RESOLVED: accept first terminal message
   OPEN --> EXPIRED: TTL elapsed
   OPEN --> EXPIRED: runtime policy
-  SUSPENDED --> EXPIRED: banked TTL / MAX_SUSPEND_MS
+  SUSPENDED --> EXPIRED: banked TTL exceeds max-suspension cap
   OPEN --> CANCELLED: CancelSession
   SUSPENDED --> CANCELLED: CancelSession
 
@@ -265,6 +261,12 @@ stateDiagram-v2
   EXPIRED --> [*]
   CANCELLED --> [*]
 ```
+
+The max-suspension cap is **session-bound, not a fixed runtime constant**: it is resolved at
+`SessionStart` from `SessionStartPayload.max_suspend_ms` (0 or absent selects the runtime's
+configured default), and the resolved value MUST be recorded on the session for replay, per
+[RFC-MACP-0001 §7.5 (Suspension and Resume)](../rfcs/RFC-MACP-0001-core.md). The field's JSON
+Schema home is [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
 
 ### 7.1 Acceptance rules in OPEN
 
@@ -526,7 +528,7 @@ Cancellation is where many systems degrade into ambiguity. MACP treats cancellat
 
 A compliant runtime MUST support deterministic cancellation that transitions a session to the terminal CANCELLED state (distinct from EXPIRED) without mutating history. By default, only the session initiator is authorized to cancel. Deployments MAY extend cancellation authority through policy.
 
-A runtime SHOULD emit a session-scoped cancellation event (`SessionCancel` Envelope) into the append-only log so that replay preserves the cause of termination.
+Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` Envelope into the append-only log so that replay preserves the cause of termination, per [RFC-MACP-0001 §7.3 (Termination)](../rfcs/RFC-MACP-0001-core.md). `SessionCancel` MUST NOT be submitted directly via `Send` — the runtime is the sole emitter. It is also an **internal annotation**: it consumes no passive-subscribe ordinal and is not delivered on a `StreamSession` subscribe stream ([RFC-MACP-0006 §3.2](../rfcs/RFC-MACP-0006-transport-bindings.md)).
 
 ```mermaid
 sequenceDiagram
