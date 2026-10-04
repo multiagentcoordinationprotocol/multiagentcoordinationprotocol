@@ -374,7 +374,7 @@ than crashing the whole suite — and both self-tests are their own targets amon
 | Code | Description | Reference |
 |------|-------------|-----------|
 | `UNKNOWN_POLICY_VERSION` | Policy not found in registry at SessionStart | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
-| `POLICY_DENIED` | Commitment rejected by governance policy rules | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
+| `POLICY_DENIED` | Commitment rejected by governance policy rules (except a `commitment.authority`/`designated_roles` breach, which is a sender-authorization failure and uses `FORBIDDEN` instead, per [RFC-MACP-0002 §6.1](../rfcs/RFC-MACP-0002-modes.md)) | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
 | `INVALID_POLICY_DEFINITION` | Policy descriptor fails validation | [RFC-MACP-0012 Section 10](../rfcs/RFC-MACP-0012-policy.md) |
 
 Full error code registry: [`registries/error-codes.md`](../registries/error-codes.md)

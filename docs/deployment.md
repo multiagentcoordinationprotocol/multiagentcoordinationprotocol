@@ -60,7 +60,7 @@ Federation depends on manifests ([docs/discovery.md](discovery.md)), mode descri
 - treat registries as cacheable but versioned,  
 - expose health, latency, and rejection metrics per shard.
 
-Backpressure is normative, not advisory: see [RFC-MACP-0001 §9 (Transport Requirements)](../rfcs/RFC-MACP-0001-core.md).
+Backpressure carries its own SHOULD-level requirement, not just operational advice: see [RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
 docs/architecture.md's own §11 (Flow control and resource limits) covers the full backpressure and quota model this recommendation summarizes.
-Treating registries as cacheable but versioned follows from [RFC-MACP-0005 §8 (Manifest Versioning)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md)'s forward-compatibility requirement.
+Treating registries as cacheable but versioned is this document's own operational guidance, not a restatement of an RFC requirement; [RFC-MACP-0005 §10 (Registries)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md) names the registry types it applies to.
 Rejection metrics support the auditability [RFC-MACP-0004 §8 (Auditability)](../rfcs/RFC-MACP-0004-security.md) expects.

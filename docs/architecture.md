@@ -264,7 +264,7 @@ stateDiagram-v2
   OPEN --> RESOLVED: accept first terminal message
   OPEN --> EXPIRED: TTL elapsed
   OPEN --> EXPIRED: runtime policy
-  SUSPENDED --> EXPIRED: banked TTL exceeds max-suspension cap
+  SUSPENDED --> EXPIRED: banked TTL elapses / max-suspension cap exceeded
   OPEN --> CANCELLED: CancelSession
   SUSPENDED --> CANCELLED: CancelSession
 
@@ -523,8 +523,7 @@ If a Mode requires cross-session coordination, it MUST define that topology expl
 A coordination kernel that buffers unboundedly becomes the instability it was built to prevent.
 
 Therefore, implementations MUST treat flow control and resource limits as structural features, not
-tuning knobs, per [RFC-MACP-0001 §9 (Transport Requirements)](../rfcs/RFC-MACP-0001-core.md);
-[RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
+tuning knobs, per [RFC-MACP-0004 §7 (DoS Mitigation)](../rfcs/RFC-MACP-0004-security.md).
 
 ### 11.1 Backpressure
 

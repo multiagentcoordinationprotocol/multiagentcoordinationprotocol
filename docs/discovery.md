@@ -23,11 +23,11 @@ validated in CI by `make json-validate`.
 
 ## Well-known Discovery
 
-Agents SHOULD publish their manifest at:
+[RFC-MACP-0005 §7.1 (Well-known URL)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md) defines this location — the RFC itself says MAY:
 
 `https://<host>/.well-known/macp.json`
 
-per [RFC-MACP-0005 §7.1 (Well-known URL)](../rfcs/RFC-MACP-0005-discovery-and-manifests.md).
+Agents SHOULD publish there regardless: this is this guide's own interoperability recommendation, stronger than the RFC's floor.
 
 Content types SHOULD use registered MACP media types from [`registries/media-types.md`](../registries/media-types.md).
 
