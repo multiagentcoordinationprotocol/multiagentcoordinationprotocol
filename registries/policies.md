@@ -34,7 +34,7 @@ Policies are registered with the runtime via:
 - **gRPC `RegisterPolicy` RPC** — dynamic registration at runtime
 - **File loading from `MACP_POLICIES_DIR`** — static loading at startup (implementation-defined)
 
-Both paths are **admission**: the rule-schema validation required by [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) §7 runs when a descriptor is registered or loaded, against the rule schemas the runtime ships — and never again afterwards. Because rule schemas can tighten between releases, a policy file that loaded under an earlier release may fail to load under a later one. Such a failure bars **new** sessions from binding that policy; it MUST NOT affect stored sessions, which replay from the persisted `PolicyDescriptor` without revalidation (RFC-MACP-0012 §8, items 2 and 4), never from `MACP_POLICIES_DIR`.
+Both paths are **admission**: the descriptor-schema and rule-schema validation required by [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) §7 runs when a descriptor is registered or loaded, against the schemas the runtime ships — and never again afterwards. An unsupported `schema_version` and an unimplemented vendor-extension key are both rejected here, with `INVALID_POLICY_DEFINITION` (§3, §4). Because these schemas can tighten between releases, a policy file that loaded under an earlier release may fail to load under a later one. Such a failure bars **new** sessions from binding that policy; it MUST NOT affect stored sessions, which replay from the persisted `PolicyDescriptor` without revalidation (RFC-MACP-0012 §8, items 2 and 4), never from `MACP_POLICIES_DIR`.
 
 ## Rule Schemas
 
@@ -47,3 +47,13 @@ Each standard mode defines a normative JSON Schema for its governance rules:
 | `macp.mode.proposal.v1` | `schemas/json/policy/proposal-rules.schema.json` | [RFC-MACP-0012 Section 4.3](../rfcs/RFC-MACP-0012-policy.md) |
 | `macp.mode.task.v1` | `schemas/json/policy/task-rules.schema.json` | [RFC-MACP-0012 Section 4.4](../rfcs/RFC-MACP-0012-policy.md) |
 | `macp.mode.handoff.v1` | `schemas/json/policy/handoff-rules.schema.json` | [RFC-MACP-0012 Section 4.5](../rfcs/RFC-MACP-0012-policy.md) |
+
+## Vendor-Extension Keys
+
+A `rules` object MAY carry vendor-extension keys at its top level, for restrictions MACP does not define ([RFC-MACP-0012 §4](../rfcs/RFC-MACP-0012-policy.md)). This registry does **not** allocate them. The name is the vendor's own reverse-domain identifier after an `x-` prefix, matching `^x-[a-z0-9]+(\.[a-z0-9-]+)+$`. For example, `x-com.example.governance` belongs to whoever controls `example.com`. Collision avoidance rests on domain ownership, the same convention used for reverse-domain extension mode identifiers. A vendor SHOULD use only a domain it controls and SHOULD publish the extension's keys, value types and restriction semantics.
+
+The rule schemas enforce only the key's shape: its name, its top-level position and an object value. The extension's contents are validated by the runtime that implements it. A runtime that does not implement a given key rejects the descriptor at admission, and a runtime MAY advertise the keys it implements in `PolicyRegistryCapability.rule_extensions` (RFC-MACP-0012 §9).
+
+| Example key | Defined by | Purpose |
+|-------------|------------|---------|
+| `x-com.zer07labs.seam` | Seam (`zer07labs.com`) | `capture_dissent: true` refuses a `Vote` whose `reason` is empty or whitespace. This example is cited non-normatively in RFC-MACP-0012 §4 and is not a registration. |

@@ -47,15 +47,16 @@ alongside it under the same whole-schema mutation and break the diagonal.
 from the schema should make exactly that fixture validate and leave the others
 rejected — a perfect diagonal:
 
-| mutation | weighted | zero | over100 | no-roles | roles-empty | unknown-key |
-|---|---|---|---|---|---|---|
-| *intact* | reject | reject | reject | reject | reject | reject |
-| drop `enum` | **PASS** | reject | reject | reject | reject | reject |
-| drop `exclusiveMinimum` | reject | **PASS** | reject | reject | reject | reject |
-| drop percentage `maximum` | reject | reject | **PASS** | reject | reject | reject |
-| drop arm's `required` | reject | reject | reject | **PASS** | reject | reject |
-| drop arm's `minItems` | reject | reject | reject | reject | **PASS** | reject |
-| drop every `additionalProperties: false` | reject | reject | reject | reject | reject | **PASS** |
+| mutation | weighted | zero | over100 | no-roles | roles-empty | unknown-key | x-non-object |
+|---|---|---|---|---|---|---|---|
+| *intact* | reject | reject | reject | reject | reject | reject | reject |
+| drop `enum` | **PASS** | reject | reject | reject | reject | reject | reject |
+| drop `exclusiveMinimum` | reject | **PASS** | reject | reject | reject | reject | reject |
+| drop percentage `maximum` | reject | reject | **PASS** | reject | reject | reject | reject |
+| drop arm's `required` | reject | reject | reject | **PASS** | reject | reject | reject |
+| drop arm's `minItems` | reject | reject | reject | reject | **PASS** | reject | reject |
+| drop every `additionalProperties: false` | reject | reject | reject | reject | reject | **PASS** | reject |
+| drop the `x-` arm's `type` | reject | reject | reject | reject | reject | reject | **PASS** |
 
 The `drop every additionalProperties: false` row is the whole-schema mutation
 unit described above, not a single keyword — that is why it reads differently
@@ -80,6 +81,16 @@ Note the consequence for the enum: there can be only **one** enum fixture here.
 and the refusal of the `count` alias (issue #98 item 4), because a second enum
 fixture would also start validating when the `enum` keyword is dropped, breaking
 the diagonal.
+
+**`vendor-extension-non-object.json`** (RFC-MACP-0012 1.7.0-draft; issue #185 S1) pins
+this schema's top-level vendor-extension arm, `^x-[a-z0-9]+(\.[a-z0-9-]+)+$`. A well-named
+top-level key whose value is not an object is rejected by that arm's `type: object` alone.
+Dropping that one keyword flips this fixture and no other. All five rule schemas carry the
+arm, so each mode has its own copy of this fixture. Without one, a schema whose arm had been
+copied wrongly or left out would still pass. The name and nesting cases (`-bad-name`,
+`-nested`) live in `../invalid-policy-rules/` only. They test the closure keyword, which is
+the same in every schema, so one copy is enough. The positive case is the `x-com.example.gov`
+key in `../valid-policy-rules/`.
 
 ## Adding a fixture
 

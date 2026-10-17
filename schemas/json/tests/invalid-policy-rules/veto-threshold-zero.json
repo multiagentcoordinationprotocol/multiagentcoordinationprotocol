@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "`objection_handling.veto_threshold` MUST be at least 1 -- `minimum: 1` (RFC-MACP-0012 §4.1). A count of 0 blocking objections is met by an empty objection set, so the policy would veto every commitment. Added as an admission-time range vector (seam-embedder-findings proposal S11, issue #185): the §7 admission gate rejects out-of-range values, not only unknown keys. No other key is set, so nothing else can be the cause.",
+  "objection_handling": {
+    "veto_threshold": 0
+  }
+}

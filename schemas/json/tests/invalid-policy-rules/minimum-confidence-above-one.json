@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "`evaluation.minimum_confidence` MUST be at most 1 -- `maximum: 1` (RFC-MACP-0012 §4.1). Confidence is a fraction in [0, 1], so a floor above 1 is met by no evaluation and silently disqualifies every one. Added as an admission-time range vector (seam-embedder-findings proposal S11, issue #185): the §7 admission gate rejects out-of-range values, not only unknown keys. No other key is set, so nothing else can be the cause.",
+  "evaluation": {
+    "minimum_confidence": 1.5
+  }
+}

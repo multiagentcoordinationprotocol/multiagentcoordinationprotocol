@@ -1,0 +1,8 @@
+{
+  "_invalid_because": "Vendor-extension keys (`^x-[a-z0-9]+(\\.[a-z0-9-]+)+$`) are legal at the TOP LEVEL of a `rules` object only (RFC-MACP-0012 §4, Vendor-extension keys; seam-embedder-findings proposal S1, issue #185). Nested object levels keep the `^[_$]` annotation escape and nothing else, so a well-named, object-valued `x-` key under `commitment` is an undefined key there and is rejected by the `commitment`-level `additionalProperties: false`. Placed under `commitment` rather than `voting` (where the proposal put it) so that it is rejected by a different occurrence of the closure keyword from `unknown-key.json`, which owns the `voting` level. No `authority` is set, so the commitment `allOf` arm cannot fire.",
+  "commitment": {
+    "x-com.example.gov": {
+      "require_reason": true
+    }
+  }
+}

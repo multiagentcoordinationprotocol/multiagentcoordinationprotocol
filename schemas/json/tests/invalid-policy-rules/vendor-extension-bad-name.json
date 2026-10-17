@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "`x-seam` is not a vendor-extension key: the name after `x-` MUST be a reverse-domain identifier with at least one dot, per `^x-[a-z0-9]+(\\.[a-z0-9-]+)+$` (RFC-MACP-0012 §4, Vendor-extension keys; seam-embedder-findings proposal S1, issue #185). It therefore matches no patternProperties arm and is rejected as an undefined key by the TOP-LEVEL `additionalProperties: false`. The value is an object, so the `x-` arm's `type: object` cannot be the cause even under a loosened pattern.",
+  "x-seam": {}
+}

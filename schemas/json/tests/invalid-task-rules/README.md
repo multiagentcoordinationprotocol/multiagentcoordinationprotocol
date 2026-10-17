@@ -59,5 +59,15 @@ Both proofs were run across all five rule directories at once, not just this one
 the arm is shared vocabulary, so a mutation in one schema must not move a fixture
 in another.
 
+**`vendor-extension-non-object.json`** (RFC-MACP-0012 1.7.0-draft; issue #185 S1) pins
+this schema's top-level vendor-extension arm, `^x-[a-z0-9]+(\.[a-z0-9-]+)+$`. A well-named
+top-level key whose value is not an object is rejected by that arm's `type: object` alone.
+Dropping that one keyword flips this fixture and no other. All five rule schemas carry the
+arm, so each mode has its own copy of this fixture. Without one, a schema whose arm had been
+copied wrongly or left out would still pass. The name and nesting cases (`-bad-name`,
+`-nested`) live in `../invalid-policy-rules/` only. They test the closure keyword, which is
+the same in every schema, so one copy is enough. The positive case is the `x-com.example.gov`
+key in `../valid-policy-rules/`.
+
 These fixtures are **not** vendored by the downstream SDK or runtime repositories —
 only `schemas/conformance/` is — so adding one costs those repos nothing.
