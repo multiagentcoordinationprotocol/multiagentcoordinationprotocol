@@ -297,7 +297,7 @@ security-relevant subset; the three governance-policy codes (`UNKNOWN_POLICY_VER
 | `FORBIDDEN` | 403 | Authenticated sender not authorized for the session, message type, role, or claimed authority (see [RFC-MACP-0002 §6.1](../rfcs/RFC-MACP-0002-modes.md) for the Mode-rule mapping) | Deny access |
 | `DUPLICATE_MESSAGE` | 409 | `message_id` already accepted within the session | Possible replay attack |
 | `SESSION_NOT_FOUND` | 404 | Session doesn't exist | May leak session existence |
-| `SESSION_NOT_OPEN` | 409 | Session is RESOLVED/EXPIRED | Normal termination |
+| `SESSION_NOT_OPEN` | 409 | Session is not OPEN (RESOLVED, EXPIRED, CANCELLED, or SUSPENDED) | Normal termination or suspension |
 | `SESSION_ALREADY_EXISTS` | 409 | Session already has an accepted SessionStart for this session_id | Possible replay or collision |
 | `INVALID_ENVELOPE` | 400 | Envelope validation failed, payload structural contract not met, or mode validation rule breached | Possible attack |
 | `UNSUPPORTED_PROTOCOL_VERSION` | 400 | No mutually supported protocol version | Version mismatch |

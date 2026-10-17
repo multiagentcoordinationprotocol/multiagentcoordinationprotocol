@@ -6,7 +6,7 @@ Thank you for contributing to the Multi-Agent Coordination Protocol (MACP).
 MACP is a structural coordination standard. All changes MUST preserve core invariants:
 
 - Explicit session boundaries
-- Monotonic lifecycle (OPEN → RESOLVED | EXPIRED)
+- Monotonic lifecycle (OPEN → RESOLVED | EXPIRED | CANCELLED)
 - Isolation between sessions
 - Append-only history
 - Idempotent message acceptance

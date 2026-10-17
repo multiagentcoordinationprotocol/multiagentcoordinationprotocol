@@ -8,7 +8,7 @@ stayed green while RFC-MACP-0012 made four false claims about its own canonical
 schemas, while two RFCs gave opposite answers about the same tally, and while a
 justification rested on a section that does not exist.
 
-"Is this paragraph true?" is not a lint rule. These eight checks are the fraction
+"Is this paragraph true?" is not a lint rule. These ten checks are the fraction
 that is mechanical:
 
   1. line-number anchors   -- `(:102)`-style citations drift on every edit above
@@ -50,6 +50,15 @@ that is mechanical:
                               Nothing held the two lists to each other or to
                               the script; #157 found them both disagreeing
                               and both stale.
+  9. RPC listing            -- RFC-MACP-0006 §3 reproduces core.proto's
+                              MACPRuntimeService "for convenience", and it
+                              lacked SuspendSession/ResumeSession. Its rpc
+                              lines must equal the proto's, in order (#185 S9).
+  10. session-state lists   -- curated prose lists of session states must
+                              name exactly RFC-MACP-0001 §7.2's terminal set,
+                              full set, or non-OPEN set; §7.2 is itself held to
+                              envelope.proto's SessionState enum. Four sites
+                              still listed the two-terminal lifecycle (#185 S10).
 
 Reporting follows check-indexes.sh: accumulate every failure and report them all,
 rather than dying on the first. One run should surface the whole list.
@@ -1080,6 +1089,199 @@ def check_parity_held_values():
           else "  [X] %d enumeration mismatch(es)" % problems)
 
 
+# --------------------------------------------------------------------------
+# 9. RFC-MACP-0006 §3 RPC listing equals core.proto's MACPRuntimeService
+# --------------------------------------------------------------------------
+RPC_LINE = re.compile(r"^\s*rpc\s+(\w+)\s*\(.*$", re.M)
+
+
+def _norm_rpc(line):
+    return " ".join(line.split())
+
+
+def check_rpc_listing():
+    """Assert RFC-MACP-0006 §3's MACPRuntimeService listing reproduces
+    core.proto's `rpc` set, in order, signature for signature.
+
+    Canonical: the `service MACPRuntimeService { ... }` block in
+    schemas/proto/macp/v1/core.proto. The RFC calls the proto authoritative and
+    its own listing "reproduced for convenience", but the listing is the copy
+    readers see -- and it silently lacked SuspendSession and ResumeSession,
+    which RFC-MACP-0001 §7.5 depends on (seam-embedder-findings proposal S9,
+    issue #185).
+
+    Two assertions. (1) The §3 listing's rpc lines, whitespace-normalised,
+    equal the proto service's rpc lines in the same order. Comments are not
+    compared. (2) Every rpc line in ANY protobuf block of RFC-MACP-0006 (the
+    §3.7 and §3.8 excerpts too) is a signature the proto actually declares, so
+    an excerpt cannot drift on its own.
+    """
+    global CHECKS
+    CHECKS += 1
+    print("-- RFC-MACP-0006 §3 RPC listing matches core.proto --")
+    proto_path = os.path.join(ROOT, "schemas", "proto", "macp", "v1", "core.proto")
+    rfc_path = os.path.join(ROOT, "rfcs", "RFC-MACP-0006-transport-bindings.md")
+    try:
+        proto = open(proto_path, encoding="utf-8").read()
+        rfc = open(rfc_path, encoding="utf-8").read()
+    except OSError as exc:
+        fail("RPC listing check could not read its inputs: %s" % exc)
+        print("  [X] core.proto or RFC-MACP-0006 unreadable")
+        return
+
+    pm = re.search(r"^service MACPRuntimeService\s*\{(.*?)^\}", proto, re.M | re.S)
+    if not pm:
+        fail("core.proto: no `service MACPRuntimeService { ... }` block found")
+        print("  [X] proto service block not found")
+        return
+    canonical = [_norm_rpc(m.group(0)) for m in RPC_LINE.finditer(pm.group(1))]
+
+    blocks = re.findall(r"```protobuf\n(.*?)```", rfc, re.S)
+    listing = next((b for b in blocks if "service MACPRuntimeService" in b), None)
+    if listing is None:
+        fail("RFC-MACP-0006: no protobuf block declaring `service "
+             "MACPRuntimeService` -- if §3's listing moved, update this check")
+        print("  [X] RFC listing not found")
+        return
+    listed = [_norm_rpc(m.group(0)) for m in RPC_LINE.finditer(listing)]
+
+    problems = 0
+    if listed != canonical:
+        problems += 1
+        missing = [r for r in canonical if r not in listed]
+        extra = [r for r in listed if r not in canonical]
+        detail = []
+        if missing:
+            detail.append("missing: %s" % "; ".join(missing))
+        if extra:
+            detail.append("not in core.proto: %s" % "; ".join(extra))
+        if not detail:
+            detail.append("same rpc set, different order")
+        fail("RFC-MACP-0006 §3's MACPRuntimeService listing (%d rpc) differs "
+             "from core.proto's (%d rpc) -- %s"
+             % (len(listed), len(canonical), " | ".join(detail)))
+
+    for block in blocks:
+        for m in RPC_LINE.finditer(block):
+            line = _norm_rpc(m.group(0))
+            if line not in canonical:
+                problems += 1
+                fail("RFC-MACP-0006: rpc excerpt %r is not a signature "
+                     "core.proto's MACPRuntimeService declares" % line)
+    print("  [OK] %d rpc(s) listed, matching core.proto in order" % len(canonical)
+          if not problems else "  [X] %d RPC listing problem(s)" % problems)
+
+
+# --------------------------------------------------------------------------
+# 10. Session-state lists agree with RFC-MACP-0001 §7.2
+# --------------------------------------------------------------------------
+# Each row: (file, regex whose group 1 is the parenthesised list, which set it
+# must equal). "terminal" = the terminal states; "all" = every state;
+# "not_open" = every state except OPEN (what SESSION_NOT_OPEN covers).
+# CURATED, like CITED_TERMS: deciding mechanically which prose list means
+# "the terminal states" is not possible, so each row pins one known site.
+# Add a row whenever prose enumerates session states (issue #185 S10).
+STATE_LIST_SITES = [
+    ("rfcs/RFC-MACP-0003-determinism.md",
+     r"produce the same terminal state \(([^)]*)\)", "terminal"),
+    ("rfcs/RFC-MACP-0003-determinism.md",
+     r"the terminal lifecycle state \(([^)]*)\)", "terminal"),
+    ("rfcs/RFC-MACP-0003-determinism.md",
+     r"identical lifecycle transitions \(([^)]*)\)", "all"),
+    ("CONTRIBUTING.md",
+     r"Monotonic lifecycle \(OPEN → ([^)]*)\)", "terminal"),
+    ("registries/error-codes.md",
+     r"\| SESSION_NOT_OPEN \| Session is not OPEN \(([^)]*)\)", "not_open"),
+    ("docs/security.md",
+     r"\| `SESSION_NOT_OPEN` \| 409 \| Session is not OPEN \(([^)]*)\)", "not_open"),
+]
+STATE_LIST_FILLER = {"OR", "AND"}
+
+
+def check_state_lists():
+    """Assert every curated prose list of session states names exactly the
+    states RFC-MACP-0001 §7.2 defines for that list's meaning.
+
+    Canonical: the bullet list under RFC-MACP-0001 "### 7.2 Session States",
+    where a bullet marked "terminal" is a terminal state. That set is itself
+    cross-checked against the `SessionState` enum in envelope.proto (minus
+    UNSPECIFIED), so the RFC and the wire cannot drift apart either.
+
+    Several sites still listed the pre-CANCELLED lifecycle (two terminal
+    states, no SUSPENDED) long after RFC-MACP-0001 grew five states, and
+    nothing noticed (seam-embedder-findings proposal S10, issue #185).
+    """
+    global CHECKS
+    CHECKS += 1
+    print("-- session-state lists agree with RFC-MACP-0001 §7.2 --")
+    problems = 0
+    try:
+        core = open(os.path.join(ROOT, "rfcs", "RFC-MACP-0001-core.md"),
+                    encoding="utf-8").read()
+        env = open(os.path.join(ROOT, "schemas", "proto", "macp", "v1",
+                                "envelope.proto"), encoding="utf-8").read()
+    except OSError as exc:
+        fail("state-list check could not read RFC-MACP-0001 or envelope.proto: %s"
+             % exc)
+        print("  [X] canonical sources unreadable")
+        return
+
+    sm = re.search(r"^### 7\.2 Session States\n(.*?)^#", core, re.M | re.S)
+    if not sm:
+        fail("RFC-MACP-0001: no '### 7.2 Session States' section -- if it "
+             "moved, update check_state_lists")
+        print("  [X] RFC-MACP-0001 §7.2 not found")
+        return
+    all_states, terminal = set(), set()
+    for m in re.finditer(r"^- `([A-Z_]+)`(.*)$", sm.group(1), re.M):
+        all_states.add(m.group(1))
+        if re.search(r"—\s*terminal\b", m.group(2)):
+            terminal.add(m.group(1))
+    if not all_states or not terminal:
+        fail("RFC-MACP-0001 §7.2: could not parse the state bullet list "
+             "(found %d states, %d terminal)" % (len(all_states), len(terminal)))
+        print("  [X] §7.2 state list unparseable")
+        return
+
+    em = re.search(r"enum SessionState\s*\{(.*?)\}", env, re.S)
+    enum_states = set(re.findall(r"SESSION_STATE_([A-Z_]+)\s*=", em.group(1))) \
+        if em else set()
+    enum_states.discard("UNSPECIFIED")
+    if enum_states != all_states:
+        problems += 1
+        fail("RFC-MACP-0001 §7.2 lists states %s but envelope.proto's "
+             "SessionState enum declares %s"
+             % (sorted(all_states), sorted(enum_states)))
+
+    expected = {"terminal": terminal, "all": all_states,
+                "not_open": all_states - {"OPEN"}}
+    for relpath, pattern, kind in STATE_LIST_SITES:
+        try:
+            text = open(os.path.join(ROOT, relpath), encoding="utf-8").read()
+        except OSError as exc:
+            problems += 1
+            fail("%s could not be read to check its state list: %s"
+                 % (relpath, exc))
+            continue
+        m = re.search(pattern, text)
+        if not m:
+            problems += 1
+            fail("%s: no state list matched /%s/ -- the sentence was reworded "
+                 "or removed, so nothing holds it to RFC-MACP-0001 §7.2; update "
+                 "STATE_LIST_SITES" % (relpath, pattern))
+            continue
+        found = {t.upper() for t in re.findall(r"[A-Za-z_]+", m.group(1))} \
+            - STATE_LIST_FILLER
+        if found != expected[kind]:
+            problems += 1
+            fail("%s: state list (%s) names %s, but RFC-MACP-0001 §7.2's %s "
+                 "set is %s" % (relpath, m.group(1), sorted(found), kind,
+                                sorted(expected[kind])))
+    print("  [OK] %d state list(s) agree with RFC-MACP-0001 §7.2 and "
+          "envelope.proto" % len(STATE_LIST_SITES)
+          if not problems else "  [X] %d state-list problem(s)" % problems)
+
+
 def main():
     print("Checking RFC prose against the artifacts that implement it...")
     print("")
@@ -1091,6 +1293,8 @@ def main():
     check_check_count()
     check_descriptor_required()
     check_parity_held_values()
+    check_rpc_listing()
+    check_state_lists()
     print("")
     print("-------------------------------------")
     if FAILURES:

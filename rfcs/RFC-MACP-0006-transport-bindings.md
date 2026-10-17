@@ -2,10 +2,16 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.5.0-draft
+**Version:** 1.6.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.6.0-draft:** Three amendments from the seam-embedder-findings proposal (issue #185).
+> (1) S9: §3's `MACPRuntimeService` listing now includes `SuspendSession` and `ResumeSession`, which RFC-MACP-0001 §7.5 depends on. They were in `core.proto` and missing here, so the listing showed 22 of 24 RPCs. The listing now matches `core.proto`'s `rpc` set in order, and `make prose-check` enforces that. Editorial: the proto was always authoritative.
+> (2) S13: §3 adds "The gRPC binding MUST map error codes to gRPC status codes per the error-codes registry", with a new **gRPC Status** column in `registries/error-codes.md` that is aligned with the HTTP column. The HTTP binding (§4) already had this obligation; the gRPC binding had none, so a server could map codes its own way. Per-message rejections still travel in `SendResponse.ack` (§3.1). The proposal also asked for a parity-contract `error_status` table. It is **deferred**: `macp-runtime`'s server currently maps `POLICY_DENIED` to `FAILED_PRECONDITION`, and `SESSION_NOT_FOUND`, `INVALID_ENVELOPE`, `DUPLICATE_MESSAGE`, `UNSUPPORTED_PROTOCOL_VERSION`, `MODE_NOT_SUPPORTED` and `UNKNOWN_POLICY_VERSION` fall through to `FAILED_PRECONDITION`. A parity entry can only pin values that already agree. **Behaviour:** this is a new MUST. That server does not conform for those seven codes until it changes, and clients that branch on its current `FAILED_PRECONDITION` for `POLICY_DENIED` will see `PERMISSION_DENIED` once it does.
+> (3) S8: §3.4 defines `WatchSignalsResponse.sender_authenticated` (`false` = unauthenticated), which is the wire carrier for RFC-MACP-0004 §4.1's unauthenticated-Signal annotation. §4 and §5 require the HTTP and WebSocket bindings to deliver Signals with the same flag. The proto field itself (`bool sender_authenticated = 2;`) lands in `core.proto` through the companion S8 change, not this one; this text references it by name. Additive: an absent flag reads as `false`, which is the safe direction.
+> **Replay:** no exposure. Transport status codes and the Signal authentication flag are outside accepted session history. Signals never enter it (§3.4), and a rejected envelope produces the same accept/reject decision whatever status code reports it (RFC-MACP-0003 §1).
+>
 > **Changelog — 1.5.0-draft:** §3.2's bookkeeping-entries list now names
 > `SessionCancel` explicitly (previously reachable only via the trailing "any other
 > internal log entry" catch-all), citing RFC-MACP-0001 §7.3 where it is defined.
@@ -60,6 +66,9 @@ service MACPRuntimeService {
   rpc StreamSession(stream StreamSessionRequest) returns (stream StreamSessionResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
   rpc CancelSession(CancelSessionRequest) returns (CancelSessionResponse);
+  // Session suspension / resume (RFC-MACP-0001 §7.5)
+  rpc SuspendSession(SuspendSessionRequest) returns (SuspendSessionResponse);
+  rpc ResumeSession(ResumeSessionRequest) returns (ResumeSessionResponse);
   rpc GetManifest(GetManifestRequest) returns (GetManifestResponse);
   rpc ListModes(ListModesRequest) returns (ListModesResponse);
   rpc WatchModeRegistry(WatchModeRegistryRequest) returns (stream WatchModeRegistryResponse);
@@ -83,6 +92,10 @@ service MACPRuntimeService {
   rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
 }
 ```
+
+The listing MUST name exactly the `rpc` set of `MACPRuntimeService` in `core.proto`, in the same order; `make prose-check` enforces this.
+
+**Error status mapping.** The gRPC binding MUST map error codes to gRPC status codes per the [error-codes registry](../registries/error-codes.md). The registry's **gRPC Status** column is the mapping. It applies wherever the binding reports a MACP error code as the RPC's own status. It does not move per-message rejections out of `SendResponse.ack` (§3.1): a rejected envelope is still reported in the Ack, with the registry code in its `MACPError`.
 
 ### 3.1 `Send`
 
@@ -179,6 +192,8 @@ Use cases include:
 
 A runtime that supports `WatchSignals` MUST broadcast all accepted Signal envelopes to all active subscribers. Signals are ephemeral — they are not persisted and are not available for replay.
 
+**Sender authentication.** Each `WatchSignalsResponse` also carries `sender_authenticated`. A runtime MUST set it to `true` only when it authenticated the Signal's sender. `false` means the sender is unauthenticated. This field is the annotation that RFC-MACP-0004 §4.1 requires before an unauthenticated Signal is forwarded to subscribers. The Envelope itself carries no authentication field, so this flag is the only place the status travels. A proto3 bool that is absent reads as `false`. A subscriber whose runtime predates the field therefore sees every Signal as unauthenticated, which is the safe direction.
+
 ### 3.5 `GetSession`
 
 `GetSession` returns a `SessionMetadata` snapshot for the given session. The response includes the session's identity, state, timing, and bound version fields (`mode_version`, `configuration_version`, `policy_version`), as well as the current participant list, per-participant activity summaries (`ParticipantActivity`), `context_id` (if set at session creation), and `extension_keys` (the keys of any extension blocks bound at session creation). The `ParticipantActivity` entries provide `participant_id`, `last_message_at_unix_ms`, and `message_count` for each participant that has sent at least one accepted message.
@@ -240,9 +255,13 @@ POST /macp/session/{id}/cancel
 GET  /.well-known/macp.json
 ```
 
+An HTTP binding that delivers Signals to observers, for example as a server-sent-event stream or a polling response, MUST deliver each Signal with the same `sender_authenticated` flag that `WatchSignalsResponse.sender_authenticated` carries (§3.4). `false` means the sender is unauthenticated. The flag is a sibling of the Envelope and MUST NOT be placed inside it, so each delivered item is the canonical JSON mapping of `WatchSignalsResponse` (RFC-MACP-0001 §10): `{"envelope": {...}, "sender_authenticated": true}`. A receiver MUST treat an absent `sender_authenticated` as `false`, because proto3 JSON encoders commonly omit a bool whose value is `false`.
+
 ## 5. WebSocket Binding
 
 The WebSocket binding is OPTIONAL. Implementations providing it MUST frame each Envelope as a single WebSocket message and MUST preserve per-session ordering.
+
+A WebSocket binding that delivers Signals to observers MUST frame each Signal as a single WebSocket message carrying the canonical JSON mapping of `WatchSignalsResponse`, so that the Envelope travels with its `sender_authenticated` flag (§3.4, §4). This frame wraps one Envelope rather than being a bare Envelope, and it is used only for delivering Signals to observers. `false` means the sender is unauthenticated, and a receiver MUST treat an absent flag as `false`.
 
 ## 6. Message Bus Binding
 
