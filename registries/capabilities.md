@@ -27,7 +27,7 @@ macp.transport.grpc.v1
 | macp.transport.websocket.v1 | WebSocket transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.messagebus.v1 | Message bus transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.policy.v1 | Governance policy registry and evaluation | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
-| macp.security.delegated_submission.v1 | Accepts delegated (on-behalf-of) submission of session-scoped envelopes; the runtime documents the delegation mechanisms it accepts | provisional | [RFC-MACP-0004 §3.1](../rfcs/RFC-MACP-0004-security.md) |
+| macp.security.delegated_submission.v1 | Accepts delegated (on-behalf-of) submission of session-scoped envelopes; the runtime documents the delegation mechanisms it accepts | permanent | [RFC-MACP-0004 §3.1](../rfcs/RFC-MACP-0004-security.md) |
 
 ## Capability Registry vs. Capability Objects
 
