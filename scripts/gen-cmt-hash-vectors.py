@@ -25,6 +25,13 @@ Algorithm (RFC-MACP-0013 Section 4):
     3. Preimage P = ASCII("macp-commitment-hash/1:") || C.
     4. hash = "sha256:" + lowercase-hex(SHA-256(P)).
 
+Vectors 001-005 are COMPUTE vectors (payload in, hash out). Vectors 006-010
+are VERIFY vectors (RFC-MACP-0013 Section 6): each pins a payload's Protobuf
+wire encoding (`wire_hex`), a `claimed_hash`, and the `expected_outcome`
+(match | mismatch | cannot_verify) a conforming verifier MUST return. Their
+values are the ones pinned by macp-runtime's
+`macp_core::commitment_hash::verify_commitment_hash` crate tests.
+
 Run: `python3 scripts/gen-cmt-hash-vectors.py`
 """
 
@@ -123,6 +130,113 @@ _p005 = {
     "outcome_positive": False,
 }
 
+def _key(field: int, wire_type: int) -> bytes:
+    """Protobuf field key as a varint (two bytes suffice for field < 2048)."""
+    k = field << 3 | wire_type
+    return bytes([k]) if k < 0x80 else bytes([k & 0x7F | 0x80, k >> 7])
+
+
+def _len_field(field: int, body: bytes) -> bytes:
+    assert len(body) < 0x80, "single-byte length only; enough for these vectors"
+    return _key(field, 2) + bytes([len(body)]) + body
+
+
+def encode_wire(payload: dict) -> bytes:
+    """proto3 encoding of a projected CommitmentPayload: default-valued
+    scalars omitted, fields in field-number order. A `_tail` key (in the
+    payload or in `supersedes`) is raw wire bytes appended to that message;
+    it is never projected or hashed."""
+    out = b""
+    for num, name in enumerate(STRING_FIELDS, start=1):
+        if payload[name]:
+            out += _len_field(num, payload[name].encode("utf-8"))
+    if payload["outcome_positive"]:
+        out += _key(8, 0) + b"\x01"
+    if "supersedes" in payload:
+        ref = payload["supersedes"]
+        body = b""
+        for num, name in ((1, "session_id"), (2, "commitment_hash")):
+            if ref[name]:
+                body += _len_field(num, ref[name].encode("utf-8"))
+        out += _len_field(9, body + ref.get("_tail", b""))
+    return out + payload.get("_tail", b"")
+
+
+STRING_FIELDS = (
+    "commitment_id", "action", "authority_scope", "reason",
+    "mode_version", "policy_version", "configuration_version",
+)
+
+# --- Verify vectors (RFC-MACP-0013 Section 6) ----------------------------
+_w001 = encode_wire(_p001)
+
+_p006_wire = dict(_p001, _tail=_key(99, 2) + b"\x01x")  # field 99 = "x"
+
+_p009_covered = dict(_p001, supersedes={"session_id": "s0", "commitment_hash": _hash001})
+_, _, _hash009_covered = commitment_hash(_p009_covered)
+_p009_wire = dict(_p001, supersedes={
+    "session_id": "s0",
+    "commitment_hash": _hash001,
+    "_tail": _key(3, 2) + b"\x01z",  # unknown CommitmentRef field 3 = "z"
+})
+
+VERIFY_VECTORS = [
+    {
+        "name": "cmt_hash_006_unknown_field",
+        "description": (
+            "the wire of cmt_hash_001_minimal with CommitmentPayload field 99 = \"x\" "
+            "appended; a field outside the frozen set (RFC-MACP-0013 Section 5) is "
+            "cannot-verify, never dropped and hashed"
+        ),
+        "wire": encode_wire(_p006_wire),
+        "claimed_hash": _hash001,
+        "expected_outcome": "cannot_verify",
+    },
+    {
+        "name": "cmt_hash_007_mismatch",
+        "description": (
+            "exactly the wire of cmt_hash_001_minimal; the claimed hash differs from "
+            "001's hash in one hex digit"
+        ),
+        "wire": _w001,
+        "claimed_hash": "sha256:9f59e9d114d11860d48aa2bcb8cda458b9618b1cc8560595a802b68c4af85d41",
+        "expected_outcome": "mismatch",
+    },
+    {
+        "name": "cmt_hash_008_noncanonical_claim",
+        "description": (
+            "the wire of cmt_hash_007_mismatch with 001's hash in uppercase hex; a "
+            "claimed hash not in canonical form is mismatch, never normalized"
+        ),
+        "wire": _w001,
+        "claimed_hash": "sha256:9F58E9D114D11860D48AA2BCB8CDA458B9618B1CC8560595A802B68C4AF85D41",
+        "expected_outcome": "mismatch",
+    },
+    {
+        "name": "cmt_hash_009_unknown_supersedes_field",
+        "description": (
+            "the payload of cmt_hash_001_minimal plus supersedes {session_id \"s0\", "
+            "commitment_hash = 001's hash, unknown CommitmentRef field 3 = \"z\"}; the claim "
+            "is the correct hash of the covered payload WITHOUT field 3, so a verifier that "
+            "drops unknown fields reports match where a conforming one reports cannot-verify"
+        ),
+        "wire": encode_wire(_p009_wire),
+        "claimed_hash": _hash009_covered,
+        "expected_outcome": "cannot_verify",
+    },
+    {
+        "name": "cmt_hash_010_no_prefix",
+        "description": (
+            "the wire of cmt_hash_007_mismatch with 001's hex digits and no sha256: "
+            "prefix; mismatch, never an error -- cannot-verify is reserved for the "
+            "payload encoding, never the claim"
+        ),
+        "wire": _w001,
+        "claimed_hash": "9f58e9d114d11860d48aa2bcb8cda458b9618b1cc8560595a802b68c4af85d41",
+        "expected_outcome": "mismatch",
+    },
+]
+
 VECTORS = [
     {
         "name": "cmt_hash_001_minimal",
@@ -186,6 +300,19 @@ def main() -> int:
         text = json.dumps(out, indent=2, ensure_ascii=True, sort_keys=False) + "\n"
         out_path.write_text(text, encoding="ascii")
         print(f"wrote {out_path.relative_to(OUT_DIR.parent.parent.parent)}  hash={digest}")
+    for vector in VERIFY_VECTORS:
+        out = {
+            "name": vector["name"],
+            "description": vector["description"],
+            "label": LABEL,
+            "wire_hex": vector["wire"].hex(),
+            "claimed_hash": vector["claimed_hash"],
+            "expected_outcome": vector["expected_outcome"],
+        }
+        out_path = OUT_DIR / f"{vector['name']}.json"
+        out_path.write_text(json.dumps(out, indent=2, ensure_ascii=True) + "\n", encoding="ascii")
+        print(f"wrote {out_path.relative_to(OUT_DIR.parent.parent.parent)}  "
+              f"outcome={vector['expected_outcome']}")
     return 0
 
 

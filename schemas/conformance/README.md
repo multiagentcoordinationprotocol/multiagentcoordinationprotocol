@@ -196,11 +196,14 @@ make verify-fixtures   # Fail if the local copy has drifted (CI gate)
 ## `cmt-hash/` — commitment-hash test vectors (RFC-MACP-0013)
 
 `cmt-hash/` holds a different kind of fixture than the rest of this directory:
-canonical **commitment-hash vectors** for RFC-MACP-0013 Section 4 (the
-canonical commitment hash algorithm), not session transcripts. Each vector
-pins the projected `CommitmentPayload`, the JCS-canonicalized bytes, the
-domain-separated preimage, and the resulting hash, so a diverging
-implementation can identify exactly which step it diverged at. This is a
+canonical **commitment-hash vectors** for RFC-MACP-0013, not session
+transcripts. They come in two kinds. A **compute** vector (Section 4, the
+canonical commitment hash algorithm) pins the projected `CommitmentPayload`,
+the JCS-canonicalized bytes, the domain-separated preimage, and the resulting
+hash, so a diverging implementation can identify exactly which step it
+diverged at. A **verify** vector (Section 6.1) pins a payload's Protobuf wire
+encoding (`wire_hex`), a `claimed_hash`, and the `expected_outcome` (`match`,
+`mismatch` or `cannot_verify`) a conforming verifier MUST return. This is a
 different shape from `schema.json`'s session-transcript format, deliberately
 outside `schema.json`'s closed shape. `cmt-hash/vector-schema.json` documents
 that shape, including RFC-MACP-0013 Section 5's frozen nine-field constraint,
@@ -209,7 +212,13 @@ the shape it documents is instead enforced in code by
 `scripts/check-cmt-hash-vectors.py`, which asserts each vector's `payload`
 keys are a subset of exactly those nine fields (and, when present,
 `supersedes`'s keys are a subset of exactly `session_id` and
-`commitment_hash`), failing loudly on any unrecognized field.
+`commitment_hash`), failing loudly on any unrecognized field. For verify
+vectors it decodes `wire_hex` with a minimal stdlib-only Protobuf wire
+decoder, treats any unknown field (including inside `supersedes`) or
+unparseable encoding as `cannot_verify`, otherwise hashes the decoded payload
+and compares it to `claimed_hash` by exact string equality, and asserts the
+result equals `expected_outcome`. Every compute vector is also re-encoded to
+wire and must verify as `match` on its own hash.
 
 Both `scripts/validate-json.sh` (via `"${CONFORMANCE_DIR}"/*.json`) and
 `lint_fixtures.py` (via `fixtures_dir.glob("*.json")`) glob this directory
@@ -221,11 +230,17 @@ against every file in `cmt-hash/`.
 Vectors are **generated** by `scripts/gen-cmt-hash-vectors.py` and must never
 be hand-edited; regenerate and re-run `make cmt-hash-vectors` instead.
 
-There are five vector files (`cmt_hash_001_minimal.json` through
-`cmt_hash_005_escapes.json`). Casual references to "six cases" mean those five
-files plus one machine-checked inequality assertion: `cmt_hash_004` (empty
-`supersedes`) MUST hash differently from `cmt_hash_003` (no `supersedes` at
-all) — asserted by `check-cmt-hash-vectors.py`, not a sixth file.
+There are ten vector files. Five are compute vectors
+(`cmt_hash_001_minimal.json` through `cmt_hash_005_escapes.json`), plus one
+machine-checked inequality assertion: `cmt_hash_004` (empty `supersedes`) MUST
+hash differently from `cmt_hash_003` (no `supersedes` at all) — asserted by
+`check-cmt-hash-vectors.py`, not a separate file. Five are verify vectors
+(`cmt_hash_006_unknown_field.json` through `cmt_hash_010_no_prefix.json`): two
+`cannot_verify` (an unknown top-level field; an unknown field inside
+`supersedes`) and three `mismatch` (a one-digit difference, uppercase hex, no
+`sha256:` prefix). The script also carries inline self-checks for the Section
+6.1 wire-decoding rules (malformed encodings, repeated-field merge, the
+zero-length payload) that no vector file spells out.
 
 ## Adding or Changing Fixtures
 

@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) — Canonical Commitment Hash
 
 **Document:** RFC-MACP-0013
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0003
+
+> **Changelog — 1.1.0-draft:** New §6.1 (Verification) gives the three outcomes of Sections 5 and 6 — *match*, *mismatch*, *cannot-verify* — an operation and vectors. Until now every vector was a compute vector (payload in, hash out), so nothing pinned the other two outcomes: an implementation that dropped unknown fields and hashed the rest passed every vector while violating Section 5. An implementation that offers verification MUST now expose it as an operation distinct from computation, taking the payload's **wire encoding** (so unknown fields stay observable) and a claimed hash. §6.1 also states three wire-decoding rules (an unparseable encoding is *cannot-verify*; a repeated known field takes Protobuf merge semantics; a zero-length encoding is the all-default payload of vector `003` and is hashable) and that a claimed hash not in canonical form is *mismatch*, never normalized and never *cannot-verify*. §11 gains five verify vectors, `cmt_hash_006` through `cmt_hash_010`, and `vector-schema.json` gains the optional `wire_hex`, `claimed_hash` and `expected_outcome` fields that carry them; the values match the ones macp-runtime pins in its `verify_commitment_hash` crate tests. Vectors `001`–`005` are unchanged and continue to mean *match* on their computed hash. Additive: the computation, every existing hash value and the label `macp-commitment-hash/1` are unchanged, and an implementation that does not offer verification is unaffected. **Replay:** no exposure. Verification is a read-only check over a payload and a claim, and it never changes session state; no previously computed hash changes (seam-embedder-findings proposal S14, issue #185).
 
 ## Abstract
 
@@ -84,6 +86,18 @@ The canonical commitment hash is defined over any `CommitmentPayload` value that
 
 The practical consequence is that a verifier can always compute the canonical commitment hash of a received `CommitmentPayload` — including one whose fields are empty strings, or whose `supersedes` is present with empty sub-fields — and compare it against a claimed value. A disagreement in that comparison is a **mismatch**: a definite, reportable outcome, distinct from the **cannot-verify** outcome of Section 5, which arises only when the payload's field set falls outside what the label covers, not when its field values are themselves invalid or degenerate.
 
+### 6.1 Verification
+
+An implementation that offers verification MUST expose it as an operation distinct from computation, taking the payload's wire encoding (so that unknown fields remain observable) and a claimed hash, and returning exactly one of *match*, *mismatch* or *cannot-verify*. A claimed hash that is not in canonical form (Section 9) is *mismatch*.
+
+Wire decoding for verification follows Protobuf semantics, with three outcomes stated explicitly:
+
+1. An encoding that cannot be parsed as a `CommitmentPayload` is *cannot-verify*. This covers a truncated message, a known field number with the wrong wire type, invalid UTF-8 in a `string` field, a group, and field number 0.
+2. A known field that appears more than once takes Protobuf merge semantics: the last value wins for a scalar, and messages such as `supersedes` merge.
+3. A zero-length encoding is the all-default payload (vector `003`). It is hashable and is never *cannot-verify* for that reason alone.
+
+The comparison is exact string equality against the canonical commitment hash the implementation computes, so a claim with a `SHA256:` prefix, uppercase hex, no `sha256:` prefix, or leading or trailing whitespace is *mismatch*, never normalized and never an error. *Cannot-verify* is reserved for the payload encoding (Section 5 and rule 1 above); it is never a verdict on the claim.
+
 ## 7. Wire Format and Version Negotiation
 
 The canonical commitment hash is written on the wire as it is today: the literal string `sha256:` followed by 64 lowercase hexadecimal characters, and nothing else. The label (for example `/1`) that identifies which projection and preimage construction produced the value lives **inside the preimage only** (Section 4, step 3); it is not present in, and is not recoverable from, the output string.
@@ -124,7 +138,9 @@ This RFC defines the value of `CommitmentRef.commitment_hash` only. `session_has
 
 ## 11. Testing Requirements
 
-Conformance for this RFC is defined by five reference vectors, each pinning the payload JSON, the JCS-canonicalized output, the full domain-separated preimage, and the resulting canonical commitment hash, so that an implementation diverging from these vectors can identify at which step it diverged:
+Conformance for this RFC is defined by ten reference vectors under `schemas/conformance/cmt-hash/`: five compute vectors and five verify vectors.
+
+The five compute vectors each pin the payload JSON, the JCS-canonicalized output, the full domain-separated preimage, and the resulting canonical commitment hash, so that an implementation diverging from these vectors can identify at which step it diverged:
 
 - `cmt_hash_001_minimal.json` — a baseline `CommitmentPayload` with no `supersedes`.
 - `cmt_hash_002_supersedes.json` — `supersedes` set, chained: its `commitment_hash` field is `cmt_hash_001_minimal`'s output (Section 3, rule 4).
@@ -132,7 +148,17 @@ Conformance for this RFC is defined by five reference vectors, each pinning the 
 - `cmt_hash_004_empty_supersedes.json` — identical to `cmt_hash_003_all_empty.json` except `supersedes` is **present** with both `session_id` and `commitment_hash` set to `""` — a payload that RFC-MACP-0001 §7.3.1 rejects as not well-formed, but that Section 6 of this RFC requires to be hashable regardless.
 - `cmt_hash_005_escapes.json` — exercises RFC 8785 §3.2.2 escaping: embedded quote and backslash characters, tab and newline short-form escapes, non-ASCII characters, and an astral-plane codepoint requiring surrogate-pair handling in the source encoding.
 
-A conforming implementation MUST reproduce the pinned hash for each of the five vectors above, and MUST assert that `cmt_hash_003_all_empty.json` and `cmt_hash_004_empty_supersedes.json` produce **different** canonical commitment hashes: this inequality is the sole vector-level check that the *unset vs. empty* rule of Section 3, rule 3 is actually implemented, rather than `supersedes` being treated as absent whenever its sub-fields are empty.
+A conforming implementation MUST reproduce the pinned hash for each of the five vectors above, and MUST assert that `cmt_hash_003_all_empty.json` and `cmt_hash_004_empty_supersedes.json` produce **different** canonical commitment hashes: this inequality is the sole vector-level check that the *unset vs. empty* rule of Section 3, rule 3 is actually implemented, rather than `supersedes` being treated as absent whenever its sub-fields are empty. Each compute vector also means *match*: verifying its pinned hash against the payload's wire encoding (Section 6.1) MUST return *match*.
+
+The five verify vectors each pin a payload's Protobuf wire encoding (`wire_hex`), a `claimed_hash`, and the `expected_outcome` a conforming verifier MUST return (Section 6.1). `H001` below is `cmt_hash_001_minimal.json`'s hash:
+
+- `cmt_hash_006_unknown_field.json` — the wire of `001` with field 99 appended, claiming `H001`: *cannot-verify* (Section 5).
+- `cmt_hash_007_mismatch.json` — exactly the wire of `001`, claiming a hash that differs from `H001` in one hex digit: *mismatch*.
+- `cmt_hash_008_noncanonical_claim.json` — the wire of `001`, claiming `H001` in uppercase hex: *mismatch*.
+- `cmt_hash_009_unknown_supersedes_field.json` — the payload of `001` plus a `supersedes` carrying an unknown `CommitmentRef` field 3, claiming the correct hash of the covered payload *without* field 3: *cannot-verify*. An implementation that drops unknown fields and hashes the rest reports *match* here, so the vector cannot be passed by accident.
+- `cmt_hash_010_no_prefix.json` — the wire of `001`, claiming `H001`'s hex digits without the `sha256:` prefix: *mismatch*, never an error.
+
+An implementation that offers verification MUST return the pinned `expected_outcome` for each verify vector.
 
 ## 12. Security Considerations
 
