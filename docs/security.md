@@ -79,6 +79,21 @@ The `sender` field in MACP Envelopes MUST be derived from the authenticated iden
 - **JWT**: Use `sub` claim
 - **OIDC**: Use `sub` from ID token
 
+### Delegated (On-Behalf-Of) Submission
+
+See [RFC-MACP-0004 §3.1 (Delegated submission)](../rfcs/RFC-MACP-0004-security.md).
+
+A gateway, human-in-the-loop UI or embedding service may authenticate one principal (the **submitter**) and submit session-scoped envelopes whose `sender` is a different participant. That is conformant only under RFC-MACP-0004 §3.1. Checklist for a runtime that accepts delegated submissions:
+
+- [ ] The submitter is itself authenticated per RFC-MACP-0004 §3
+- [ ] Each delegation names the `sender`, is established before the envelope is accepted, and is scoped to a session (or set of sessions) and to the message types it covers
+- [ ] An unscoped submitter credential is never treated as a delegation for every participant, so one compromised owner credential cannot cast every panel member's ballot
+- [ ] The delegated `sender` still passes the session- and message-type authorization of RFC-MACP-0004 §4
+- [ ] The submitter's identity is recorded alongside each accepted envelope, outside `Envelope` (a store column or audit-log annotation), so delegated acceptance is distinguishable from direct acceptance
+- [ ] The runtime advertises `macp.security.delegated_submission.v1` ([capability registry](../registries/capabilities.md)) and documents the delegation mechanisms it accepts (signed grant, session-scoped token, operator-configured panel binding, ...)
+
+A runtime that never accepts delegated submissions needs none of this and does not advertise the capability.
+
 ## Authorization
 
 See [RFC-MACP-0004 §4 (Authorization)](../rfcs/RFC-MACP-0004-security.md).
@@ -117,6 +132,8 @@ Signals are ambient and non-binding. In the base protocol they carry an empty `s
 - Require authentication for Signal submission
 - Rate limit Signals per agent
 - Filter/drop Signals based on policy
+
+A runtime that accepts unauthenticated Signals MUST mark them for `WatchSignals` subscribers. On the gRPC binding the mark is `WatchSignalsResponse.sender_authenticated`: `false` (also the proto3 default, so an older runtime reads as unauthenticated) means the `sender` was not authenticated, and such a Signal MUST NOT influence operational decisions.
 
 ## Isolation
 
@@ -341,7 +358,7 @@ Mode developers MUST consider:
 
 ### Recommended Tests
 
-1. **Authentication bypass attempts**
+1. **Authentication bypass attempts** (including a submitter credential used as a delegation for a `sender` or session it was not granted, if delegated submission is enabled)
 2. **Authorization escalation attempts** (agent accesses session they shouldn't)
 3. **Replay attack simulations** (duplicate message_id)
 4. **DoS stress tests** (session flooding, payload amplification)
