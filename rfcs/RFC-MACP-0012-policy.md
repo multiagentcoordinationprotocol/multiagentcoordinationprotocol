@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Governance Policy Framework
 
 **Document:** RFC-MACP-0012
-**Version:** 1.6.1-draft
+**Version:** 1.7.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0002, RFC-MACP-0003
 
+> **Changelog — 1.7.0-draft:** Three amendments from the seam-embedder-findings proposal (issue #185). **(S1) Vendor-extension keys, §4, §8, §9.** Closed rule objects (1.4.0-draft) left a deployment with a restriction MACP does not define nowhere conformant to put it: an undefined key is rejected at admission, and the `^[_$]` annotation namespace is inert by definition. §4 now reserves a top-level `x-<reverse-domain>` namespace (`^x-[a-z0-9]+(\.[a-z0-9-]+)+$`, object values only, illegal at nested levels). An extension MAY only restrict, never cause acceptance of what standard rules or mode validation reject. A runtime MUST reject at admission, with `INVALID_POLICY_DEFINITION`, a descriptor carrying an extension it does not implement, so a restriction its author relied on is never dropped silently. Standard evaluation ignores extension keys, but unlike annotations they **are** part of `rules` equality (§2.2, §8). §4 gives Seam's `x-com.zer07labs.seam` as a non-normative example. `PolicyRegistryCapability` gains `repeated string rule_extensions = 4` (an additive proto change), and all five `*-rules.schema.json` gain the top-level `x-` `patternProperties` arm. **(S2) The descriptor schema is an admission gate, §3, §7, §8.** §7 named only the rule schemas, which the 1.5.0-draft entry below records as a gap. The descriptor schema is now named beside them, and §3 makes an unsupported `schema_version` an admission-time `INVALID_POLICY_DEFINITION`. Deferring that check to evaluation admits a policy under which no commitment can ever be authorized. §8 item 4's no-revalidation rule is widened to cover the descriptor schema too, so that the two gates stay symmetric. §3 also states that an empty proto3 `description` satisfies the presence requirement. **(S13, §6.2 part only) Structured `POLICY_DENIED` detail.** A denial SHOULD carry stable, lowercase `snake_case` reason identifiers, with related participant identifiers kept separate from free text. The identifiers named, and the `code`/`message`/`participants` shape shown, are non-normative examples, not a registry. **Behaviour/compatibility:** the schema changes are additive and no `schema_version` changes. Every descriptor that validated before still validates. The only newly valid shape is a well-formed top-level `x-` key, which 1.4.0-draft rejected. The two new admission rejections apply only to descriptors that were already non-conformant (an unknown top-level key) or could never authorize a commitment (an unsupported `schema_version`). The §6.2 detail is a SHOULD. **Replay:** none of this alters a stored session's replay. Both gates are admission-time only, and §8 item 4 forbids revalidating a stored descriptor. Vendor-extension keys are excluded from standard evaluation, so no standard outcome changes. Counting them in equality can make two descriptors unequal only where at least one carries an `x-` key, and no such descriptor was admissible before this revision. A runtime that admitted one anyway was not enforcing 1.4.0-draft closure.
+>
 > **Changelog — 1.6.1-draft:** §5.2 corrects a false claim in its own worked comparison of the three `policy.std.*` profiles. The removed sentence asserted that an empty decisive tally which nonetheless clears `voting.quorum`'s participation floor (e.g. a lone abstention against `value: 1`) is allowed to support a positive commitment under schema_version 1 but denied under `schema_version ≥ 3` — a claimed **outcome** divergence between the two schema versions. §4.1's own Legacy empty-tally rule (schema_version ≤ 2) governs this case by the bare boolean value of `commitment.require_vote_quorum` alone, never by whether `voting.quorum`'s configured count was actually met by cast ballots (abstentions included); since all three profiles set `require_vote_quorum: true`, the legacy arm denies the empty tally unconditionally, exactly as `schema_version ≥ 3`'s "algorithm fails on an empty tally" rule does. The claimed scenario therefore has no possible instance — both readings deny a positive commitment, differing only in which rule produces the denial, never in whether one is produced — and is independently pinned by the conformance fixture `schemas/conformance/decision_legacy_require_vote_quorum.json`, which already expects `reject`/`POLICY_DENIED` for exactly this shape at `schema_version: 2`. This is a prose-only correction of a worked example: no schema keyword, rule semantic, or conformance fixture changes (issue #181).
 >
 > **Changelog — 1.6.0-draft:** §4.1 gains the **vacuous participation floor** rule. At `schema_version ≥ 3`, `commitment.require_vote_quorum: true` over an effective floor of zero — `voting.quorum` absent, or `value: 0` under either type — is now *defined* as equivalent to `require_vote_quorum: false`, and a runtime MUST evaluate it that way rather than rejecting the descriptor (issue #122). No schema keyword changes; the annotations in `decision-rules.schema.json` are updated, but nothing that validates. The combination was reported as a fourth instance of the fail-open family closed by issue #98; on analysis it is **not** one at `schema_version ≥ 3`. Every member of that family changed an **outcome** relative to a legal alternative spelling — `threshold: 0` made an all-`REJECT` round return Passed — whereas this one changes none: with a zero floor the quorum gate is trivially satisfied in every reachable state, and the `schema_version ≥ 3` empty-tally protection is supplied by the declared version itself rather than by the flag, so `true` over a zero floor and `false` are observationally identical. What was missing was therefore not a constraint but a statement of **meaning**: the equivalence was derivable and written down nowhere, which left an implementer free to reject the combination at admission. That is now forbidden. No schema keyword enforces the rule, and none can: `schema_version` is a field of the descriptor while the rule schemas validate a bare `rules` object, so a rules-schema arm cannot see the version it would need to discriminate on. The `schema_version ≤ 2` double duty is preserved verbatim — there the flag also decides whether an empty tally blocks a positive commitment, a zero floor does not disable that, and the legacy rule in §4.1 continues to REQUIRE the flag of any legacy policy intending a binding algorithm. `examples/discovery/policy_descriptor_decline.json` is exactly such a policy and is unaffected.
@@ -90,9 +92,11 @@ A policy descriptor is a structured document with the following required fields:
 | `rules` | object | Mode-specific governance rules (see Section 4) |
 | `schema_version` | uint32 | Version of the rule schema used (`1`, `2`, or `3`) |
 
-Schema version `2` adds the Decision Mode decline-gating parameters (`commitment.allow_decline_over_approval`, `objection_handling.critical_objection_action`; see §4.1). That bump is **additive**: the new fields are optional and default to legacy behavior, so `schema_version: 1` policies remain valid. Declaring `schema_version: 2` signals only that the descriptor MAY use the new fields. A runtime MUST accept every schema version it supports (`{1, 2, 3}`).
+Schema version `2` adds the Decision Mode decline-gating parameters (`commitment.allow_decline_over_approval`, `objection_handling.critical_objection_action`; see §4.1). That bump is **additive**: the new fields are optional and default to legacy behavior, so `schema_version: 1` policies remain valid. Declaring `schema_version: 2` signals only that the descriptor MAY use the new fields. A runtime MUST accept every schema version it supports (`{1, 2, 3}`). A runtime MUST reject at admission, with `INVALID_POLICY_DEFINITION`, a descriptor whose `schema_version` is not one it supports. Deferring the check to evaluation is non-conformant: it admits a policy under which no commitment can ever be authorized.
 
 Schema version `3` is the first **semantic** bump: it changes the evaluation of existing fields — the empty-tally rule of §4.1 — rather than adding fields. It is not additive: the same descriptor bytes can evaluate differently under versions 2 and 3. Authors select semantics by the version they declare; Section 8 pins every stored session to its declared version. New policies that use a voting algorithm other than `none` SHOULD declare `schema_version: 3`.
+
+`description` is required, but only its presence is: no minimum length is imposed. On the Protobuf binding, where proto3 cannot distinguish an absent string from an empty one, an empty `description` satisfies the presence requirement.
 
 The canonical wire format is defined in `schemas/proto/macp/v1/policy.proto`. The `rules` field is JSON-encoded bytes to allow mode-specific schemas without requiring proto changes per mode.
 
@@ -113,6 +117,18 @@ The namespace does **not** extend into maps whose keys are data rather than para
 Because annotation keys are semantically inert, two `rules` objects differing only in them are equivalent for every purpose in this document: they resolve every parameter identically, so they satisfy the semantic-equality requirement of §2.2, and they are `rules`-equal for the replay and policy-equality comparison of §8.
 
 One consequence is worth stating plainly, because the escape cannot avoid it: prefixing the name of a *real* parameter object with `_` — `_voting` rather than `voting` — produces a document that validates and is then ignored, which is the very failure closing these objects prevents. The namespace is for metadata that was never meant to be evaluated. A runtime MAY warn when an annotation key differs from a declared property name only by its prefix.
+
+**Vendor-extension keys.** A key matching `^x-[a-z0-9]+(\.[a-z0-9-]+)+$` at the **top level** of a `rules` object is a vendor-extension key. Its name is the reverse-domain identifier of the vendor or product that defines it (for example `x-com.example.governance`), and its value MUST be a JSON object. Vendor-extension keys are not legal at any nested level. (As with annotations, `voting.weights` is a data map, not a closed object level: a key there names a participant, never an extension.)
+
+A vendor extension MAY only **restrict**: it MAY cause a runtime that implements it to reject an envelope or deny a commitment that standard rules would accept. It MUST NOT cause acceptance of anything that standard rules or mode validation reject. This is the additivity principle of [RFC-MACP-0002](RFC-MACP-0002-modes.md) §8.1 applied to policy content.
+
+A runtime MUST reject at admission, with `INVALID_POLICY_DEFINITION`, a descriptor carrying a vendor-extension key that the runtime does not implement. A restriction its author relied on is never silently dropped; this is the same failure the closed-object rule prevents. A runtime MAY advertise the extensions it implements (Section 9).
+
+MACP-standard evaluation (Sections 4.1–4.5 and 6) MUST ignore vendor-extension keys when computing any standard outcome. Unlike annotation keys, vendor-extension keys **are** part of `rules` equality for Sections 2.2 and 8.
+
+The rule schemas enforce the shape of a vendor-extension key — its name, its top-level position and an object value — and leave the object's contents opaque. Validating those contents, and rejecting a malformed value at admission, is the obligation of the runtime that implements the extension.
+
+*Example (non-normative).* Seam, a coordination service operated by the owner of `zer07labs.com`, defines one extension, carried at the top level of its `rules` object beside the standard keys as `"x-com.zer07labs.seam": { "capture_dissent": true }`. `capture_dissent` is an optional boolean, default `false`. When it is `true`, a runtime that implements the extension refuses a `Vote` whose `reason` is empty or only whitespace. The same runtime refuses the policy at admission if the value is not a boolean or if the object carries any other key. The example shows both rules at once. The extension only restricts: it refuses envelopes standard rules accept and never admits one they reject. A runtime that does not implement `x-com.zer07labs.seam` rejects the whole descriptor at admission rather than running the session without the restriction.
 
 ### 4.1 Decision Mode Rules
 
@@ -347,6 +363,19 @@ When a `Commitment` envelope is received:
 3. If the policy rules are satisfied, the `Commitment` is accepted and the session resolves.
 4. If the policy rules are not satisfied, the runtime MUST reject the `Commitment` with error code `POLICY_DENIED` and an informative reason string.
 
+A `POLICY_DENIED` rejection SHOULD carry its reasons as structured detail. Each reason carries a stable reason identifier, such as `veto`, `quorum_not_met`, `threshold_not_met`, `confidence_below_minimum` or `no_votes`, and lists the participant identifiers it relates to separately from its message. Participant identifiers MUST NOT appear only inside free text. Reason identifiers are lowercase `snake_case`. The identifiers named here are examples, not a registry: this document does not define a closed or canonical set of reason identifiers, and a runtime MAY use others.
+
+*Example (non-normative).* One shape a runtime might use for the detail, keeping a veto's objectors out of the message text:
+
+```text
+{"reasons": ["2 blocking objection(s) (veto threshold: 2)"],
+ "denials": [{"code": "veto",
+              "message": "2 blocking objection(s) (veto threshold: 2)",
+              "participants": ["agent://a", "agent://b"]}]}
+```
+
+Other identifiers a runtime might use include `veto_hold`, `evaluation_required` and `decline_over_approval`.
+
 ### 6.3 Determinism Requirement
 
 Policy evaluation MUST be a pure function of:
@@ -384,7 +413,7 @@ Registration constraints:
 - `policy.default` MUST NOT be registered or unregistered (it is built-in).
 - A `policy_id` in the reserved `policy.std.` namespace MUST NOT be registered unless the descriptor is the canonical definition for that identifier (Section 2.2), and a pre-registered `policy.std.` policy MUST NOT be unregistered.
 - `policy_id` MUST be unique; re-registration of an existing ID MUST fail.
-- `rules` MUST validate against the target mode's rule JSON Schema if a schema exists. This validation is an **admission-time** gate: it applies when a descriptor enters the runtime — via `RegisterPolicy` or an implementation's file-loading path — against the rule schemas that runtime ships, and never afterwards. Rule schemas MAY tighten between revisions of this specification; a tightening bars *new* admissions only and does not retroactively invalidate a descriptor already admitted or stored (Section 8, item 4).
+- The descriptor MUST validate against `schemas/json/macp-policy-descriptor.schema.json`, and `rules` MUST validate against the target mode's rule JSON Schema if one exists. Both validations are **admission-time** gates: they apply when a descriptor enters the runtime — via `RegisterPolicy` or an implementation's file-loading path — against the schemas that runtime ships, and never afterwards. These schemas MAY tighten between revisions of this specification; a tightening bars *new* admissions only and does not retroactively invalidate a descriptor already admitted or stored (Section 8, item 4).
 - Unregistering a policy does not affect sessions that have already resolved it.
 
 Canonical proto definitions: `schemas/proto/macp/v1/policy.proto`
@@ -396,7 +425,7 @@ RFC-MACP-0003 (Determinism) requires that replay under identical bound versions 
 1. The resolved `PolicyDescriptor` MUST be persisted as part of the session snapshot.
 2. During replay, the runtime MUST use the stored `PolicyDescriptor`, never re-resolving from the registry.
 3. If the stored policy uses `schema_version` N, the runtime MUST evaluate using schema-version-N semantics, even if a newer schema version exists.
-4. Rule-schema validation (Section 7) is an admission-time gate only. The runtime MUST NOT revalidate a stored `PolicyDescriptor` against any rule JSON Schema during replay, and MUST evaluate a stored descriptor under its declared `schema_version` even if that descriptor no longer validates against the current rule schema. A schema tightening therefore never renders a stored session unreplayable.
+4. Descriptor-schema and rule-schema validation (Section 7) are admission-time gates only. The runtime MUST NOT revalidate a stored `PolicyDescriptor` against the descriptor schema or any rule JSON Schema during replay, and MUST evaluate a stored descriptor under its declared `schema_version` even if that descriptor no longer validates against the current schemas. A schema tightening therefore never renders a stored session unreplayable.
 
 **Bounded exception — weight-`0` decisiveness (1.1.0-draft).** Item 3 carries one deliberate, bounded exception: under `weighted`, a `REJECT` cast by a weight-`0` participant does not satisfy the decline guard of RFC-MACP-0007 §6.2 at **any** schema version, including stored `schema_version ≤ 2` descriptors. For every configuration involving an *unlisted* voter this completes behavior the original text left undefined — the voter's weight, the `0/0` ratio, and its result classification were all unspecified — and completing undefined semantics is a precondition of item 3, not a violation of it: a runtime cannot replay under semantics that determine no outcome. In exactly one configuration the original text *did* define an outcome that this rule reverses: a descriptor with an explicit `0` in `weights` (formerly schema-legal) plus `allow_decline_over_approval: true`, where a **Passed** tally whose only reject was cast by the weight-`0` participant formerly authorized a decline and no longer does. A stored session whose accepted history contains a decline accepted under that reading will not replay identically under this text. That break is accepted because it is vanishingly narrow, because descriptors with explicit `0` weights can no longer be admitted (Section 7), and because the reversed behavior was unsound: it granted a participant the policy author had explicitly stripped of voting weight the unilateral power to convert an approving weighted electorate's outcome into a decline. This is the only change in this revision that can alter a **stored** session's replay under `schema_version ≤ 2`, and no other change that could is permitted.
 
@@ -404,7 +433,7 @@ RFC-MACP-0003 (Determinism) requires that replay under identical bound versions 
 
 **Completion — Quorum `percentage` ceiling rounding (1.2.0-draft).** Section 4.2 now states the rounding direction for the Quorum Mode `percentage` threshold **and pins its denominator to the participant count declared at `SessionStart`, unaffected by ballots subsequently cast**: the effective approval count is the **ceiling** of `value × declared_participant_count / 100`. The denominator half is a second completion, distinct from rounding: [RFC-MACP-0011](RFC-MACP-0011-quorum-mode.md) §5 rule 4a removes an abstaining participant from the pool of potential approvers, which left it arguable that the percentage base shrank with it. It does not; the base is static. Earlier normative text stated no direction, so it determined no outcome at any non-integral product; stating one completes undefined semantics, which is a precondition of item 3, not a violation of it. The direction matches the only prior statement of intent in this document — the Section 5.2 rationale, whose "`67` requires 3 of 3" example is arithmetic only under ceiling. No stored session's replay is altered unless its runtime had privately chosen a direction no text licensed.
 
-`registered_at_unix_ms` is runtime metadata and is not part of the policy's semantic identity. Replay and policy equality comparisons MUST use `policy_id` + `schema_version` + `rules` equality, not full descriptor byte comparison. `rules` equality is taken modulo the `^[_$]` annotation namespace of §4: keys in that namespace carry no semantics, so two `rules` objects differing only in them are equal for this purpose.
+`registered_at_unix_ms` is runtime metadata and is not part of the policy's semantic identity. Replay and policy equality comparisons MUST use `policy_id` + `schema_version` + `rules` equality, not full descriptor byte comparison. `rules` equality is taken modulo the `^[_$]` annotation namespace of §4 (vendor-extension keys are not excluded): keys in that namespace carry no semantics, so two `rules` objects differing only in them are equal for this purpose, while two differing in a vendor-extension key are not.
 
 This ensures that a session replayed years later produces identical governance outcomes regardless of registry state.
 
@@ -417,10 +446,13 @@ message PolicyRegistryCapability {
   bool register_policy = 1;
   bool list_policies = 2;
   bool list_changed = 3;
+  repeated string rule_extensions = 4;
 }
 ```
 
 This capability is added to the `Capabilities` message. Runtimes that do not support policy registration but do support policy evaluation (e.g., file-loaded policies only) SHOULD set `register_policy = false` and `list_policies = true`.
+
+`rule_extensions` lists, by full key name (e.g. `x-com.example.governance`), the vendor-extension keys of Section 4 that the runtime implements. An empty list means the runtime implements none, and so admits no descriptor carrying a vendor-extension key. The list is advisory: admission is authoritative, and a client MUST NOT treat an advertised extension as a substitute for the runtime's admission result. The field is additive; a runtime built against an earlier schema leaves it empty, which is the correct reading for a runtime that predates vendor extensions.
 
 ## 10. Error Codes
 
@@ -430,7 +462,7 @@ The following error codes are added to the MACP Error Code Registry:
 |------|-------------|-------------|--------|-----------|
 | `UNKNOWN_POLICY_VERSION` | `policy_version` not found in policy registry at SessionStart | 404 | permanent | RFC-MACP-0012 |
 | `POLICY_DENIED` | Commitment rejected because governance policy rules are not satisfied. Breaches of `commitment.authority` / `commitment.designated_roles` are the exception: those are sender-authorization failures and use `FORBIDDEN`, per [RFC-MACP-0002](RFC-MACP-0002-modes.md) §6.1 and the conformance corpus. | 403 | permanent | RFC-MACP-0012 |
-| `INVALID_POLICY_DEFINITION` | Policy descriptor fails validation (bad JSON, schema mismatch, mode mismatch) | 400 | permanent | RFC-MACP-0012 |
+| `INVALID_POLICY_DEFINITION` | Policy descriptor fails validation (bad JSON, schema mismatch, mode mismatch, unsupported `schema_version`, unimplemented vendor-extension key) | 400 | permanent | RFC-MACP-0012 |
 
 ## 11. Security Considerations
 

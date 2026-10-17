@@ -1,0 +1,4 @@
+{
+  "_invalid_because": "The value of a vendor-extension key MUST be a JSON object (RFC-MACP-0012 §4, Vendor-extension keys; seam-embedder-findings proposal S1, issue #185). The key is well-named and at the top level, so it matches this schema's `x-` patternProperties arm; that arm's `type: object` is the sole cause of rejection. One such fixture per mode proves each of the five rule schemas carries a real arm rather than a decorative copy.",
+  "x-com.example.gov": "require_reason"
+}

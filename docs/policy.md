@@ -86,6 +86,18 @@ documentation and tooling metadata can travel with a policy without widening its
 surface. Two `rules` objects that differ only in annotation keys are equivalent everywhere,
 including for replay.
 
+**Vendor-extension keys** are the other escape, for restrictions MACP does not define. A
+top-level key of the form `x-<reverse-domain>` (pattern `^x-[a-z0-9]+(\.[a-z0-9-]+)+$`, for
+example `x-com.example.governance`) is legal, provided its value is a JSON object. Such keys are
+not legal at nested levels. An extension may only **restrict**: it can make a runtime that
+implements it reject an envelope or deny a commitment, never accept something standard rules
+reject. A runtime that does not implement an extension MUST reject the whole descriptor at
+admission with `INVALID_POLICY_DEFINITION`, so the restriction is never dropped silently.
+Standard evaluation ignores extension keys, but unlike annotations they *do* count for policy
+equality. Runtimes may list the extensions they implement in
+`PolicyRegistryCapability.rule_extensions`. See
+[RFC-MACP-0012 Section 4](../rfcs/RFC-MACP-0012-policy.md) and Section 9.
+
 One deliberate exception: Decision Mode's `voting.weights` is *not* closed. Its keys are
 participant identifiers, and its `additionalProperties` types the map's values rather than
 closing the object. It is constrained instead by `minProperties: 1` and a per-value floor.
@@ -214,7 +226,7 @@ At `SessionStart`, the runtime resolves `policy_version` from the payload. If em
 
 ### Commitment Evaluation
 
-When a `Commitment` envelope arrives, the runtime evaluates the policy's `rules` against accumulated session state. If satisfied, the `Commitment` is accepted. If not, the runtime rejects with `POLICY_DENIED`.
+When a `Commitment` envelope arrives, the runtime evaluates the policy's `rules` against accumulated session state. If satisfied, the `Commitment` is accepted. If not, the runtime rejects with `POLICY_DENIED`. That rejection SHOULD carry structured reasons: a stable reason identifier (for example `veto` or `quorum_not_met`), with any related participant identifiers listed separately rather than only inside free text. See [RFC-MACP-0012 Section 6.2](../rfcs/RFC-MACP-0012-policy.md).
 
 Policy evaluation layers on top of mode validation: mode validation runs first, then policy rules adjust eligible behaviors within mode boundaries. A `Commitment` must satisfy both to be accepted.
 
@@ -238,10 +250,13 @@ Registration constraints, summarized — see
 [RFC-MACP-0012 Section 7](../rfcs/RFC-MACP-0012-policy.md) for the full normative list:
 `policy.default` cannot be registered or unregistered, and a `policy_id` under the reserved
 `policy.std.` namespace cannot be registered unless it is the canonical definition for that
-identifier, nor unregistered once pre-registered; `policy_id` must otherwise be unique. Rule-schema
-validation against `rules` is an **admission-time** gate only — it runs when a descriptor enters
-the runtime and never again, so a later tightening of a rule schema bars *new* admissions without
-retroactively invalidating a descriptor already stored.
+identifier, nor unregistered once pre-registered; `policy_id` must otherwise be unique. The
+descriptor must validate against `macp-policy-descriptor.schema.json` and its `rules` against the
+mode's rule schema. Both are **admission-time** gates only: they run when a descriptor enters
+the runtime and never again, so a later tightening of either schema bars *new* admissions without
+retroactively invalidating a descriptor already stored. A `schema_version` the runtime does not
+support is rejected at admission with `INVALID_POLICY_DEFINITION`. It is not left to fail at
+evaluation, where it would deny every commitment.
 
 Canonical proto definitions: [`schemas/proto/macp/v1/policy.proto`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/proto/macp/v1/policy.proto)
 

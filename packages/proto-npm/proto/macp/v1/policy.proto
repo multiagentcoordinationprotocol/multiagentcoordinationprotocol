@@ -33,6 +33,12 @@ message PolicyRegistryCapability {
   bool register_policy = 1;
   bool list_policies = 2;
   bool list_changed = 3;
+  // Vendor-extension keys (RFC-MACP-0012 §4) this runtime implements, by full
+  // key name (e.g. "x-com.example.governance"). A descriptor carrying any other
+  // vendor-extension key is rejected at admission with INVALID_POLICY_DEFINITION.
+  // Empty means no vendor extensions are implemented. Advisory: admission, not
+  // this list, is authoritative.
+  repeated string rule_extensions = 4;
 }
 
 // ── Registration lifecycle RPCs ─────────────────────────────────────

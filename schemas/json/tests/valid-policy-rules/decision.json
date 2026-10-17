@@ -30,5 +30,9 @@
     "require_vote_quorum": true,
     "allow_decline_over_approval": false,
     "_note": "the SATISFIED case of the designated_role arm -- the invalid-*-rules corpora pin the two ways it rejects, this pins the way it accepts."
+  },
+  "x-com.example.gov": {
+    "require_reason": true,
+    "_note": "a top-level vendor-extension key (RFC-MACP-0012 §4; issue #185 S1). Its value is a JSON object the standard schema leaves opaque; this proves the x- arm accepts."
   }
 }

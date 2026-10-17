@@ -10,5 +10,9 @@
       "agent://oncall"
     ],
     "_note": "the SATISFIED case of the designated_role arm."
+  },
+  "x-com.example.gov": {
+    "require_reason": true,
+    "_note": "a top-level vendor-extension key (RFC-MACP-0012 §4; issue #185 S1). Its value is a JSON object the standard schema leaves opaque; this proves the x- arm accepts."
   }
 }

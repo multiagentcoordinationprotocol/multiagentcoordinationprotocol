@@ -66,6 +66,18 @@ Each file does all three at once, deliberately:
    `designated_roles`. The `../invalid-*-rules/` fixtures pin the two ways that
    arm rejects; these pin the way it accepts.
 
+## The vendor-extension key
+
+Since RFC-MACP-0012 1.7.0-draft (issue #185 S1), every fixture also carries one
+top-level vendor-extension key, `x-com.example.gov`, with an object value. That is the
+positive case of the `x-` `patternProperties` arm that all five schemas now carry: drop
+the arm from any one schema and that mode's fixture is rejected. The key is not counted
+toward maximality, because the maximality walk only looks at declared `properties`. It is
+there so that the arm is proved to *accept*. The rejecting cases are in the
+`vendor-extension-*` fixtures of `../invalid-*-rules/`. The key's own value carries a
+`_note`, like every other nested level here. The domain is `example.com` on purpose: a
+real vendor's key belongs in the RFC's non-normative example, not in a test fixture.
+
 ## What this corpus does not cover
 
 `voting.weights` has no positive instance here. The Decision fixture uses
