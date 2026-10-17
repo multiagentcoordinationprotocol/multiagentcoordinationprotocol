@@ -167,6 +167,8 @@ MACP/
       quorum_happy_path.json
       quorum_negative_outcome.json
       quorum_reject_paths.json
+      quorum_unreachable_override.json
+      quorum_percentage_override_reachable.json
       multi_round_happy_path.json
       multi_round_reject_paths.json
     parity/
