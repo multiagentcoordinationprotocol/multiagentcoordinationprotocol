@@ -489,15 +489,29 @@ An embedder that seals the hash of a superseded commitment into an audit record 
 Add to RFC-0013 §6:
 
 > An implementation that offers verification MUST expose it as an operation distinct from computation, taking the payload's wire encoding (so that unknown fields remain observable) and a claimed hash, and returning exactly one of *match*, *mismatch* or *cannot-verify*. A claimed hash that is not in canonical form (§9) is *mismatch*.
+>
+> Wire decoding for verification follows Protobuf semantics, with three outcomes stated explicitly:
+>
+> 1. An encoding that cannot be parsed as a `CommitmentPayload` is *cannot-verify*. This covers a truncated message, a known field number with the wrong wire type, invalid UTF-8 in a `string` field, a group, and field number 0.
+> 2. A known field that appears more than once takes Protobuf merge semantics: the last value wins for a scalar, and messages such as `supersedes` merge.
+> 3. A zero-length encoding is the all-default payload (vector `003`). It is hashable and is never *cannot-verify* for that reason alone.
 
 Extend `vector-schema.json` with optional `wire_hex` (the payload's Protobuf encoding), `claimed_hash` and `expected_outcome` (`match | mismatch | cannot_verify`). Existing vectors are unchanged and continue to mean *match* on their computed hash.
 
 ### Conformance vectors
 
-- `cmt_hash_006_unknown_field.json`: `wire_hex` with field 99 set; `expected_outcome: cannot_verify`.
-- `cmt_hash_007_mismatch.json`: the payload of `001` with a claimed hash differing in one hex digit; `mismatch`.
-- `cmt_hash_008_noncanonical_claim.json`: the hash of `001` in uppercase hex; `mismatch`.
-- `cmt_hash_009_unknown_supersedes_field.json`: an unknown field inside `supersedes`; `cannot_verify`.
+Exact values follow. They are pinned in the macp-runtime crate tests (`macp_core::commitment_hash::verify_commitment_hash`). Each one was checked independently against this repository, decoding with `protoc --decode=macp.v1.CommitmentPayload` and hashing with `scripts/gen-cmt-hash-vectors.py`. `H001` is vector `001`'s hash, `sha256:9f58e9d114d11860d48aa2bcb8cda458b9618b1cc8560595a802b68c4af85d41`.
+
+- `cmt_hash_006_unknown_field.json`: the payload of `001` with field 99 = `"x"` appended. `expected_outcome: cannot_verify`.
+  - `wire_hex`: `0a02633112116465636973696f6e2e617070726f7665641a047365616d220e7365616c6564206279207365616d2a156d6163702e6d6f64652e6465636973696f6e2e76313205312e302e303a05312e302e3040019a060178`
+  - `claimed_hash`: `H001`
+- `cmt_hash_007_mismatch.json`: the wire of `006` without the trailing `9a060178`, which is exactly `001`. The claimed hash differs from `H001` in one hex digit. `mismatch`.
+  - `claimed_hash`: `sha256:9f59e9d114d11860d48aa2bcb8cda458b9618b1cc8560595a802b68c4af85d41`
+- `cmt_hash_008_noncanonical_claim.json`: the same wire as `007`, with `H001` in uppercase hex. `mismatch`.
+  - `claimed_hash`: `sha256:9F58E9D114D11860D48AA2BCB8CDA458B9618B1CC8560595A802B68C4AF85D41`
+- `cmt_hash_009_unknown_supersedes_field.json`: the payload of `001` plus `supersedes{session_id: "s0", commitment_hash: H001, 3: "z"}`, where field 3 is unknown. `cannot_verify`.
+  - `wire_hex`: `0a02633112116465636973696f6e2e617070726f7665641a047365616d220e7365616c6564206279207365616d2a156d6163702e6d6f64652e6465636973696f6e2e76313205312e302e303a05312e302e3040014a500a02733012477368613235363a396635386539643131346431313836306434386161326263623863646134353862393631386231636338353630353935613830326236386334616638356434311a017a`
+  - `claimed_hash`: `sha256:5b2e82b41d2a50095eef090cc4ef402e771a45e59e05895b6c77790f89fa2526`. This is the correct hash of the covered payload without field 3. The vector therefore fails only an implementation that drops unknown fields, and passes on *mismatch* for no other reason.
 
 ### Compatibility
 
