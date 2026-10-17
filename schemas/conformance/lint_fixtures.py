@@ -122,6 +122,50 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
         # runtime assert *why* a message rejected) but not yet universal.
         if expect == "reject" and "expected_error_code" not in msg:
             warnings.append(f"messages[{i}] reject message has no 'expected_error_code'")
+        # A SessionStart inside messages[] opens a session OTHER than the
+        # fixture's own (whose SessionStart the harness performs implicitly), so
+        # it must name that session. It is only expressible as a rejection: a
+        # transcript asserts one session's state, and an accepted second
+        # session would leave nothing asserting it.
+        if msg.get("message_type") == "SessionStart":
+            if expect != "reject":
+                errors.append(f"messages[{i}] SessionStart in messages[] must be expect 'reject'")
+            if msg.get("payload_type") != "macp.v1.SessionStartPayload":
+                errors.append(
+                    f"messages[{i}] SessionStart payload_type must be 'macp.v1.SessionStartPayload'"
+                )
+            if not isinstance(msg.get("envelope"), dict) or "session_id" not in msg["envelope"]:
+                errors.append(f"messages[{i}] SessionStart must set envelope.session_id")
+
+    # accepted_at_ms is all-or-none and non-decreasing: a harness either drives
+    # the acceptance clock for the whole transcript or not at all.
+    clocks = [m.get("accepted_at_ms") for m in data["messages"]]
+    present = [c for c in clocks if c is not None]
+    if present and len(present) != len(clocks):
+        errors.append("accepted_at_ms is set on some messages but not all")
+    elif present and any(b < a for a, b in zip(present, present[1:])):
+        errors.append("accepted_at_ms values are not non-decreasing")
+
+    # expected_history, when present, must agree with the transcript: with the
+    # synthetic (runtime-emitted) entries removed, it is exactly the ordered
+    # list of accepted messages.
+    history = data.get("expected_history")
+    if history is not None:
+        submitted = [
+            (h.get("message_type"), h.get("sender"))
+            for h in history
+            if not h.get("synthetic", False)
+        ]
+        accepted = [
+            (m.get("message_type"), m.get("sender"))
+            for m in data["messages"]
+            if m.get("expect") == "accept"
+        ]
+        if submitted != accepted:
+            errors.append(
+                "expected_history (without synthetic entries) does not match the accepted "
+                f"messages in order: {submitted} != {accepted}"
+            )
 
     return errors, warnings
 

@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.2.0-draft
+**Version:** 1.3.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -11,6 +11,35 @@
 
 > This is an RFC-style open standard. It is not an IETF RFC.
 
+> **Changelog — 1.3.0-draft:** New §7.6 (Acceptance obligations), and §2's definition of a
+> MACP Runtime gains a sentence pointing at it. The per-envelope obligations a runtime owes
+> were spread across the RFC set, and several read as properties of the gRPC server rather
+> than of acceptance: the `macp_version` check (§6), session-identifier strength
+> (RFC-MACP-0004 §11.2, with `INVALID_SESSION_ID` named only in the error-code registry),
+> the policy/mode binding at `SessionStart` (RFC-MACP-0012 §6.1 step 5), the acceptance-time
+> clock (stated only for the Handoff implicit-accept timeout, RFC-MACP-0010 §5.1), the
+> synthetic `HandoffAccept` (RFC-MACP-0010 §5.1), and duplicate reporting (§8.2). A system
+> that embeds a library and drives it in-process meets §2's definition, but could read those
+> obligations as the server's and ship without them. §7.6 states all six once, as
+> obligations of every MACP Runtime whatever its transport, and requires a library that
+> offers a single-envelope acceptance entry point to perform each one or document the ones
+> it leaves to its caller. Item 2 names `INVALID_SESSION_ID` as the rejection code and
+> requires a runtime to document the session-identifier formats it accepts; the UUID and
+> base64url forms it mentions are non-exhaustive examples of formats that meet
+> RFC-MACP-0004 §11.2, not a normative format list. Item 4 governs the clock a deadline is
+> checked against and leaves RFC-MACP-0003 §2's TTL base (the `SessionStart` envelope's
+> `timestamp_unix_ms`) unchanged. Behaviour: each obligation already exists elsewhere in the
+> RFC set or in the reference server; the new requirements are the documentation duties in
+> the opening paragraph and in item 2, and item 6's requirement that a duplicate be
+> distinguishable from a first acceptance. A library whose entry point adds these checks
+> changes behaviour for embedders that relied on their absence, which is the intent.
+> Source: seam-embedder-findings proposal S12, issue #185. **Replay:** no new exposure for a
+> conformant history, because §7.6 restates obligations that already bound acceptance. A
+> history produced by an implementation that skipped one of them was already non-conformant
+> and can diverge on a conformant replay. For example, an embedder whose library never
+> appended the synthetic `HandoffAccept` could have accepted a `HandoffDecline` after the
+> implicit-accept deadline. §7.6 makes that divergence visible; it does not create it.
+>
 > **Changelog — 1.2.0-draft:** §7.3's `SessionCancel` terminal-annotation sentence
 > and §7.5's `SessionSuspend`/`SessionResume` "accepted history" sentence each gain a
 > cross-reference to RFC-MACP-0006 §3.2, which states that these internal
@@ -52,7 +81,7 @@ The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **
 
 An **Agent** is any identifiable computational entity that emits and receives MACP Envelopes.
 
-A **MACP Runtime** is the logical system responsible for enforcing session state transitions, ordering, deduplication, validation, authorization, and isolation.
+A **MACP Runtime** is the logical system responsible for enforcing session state transitions, ordering, deduplication, validation, authorization, and isolation. A system meets this definition by what it enforces, not by the transport it exposes: a system that embeds a library implementation and drives it in-process is a MACP Runtime, and the acceptance obligations of §7.6 bind it.
 
 A **Coordination Mode** (or **Mode**) is a semantic extension that defines how coordination unfolds inside a session.
 
@@ -322,6 +351,18 @@ Like `CancelSession`, they are restricted to the session initiator and policy-de
 **Acceptance while suspended.** A `SUSPENDED` session is not `OPEN`; therefore any session-scoped Mode message (Proposal, Vote, Commitment, …) referencing it MUST be rejected with a non-OPEN session error, exactly as for terminal sessions (§7.3). Only `ResumeSession` (and `CancelSession`) may be accepted against a `SUSPENDED` session.
 
 **Pausable TTL.** The session's absolute deadline is banked across suspension rather than continuing to run. On suspend, the runtime records the remaining time `banked = deadline − suspend_time`; on resume, it sets `deadline = resume_time + banked` (the resume's `banked_ms` records this value for replay). A `SUSPENDED` session MUST NOT expire on its pre-suspension deadline. To bound indefinite pauses, a runtime MUST enforce a maximum-suspension cap: if the cumulative suspended duration exceeds the cap, the session transitions `SUSPENDED → EXPIRED`. The cap is **session-bound**: it is resolved at `SessionStart` from `SessionStartPayload.max_suspend_ms` (0 or absent selects the runtime's configured default) and the resolved value MUST be recorded on the session, exactly like `ttl_ms`. Replay MUST use the recorded cap, never live runtime configuration — otherwise two runtimes (or one runtime reconfigured) would produce different terminal states on identical history. TTL accounting under suspension is normatively deterministic — see RFC-MACP-0003 §2.
+
+
+### 7.6 Acceptance obligations
+
+The obligations in this section bind every MACP Runtime, whatever its transport, including a runtime that embeds a library implementation and has no `MACPRuntimeService` endpoint. A library that offers a single-envelope acceptance entry point SHOULD perform each of them, and MUST document each one it leaves to its caller.
+
+1. **Version.** An envelope whose `macp_version` is not a version the runtime supports (the negotiated version, where `Initialize` applies) MUST be rejected with `UNSUPPORTED_PROTOCOL_VERSION`.
+2. **Session identifier.** A `SessionStart` whose `session_id` does not meet RFC-MACP-0004 §11.2 MUST be rejected with `INVALID_SESSION_ID`. A runtime MUST document the formats it accepts. As non-exhaustive examples, a UUID v4 or v7 in lowercase hyphenated form, or a base64url token of at least 22 characters, meets RFC-MACP-0004 §11.2. These examples are illustrative: they are not a normative list of accepted formats, and a runtime MAY accept other formats that meet RFC-MACP-0004 §11.2.
+3. **Policy binding.** RFC-MACP-0012 §6.1 applies at every `SessionStart`, including step 5 (mode mismatch, rejected with `INVALID_POLICY_DEFINITION`).
+4. **Acceptance time.** Every time-dependent rule, including TTL (§7.1), suspension banking (§7.5) and Mode timeouts such as RFC-MACP-0010 §5.1, MUST be evaluated against the runtime's recorded acceptance time. It MUST NOT be evaluated against `Envelope.timestamp_unix_ms`. The runtime MUST record the acceptance time with the accepted envelope so that replay reproduces it. This item governs the clock against which a deadline is checked. It does not move a deadline's base where another section fixes it: RFC-MACP-0003 §2 makes the accepted `SessionStart` envelope's `timestamp_unix_ms` the base of the initial TTL deadline, and that rule stands. The runtime-emitted `SessionSuspend` and `SessionResume` annotations carry the runtime's own clock, so the suspension accounting of RFC-MACP-0003 §2 already meets this item.
+5. **Due synthetic envelopes.** Before evaluating a session-scoped envelope, the runtime MUST append every synthetic envelope that a Mode specifies as due at that acceptance time, such as the synthetic `HandoffAccept` of RFC-MACP-0010 §5.1. Observation at evaluation time is sufficient. A timer or sweep is RECOMMENDED but not required.
+6. **Duplicates.** A duplicate (§8.2) MUST be reported to the submitter distinctly from a first acceptance and from every other rejection, either as `DUPLICATE_MESSAGE` or as an idempotent success that the submitter can recognise as a replay. This lets a caller tell a retried submission from a new one.
 
 ---
 

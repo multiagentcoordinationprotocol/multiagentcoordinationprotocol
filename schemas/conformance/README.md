@@ -71,6 +71,9 @@ Each fixture is a JSON object with:
 | `messages[].payload_type` | Both | **Fully-qualified** protobuf message name — `macp.v1.<Name>` for core payloads, `macp.modes.<mode>.v<N>.<Name>Payload` for mode payloads. Enforced by `schema.json`'s `payload_type` pattern, which **rejects** the short `decision.Proposal` form this table previously documented. |
 | `policy` | Runtime | Optional inline `PolicyDescriptor` (`policy_id`, `mode`, `schema_version`, `rules`) the harness registers before `SessionStart`, so a bound (non-`none`) voting algorithm is reachable. `policy_version` must match its `policy_id`. Absent ⇒ default policy. |
 | `messages[].expected_error_code` | Runtime | For `reject` messages, the error code the runtime should return (recommended) |
+| `messages[].accepted_at_ms` | Runtime | Optional acceptance clock for the step, in ms on the session timeline: the runtime's recorded acceptance time (RFC-MACP-0001 §7.6 item 4), supplied by the harness and distinct from the Envelope's `timestamp_unix_ms`. **All-or-none** and **non-decreasing** (checked by `lint_fixtures.py`). When used, the harness accepts the fixture's own `SessionStart` at acceptance time `0` with Envelope `timestamp_unix_ms` `0`. Absent everywhere ⇒ the harness's own clock. See `handoff_implicit_accept.json`. |
+| `messages[].envelope` | Runtime | Optional Envelope overrides: `session_id`, `macp_version`, `mode`, `timestamp_unix_ms`. Defaults: the harness-minted id of the fixture's session, `"1.0"`, the fixture's `mode`, the harness clock. A `SessionStart` in `messages[]` opens a *different* session, so it MUST set `envelope.session_id`, MUST be `expect: "reject"` with `payload_type` `macp.v1.SessionStartPayload` (checked by `lint_fixtures.py`). See `session_start_reject_paths.json`. |
+| `expected_history` | Runtime | Optional exact assertion on the fixture session's accepted history after its `SessionStart`: ordered `{message_type, sender, payload?, synthetic?}` entries, no extras; `payload` is a subset match. Runtime-emitted entries no message submitted (e.g. RFC-MACP-0010 §5.1's synthetic `HandoffAccept`) carry `synthetic: true`; with those removed the list MUST equal the accepted messages in order (checked by `lint_fixtures.py`). |
 | `expected_final_state` | Both | Terminal state: `Open`, `Resolved`, `Suspended`, or `Cancelled`. `Resolved` ⇒ a commitment was emitted. |
 | `expected_resolution` | Both | Commitment field assertions (`action`, `mode_version`, `configuration_version`, `outcome_positive`) when `Resolved` |
 | `expected_mode_state` | Both | Mode-specific assertions: `phase`, `votes` (per proposal/sender), proposal/offer dispositions |
@@ -139,6 +142,29 @@ Notes:
   authorization guard that keeps RFC-MACP-0012 §4.1's zero-participant
   `unanimous` clause unreachable at the wire: a zero-participant session
   accepts no `Proposal`, not even from the initiator.
+- **Acceptance obligations** (RFC-MACP-0001 §7.6) are pinned by two fixtures
+  that need the optional fields above. `session_start_reject_paths.json` holds
+  three `SessionStart` rejections against sessions other than the fixture's
+  own: a too-short `session_id` (`INVALID_SESSION_ID`, item 2), `macp_version`
+  `"2.0"` (`UNSUPPORTED_PROTOCOL_VERSION`, item 1), and a policy bound to
+  another mode (`INVALID_POLICY_DEFINITION`, item 3). It has no
+  uppercase-UUID case: item 2's UUID and base64url forms are non-exhaustive
+  examples, not a normative format list, so no specific well-formed format is
+  required to be rejected. `handoff_implicit_accept.json` pins item 5: a
+  `Commitment` evaluated after the implicit-accept deadline finds the synthetic
+  `HandoffAccept` already in history, immediately before it. Its offer's
+  Envelope `timestamp_unix_ms` is `0`, far from its acceptance time, so a
+  runtime that times the deadline off the Envelope clock (contrary to item 4)
+  is caught. A suspend/resume variant is not expressible: `SessionSuspend` and
+  `SessionResume` are runtime-emitted through the `SuspendSession` /
+  `ResumeSession` RPCs and MUST NOT be submitted via `Send`
+  (RFC-MACP-0001 §7.5), while every fixture step is a `Send`-submitted
+  envelope.
+- `handoff_reject_paths.json` pins RFC-MACP-0010 §5 rule 3a: a re-offer to a
+  target that declined is rejected, an offer to a different target is
+  accepted. `task_reject_paths.json` pins RFC-MACP-0009 §5 rule 2a on a
+  broadcast task: one participant's pre-assignment `TaskReject` does not bar
+  another's `TaskAccept`, and the declining participant can never accept.
 
 ## Source of truth & enforcement
 

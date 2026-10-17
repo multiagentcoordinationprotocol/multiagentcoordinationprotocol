@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) - Task Mode
 
 **Document:** RFC-MACP-0009
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0002
+
+> **Changelog — 1.1.0-draft:** §5 gains rule 2a, which defines what a `TaskReject` does before anyone has accepted. Rule 2 lets any eligible declared participant reject a broadcast task (empty `requested_assignee`), but rule 3c and `allow_reassignment_on_reject` cover only the *active assignee* rejecting, so a pre-assignment reject from a non-assigned participant had no stated effect. A runtime that treated it as a reassignment trigger refused every later first-ever `TaskAccept` with `POLICY_DENIED`, so one participant's decline vetoed the whole pool, contrary to rule 3a's "from any eligible participant". Rule 2a makes such a reject record that participant's decline only: it leaves other participants eligible, `allow_reassignment_on_reject` does not govern it, and the declining participant MUST NOT later send `TaskAccept` for the task. For a named `requested_assignee`, the reject leaves no eligible assignee and the Session becomes eligible for a negative `Commitment`. Behaviour: this relaxes validation in one case (another participant's first `TaskAccept` after a pre-assignment decline is now accepted) and tightens it in another (a participant that declined can no longer accept later, which a runtime could previously allow under `allow_reassignment_on_reject: true`). Source: seam-embedder-findings proposal S6, issue #185. **Replay:** the relaxation has no exposure, because the `TaskAccept` a runtime used to refuse never entered history. The tightening is exposed: `mode_version` stays `1.0.0`, and RFC-MACP-0003 §1 guarantees identical decisions only under identical validation rules, so a stored history in which a participant declined and later accepted under `allow_reassignment_on_reject: true` would be rejected by a runtime whose replay re-drives Mode validation under the new rule. Such a runtime needs to apply the old rule to sessions recorded under it, for example by gating it on a per-session semantics revision recorded at `SessionStart`.
 
 ## Abstract
 
@@ -66,6 +68,7 @@ Implementations MUST enforce the following:
 
 1. A Task Mode v1 Session MUST accept at most one `TaskRequest`.
 2. `TaskAccept` or `TaskReject` MUST come from the requested assignee, or from an eligible declared participant if `requested_assignee` is empty.
+2a. When `requested_assignee` is empty, a `TaskReject` from an eligible participant while no assignee is active records that participant's decline only. It does not change the eligibility of other participants, and `allow_reassignment_on_reject` does not govern it. A participant that has declined, whether before assignment under this rule or as the active assignee under rule 3c, MUST NOT later send `TaskAccept` for the same task. When `requested_assignee` is non-empty, that participant's `TaskReject` leaves no eligible assignee, and the Session becomes eligible for a negative `Commitment`.
 3. Only one assignee may become active for the Session in base v1.
 3a. The first accepted `TaskAccept` from any eligible participant designates that participant as the active assignee. Subsequent `TaskAccept` messages for the same session MUST be rejected if an active assignee is already designated.
 3b. A participant who has sent `TaskAccept` MUST NOT later send `TaskReject` for the same task in base v1. `TaskAccept` is irrevocable unless policy explicitly permits reassignment.
