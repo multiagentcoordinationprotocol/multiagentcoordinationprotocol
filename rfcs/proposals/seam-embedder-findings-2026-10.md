@@ -511,7 +511,7 @@ Exact values follow. They are pinned in the macp-runtime crate tests (`macp_core
   - `claimed_hash`: `sha256:9F58E9D114D11860D48AA2BCB8CDA458B9618B1CC8560595A802B68C4AF85D41`
 - `cmt_hash_009_unknown_supersedes_field.json`: the payload of `001` plus `supersedes{session_id: "s0", commitment_hash: H001, 3: "z"}`, where field 3 is unknown. `cannot_verify`.
   - `wire_hex`: `0a02633112116465636973696f6e2e617070726f7665641a047365616d220e7365616c6564206279207365616d2a156d6163702e6d6f64652e6465636973696f6e2e76313205312e302e303a05312e302e3040014a500a02733012477368613235363a396635386539643131346431313836306434386161326263623863646134353862393631386231636338353630353935613830326236386334616638356434311a017a`
-  - `claimed_hash`: `sha256:5b2e82b41d2a50095eef090cc4ef402e771a45e59e05895b6c77790f89fa2526`. This is the correct hash of the covered payload without field 3. The vector therefore fails only an implementation that drops unknown fields, and passes on *mismatch* for no other reason.
+  - `claimed_hash`: `sha256:5b2e82b41d2a50095eef090cc4ef402e771a45e59e05895b6c77790f89fa2526`. This is the correct hash of the covered payload without field 3. An implementation that drops unknown fields therefore reports *match*, while a conformant one reports *cannot-verify*. The vector cannot be passed by accident through *mismatch*.
 
 ### Compatibility
 
