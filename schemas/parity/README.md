@@ -32,7 +32,7 @@ rather than inventing a citation, and pinning the value here does not create one
 | `protocol` | runtime, both SDKs | The `macp_version` envelope literal (`"1.0"`) |
 | `modes` | runtime, both SDKs | The 5 registry-backed standard mode ids, plus the 1 shipped extension mode id (`ext.multi_round.v1`, not registry-backed) |
 | `defaults` | runtime, both SDKs | `mode_version`, `configuration_version`, `policy_version` (`policy.default`), and the policy-builder default `schema_version` |
-| `error_codes` | runtime, both SDKs | The 16 `permanent` + 1 `deprecated` canonical error-code strings |
+| `error_codes` | runtime, both SDKs | The 20 `permanent` + 1 `deprecated` canonical error-code strings |
 | `retry` | both SDKs | `RetryPolicy` defaults: max retries, base/max backoff, the derived backoff schedule, the retryable error-code set, and the deliberate absence of jitter |
 | `projection_anomaly` | both SDKs | The `ProjectionAnomaly` field set, field order, the four anomaly-kind strings, and the snake_case→lowerCamelCase naming transform a lowerCamelCase consumer follows |
 | `commitment_hash` | runtime, both SDKs | The commitment-hash format, pinned as an accept/reject behavior table (not a shared regex string, since `macp-runtime` implements this as a hand-written byte check, not a regex) |
@@ -99,6 +99,16 @@ The out-of-scope classes, each already visible elsewhere in this repo:
    name has none. Issue #134's own proposal explicitly excluded this ("not a full symbol map —
    file/class/function names are expected and fine to diverge per language"); issue #135 is the
    decision record for the naming divergences found since.
+8. **The error-code → transport-status mapping.** `registries/error-codes.md` already owns it,
+   in its HTTP and gRPC columns, and only one consumer encodes it. `macp-runtime`'s
+   `ERROR_CODE_REGISTRY` maps every code to both statuses, and the runtime's own test checks that
+   table against the registry. Neither SDK has a code → status table. Each reads the gRPC status
+   and the `macp-error-code` metadata the runtime sends and passes them through. A section here
+   could name only the runtime in `applies_to`, which makes it a duplicate of a single
+   implementation's self-test, not a parity value. The SDKs' status → code fallbacks for runtimes
+   that predate `macp-error-code` run in the other direction and are compatibility guesses about
+   older runtimes, not an encoding of the registry, so they do not count as agreement either. If
+   both SDKs ever encode the forward mapping, it becomes admissible under the rule above.
 
 None of this says a divergence in those classes is harmless. It says the divergence is the
 consumers' to resolve, and that this file will mirror the outcome rather than originate it.
