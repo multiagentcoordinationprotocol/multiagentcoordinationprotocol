@@ -408,6 +408,13 @@ message WatchSignalsRequest {}
 
 message WatchSignalsResponse {
   Envelope envelope = 1;
+  // Whether the Signal's `sender` was authenticated per RFC-MACP-0004 §3
+  // (RFC-MACP-0004 §4.1). false means UNAUTHENTICATED. false is the proto3
+  // default, so a runtime that predates this field, or one that does not set
+  // it, reports every Signal as unauthenticated: the safe direction.
+  // Subscribers MUST NOT let a Signal with sender_authenticated = false
+  // influence operational decisions.
+  bool sender_authenticated = 2;
 }
 
 // Session lifecycle observation (RFC-MACP-0001 §7.3).
