@@ -301,7 +301,7 @@ what it should if something on disk is actually rejected by it.
 implement it. `make validate` never did: it verifies that JSON matches schemas and that protos
 compile, but not that a normative sentence is true, and not that two RFCs agree.
 
-Eight checks, chosen because they are mechanical:
+Ten checks, chosen because they are mechanical:
 
 - **No line-number anchors.** A citation that pins a source line — an open paren, a colon, a
   line number, a close paren — drifts the moment anything above it is edited. Cite the heading
@@ -353,16 +353,27 @@ Eight checks, chosen because they are mechanical:
   `docs/sdk-parity.md` each hand-maintain a prose list of exactly that set,
   and nothing held them to each other — both were stale in different ways
   (issue #157).
+- **The RFC-MACP-0006 §3 RPC listing matches `core.proto`.** The RFC reproduces the
+  `MACPRuntimeService` block "for convenience" while calling the proto authoritative, and the
+  copy lacked `SuspendSession` and `ResumeSession`. Its `rpc` lines must equal the proto
+  service's, in order. Every other `rpc` excerpt in that RFC must be a signature the proto
+  declares (issue #185 S9).
+- **Session-state lists agree with RFC-MACP-0001 §7.2.** A curated set of prose sites that
+  enumerate session states (RFC-MACP-0003 §1, §2 and §5, `CONTRIBUTING.md`, and the
+  `SESSION_NOT_OPEN` rows of `registries/error-codes.md` and `docs/security.md`) must each name
+  exactly the terminal set, the full set, or the non-`OPEN` set. §7.2 is itself held to the
+  `SessionState` enum in `envelope.proto`. Four of those sites still listed the two-terminal
+  lifecycle (issue #185 S10).
 
 **What it still does not check:** whether a paragraph is *true*. Nothing here would have caught
-an RFC asserting a constraint its schema does not impose, beyond the eight narrow classes above.
+an RFC asserting a constraint its schema does not impose, beyond the ten narrow classes above.
 That remains a human job.
 
 A sibling checker, `scripts/check-envelope-coverage.py` (`make envelope-coverage`, issue #173),
-covers an axis this document's eight checks do not: whether every Core payload message and field
+covers an axis this document's ten checks do not: whether every Core payload message and field
 declared in `schemas/proto/macp/v1/core.proto` has a corresponding entry in
 `macp-envelope.schema.json`'s `$defs`. It is a proto↔JSON-Schema coverage check, not a
-prose-vs-artifact check, so it is not one of the eight above and is mutation-tested separately
+prose-vs-artifact check, so it is not one of the ten above and is mutation-tested separately
 (`make envelope-coverage-selftest`) rather than folded into this count. `check-prose.py` itself
 has the same kind of regression proof — `make prose-check-selftest`
 (`scripts/check-prose-test.py`, issues #128/#129) asserts it survives an unreadable file rather

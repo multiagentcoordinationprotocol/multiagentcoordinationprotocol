@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) — Determinism and Replay Integrity
 
 **Document:** RFC-MACP-0003  
-**Version:** 1.0.0-draft  
+**Version:** 1.0.1-draft  
 **Status:** Community Standards Track  
 **Updates:** RFC-MACP-0001
+
+> **Changelog — 1.0.1-draft:** §1's terminal-state list now reads "(RESOLVED, EXPIRED, or CANCELLED)", and §5's structural-only lifecycle list now reads "(OPEN, SUSPENDED, RESOLVED, EXPIRED, CANCELLED)". RFC-MACP-0001 §7.2 defines five states, three of them terminal. These two sites still listed the earlier two-terminal lifecycle, although §2 of this document already named `CANCELLED` (seam-embedder-findings proposal S10, issue #185). Editorial: RFC-MACP-0001 §7.2 was always normative for the state set, and no implementation obligation changes. `make prose-check` now holds both lists to RFC-MACP-0001 §7.2 and the `SessionState` enum in `envelope.proto`. **Replay:** no exposure. A replay that reproduced `SUSPENDED` transitions or a `CANCELLED` terminal state was already required to by RFC-MACP-0001; this text now says so too.
 
 ## Abstract
 
@@ -27,7 +29,7 @@ Specifically, replay MUST:
 
 - accept the same messages in the same order,
 - produce the same acceptance/rejection decisions for each envelope, given identical validation rules and bound versions (operational rejections such as rate limiting or transient authentication failures are outside the replay determinism boundary),
-- produce the same terminal state (RESOLVED or EXPIRED) and terminal message,
+- produce the same terminal state (RESOLVED, EXPIRED, or CANCELLED) and terminal message,
 - produce the same `Ack` accept/reject decisions for each envelope.
 
 Replay does NOT guarantee identical external side effects (see Section 4). Replay also does not guarantee identical error message text — only identical accept/reject outcomes.
@@ -103,7 +105,7 @@ Modes that touch the external world SHOULD use one of these patterns:
 
 The determinism classes defined by RFC-MACP-0002 are normative for descriptors and manifests. Each class provides the following replay guarantees:
 
-- **structural-only**: Replay reproduces identical lifecycle transitions (OPEN, RESOLVED, EXPIRED) and identical accept/reject decisions for each envelope. Semantic outcomes (e.g., which proposal wins a decision) are NOT guaranteed to be identical.
+- **structural-only**: Replay reproduces identical lifecycle transitions (OPEN, SUSPENDED, RESOLVED, EXPIRED, CANCELLED) and identical accept/reject decisions for each envelope. Semantic outcomes (e.g., which proposal wins a decision) are NOT guaranteed to be identical.
 
 - **semantic-deterministic**: Replay reproduces identical lifecycle transitions AND the same semantic outcome — the terminal action, committed values, and resolution are identical given the same accepted envelope sequence.
 
