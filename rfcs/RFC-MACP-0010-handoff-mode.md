@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) - Handoff Mode
 
 **Document:** RFC-MACP-0010
-**Version:** 1.1.0-draft
+**Version:** 1.2.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0002
 
+> **Changelog — 1.2.0-draft:** Two changes. (1) §5 rule 3a's second sentence said a re-offer after a decline MUST name "a different `target_participant`" without saying different from what, and a runtime that enforced neither reading let an owner re-offer to a target that had just declined until it gave in. The sentence now bars, by name, any target that has declined an offer earlier in the Session, and names the rejection code (`INVALID_ENVELOPE`). An offer that expired unanswered with no implicit-accept policy does not bar its target. The "or is unreachable" clause is dropped: a target that never answers has not declined. (2) §5.1(2) no longer restates the obligation to append the synthetic `HandoffAccept` before evaluating the next envelope. It cites RFC-MACP-0001 §7.6 item 5 (Acceptance obligations), which now states it for every Mode's due synthetic envelopes and for every runtime, including one that embeds a library and has no `MACPRuntimeService` endpoint. Change (1) tightens validation: an offer to a previously declining target that a runtime used to accept is now rejected. Change (2) is a restatement and changes no behaviour. Source: seam-embedder-findings proposal S5 and S12, issue #185. **Replay:** change (1) is exposed. `mode_version` stays `1.0.0`, and RFC-MACP-0003 §1 guarantees identical accept/reject decisions only under identical validation rules. A stored history that already contains a re-offer to a declined target was accepted under the old wording; a runtime whose replay re-drives Mode validation under the new rule would reject that entry and diverge from the recorded outcome. A runtime that replays such histories needs to apply the old rule to sessions recorded under it, for example by gating the rule on a per-session semantics revision recorded at `SessionStart`. Histories without such a re-offer replay unchanged. Change (2) has no replay effect.
+>
 > **Changelog — 1.1.0-draft:** §5.1(2)'s closing sentence no longer reads as classification equivalence between the synthetic `HandoffAccept` and the `SessionSuspend`/`SessionResume`/`SessionCancel` envelopes it analogizes to — the analogy is narrowed to the replay-boundary property it actually supports, the `SessionCancel` citation is corrected from RFC-MACP-0001 §7.5 to RFC-MACP-0001 §7.3 (§7.5 covers only `SessionSuspend`/`SessionResume`), and the synthetic accept's own ordinal-consuming, stream-delivered classification (RFC-MACP-0006 §3.2) is now stated directly rather than left to a reader's inference. No behavior change — the synthetic accept's actual classification is unchanged; only what this sentence claims about it is corrected (issue #160).
 
 ## Abstract
@@ -66,7 +68,7 @@ Implementations MUST enforce the following:
 1. Every `handoff_id` MUST identify one specific handoff offer.
 2. `HandoffContext`, `HandoffAccept`, and `HandoffDecline` MUST reference an existing `handoff_id`.
 3. `HandoffAccept` and `HandoffDecline` MUST come from the offer's `target_participant`.
-3a. A `HandoffOffer.target_participant` MUST NOT be changed after the offer is accepted into session history. If the target declines or is unreachable, a new `HandoffOffer` MUST be issued with a different `target_participant` and a new `handoff_id`.
+3a. A `HandoffOffer.target_participant` MUST NOT be changed after the offer is accepted into session history. If the target declines, a new `HandoffOffer` MUST carry a new `handoff_id` and a `target_participant` that has not previously declined an offer in this Session; a runtime MUST reject it with `INVALID_ENVELOPE` otherwise. An offer that expired unanswered under no implicit-accept policy does not bar its target from a later offer.
 4. Once an offer has been accepted, no competing accept for that same `handoff_id` is valid.
 5. A Session MAY contain multiple sequential handoff offers to different targets. At most one offer may be outstanding (unaccepted and undeclined) at any time. A new `HandoffOffer` MUST NOT be issued while a prior offer is still pending. Once an offer is accepted, no further offers may be issued for the Session. Only one final `Commitment` may resolve the Session.
 
@@ -87,14 +89,13 @@ implicitly, under the following contract:
    (the offer's recorded acceptance time and the suspend/resume events) is
    on the recorded timeline.
 
-2. **The synthetic accept enters history.** When the runtime first observes
-   the deadline elapsed, it MUST append a synthetic `HandoffAccept` envelope
-   to the session's accepted history — before evaluating any subsequent
-   message against the offer's acceptance state, and in particular **before
-   any `Commitment` evaluation** that depends on the offer being accepted. A
-   runtime SHOULD observe the deadline eagerly (a timer or sweep, like TTL
-   expiry); it MUST observe it lazily at the latest when processing the next
-   session-scoped message. Because the synthetic accept is an accepted history entry, replay simply replays it: the timer itself is outside the replay boundary, its recorded product is inside — the same replay-boundary property as any runtime-authored entry that enters the log, such as the `SessionSuspend`/`SessionResume` annotations of RFC-MACP-0001 §7.5 and the `SessionCancel` annotation of RFC-MACP-0001 §7.3. This entry's *classification* for ordinal-consumption and stream delivery is a separate question, governed by RFC-MACP-0006 §3.2, and is unrelated to this replay-boundary property — unlike those three envelopes, the synthetic `HandoffAccept` is an ordinary accepted Mode message: it consumes an accepted ordinal and is delivered on a subscribe stream like any other accepted envelope.
+2. **The synthetic accept enters history.** Once the deadline has elapsed,
+   the synthetic `HandoffAccept` is a due synthetic envelope in the sense of
+   RFC-MACP-0001 §7.6 item 5 (Acceptance obligations), and that item governs
+   when it is appended: before the runtime evaluates the next session-scoped
+   envelope, and therefore **before any `Commitment` evaluation** that depends
+   on the offer being accepted. Observing the deadline at that evaluation is
+   sufficient; a timer or sweep is RECOMMENDED but not required. Because the synthetic accept is an accepted history entry, replay simply replays it: the timer itself is outside the replay boundary, its recorded product is inside — the same replay-boundary property as any runtime-authored entry that enters the log, such as the `SessionSuspend`/`SessionResume` annotations of RFC-MACP-0001 §7.5 and the `SessionCancel` annotation of RFC-MACP-0001 §7.3. This entry's *classification* for ordinal-consumption and stream delivery is a separate question, governed by RFC-MACP-0006 §3.2, and is unrelated to this replay-boundary property — unlike those three envelopes, the synthetic `HandoffAccept` is an ordinary accepted Mode message: it consumes an accepted ordinal and is delivered on a subscribe stream like any other accepted envelope.
 
 3. **Envelope convention.** The synthetic accept is runtime-emitted; clients
    MUST NOT submit it via `Send`. Its Envelope `sender` is the offer's
