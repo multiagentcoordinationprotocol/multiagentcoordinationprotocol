@@ -308,7 +308,9 @@ For high-assurance scenarios:
 `commitment_hash` is now canonically defined by [RFC-MACP-0013](../rfcs/RFC-MACP-0013-commitment-hash.md); `session_hash` remains implementation-defined, as shown above. The canonical
 commitment-hash vector pack is re-derived and compared against the pinned hashes by `make
 cmt-hash-vectors`, and every conforming implementation MUST reproduce them, per
-[RFC-MACP-0013 §11 (Testing Requirements)](../rfcs/RFC-MACP-0013-commitment-hash.md).
+[RFC-MACP-0013 §11 (Testing Requirements)](../rfcs/RFC-MACP-0013-commitment-hash.md). The
+same pack carries verify vectors that pin the *match*, *mismatch* and *cannot-verify*
+outcomes of verifying a claimed hash against a payload's wire encoding (RFC-MACP-0013 §6.1).
 
 ## Testing Determinism
 
