@@ -80,8 +80,8 @@ Optional features that enhance the SDK but are not required for conformance.
 These surfaces are optional **and not parity-governed**. Two SDKs may differ here in behaviour,
 shape, naming and defaults without either being non-conformant, and the parity-contract manifest
 will not pin them — see the "What this manifest does not pin, and why" section of
-`schemas/parity/README.md`. That section is broader than this tier: it lists seven classes the
-manifest will not pin, and three of them are not MAY-tier surfaces at all — among them the MUST
+`schemas/parity/README.md`. That section is broader than this tier: it lists eight classes the
+manifest will not pin, and four of them are not MAY-tier surfaces at all — among them the MUST
 rule below and this document's own Naming section below. Unpinnable by the manifest and
 optional for an SDK are different statements. Two consequences are worth stating outright,
 because each has been raised as a cross-SDK question:
