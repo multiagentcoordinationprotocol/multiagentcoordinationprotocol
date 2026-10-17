@@ -2,7 +2,7 @@
 
 **Document:** rfcs/proposals/seam-embedder-findings-2026-10.md
 **Stage:** Idea / pre-Draft proposal. This is not a numbered RFC. It asks for discussion through the RFC-proposal issue and, for each item, a PR against the RFC it amends.
-**Status:** Proposed
+**Status:** Accepted (owner decision 2026-10-16); landing as per-RFC amendments
 **Date:** 2026-10-13 (revised 2026-10-16: S12–S14 and I12–I17 added)
 **Pinned spec revision:** [`c2d0a5d`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/tree/c2d0a5d9b4b4ba2f28db2acd50e82a9a1a03a3fe) (RFC-MACP-0012 1.6.1-draft)
 **Pinned reference implementation:** macp-runtime [`fb10fb2`](https://github.com/multiagentcoordinationprotocol/macp-runtime/tree/fb10fb29b0f3f76db565444d56d390824674fe04) (crates 0.8.8; code-identical to 0.8.6 apart from rustdoc)
@@ -39,6 +39,16 @@ Defects that are purely implementation bugs, where the RFC is already clear, are
 | S12 | Acceptance obligations that hold regardless of transport are not stated as such | RFC-0001 §2, new §7.6; RFC-0010 §5.1 | Security / correctness |
 | S13 | The error-code registry maps codes to HTTP only, and `POLICY_DENIED` has no structured detail | `registries/error-codes.md`; RFC-0006 §3; RFC-0012 §6 | Correctness |
 | S14 | No conformance vector exercises RFC-0013 *cannot-verify* or *mismatch* | RFC-0013 §5, §6; `schemas/conformance/cmt-hash` | Conformance |
+
+## Decisions (owner, 2026-10-16)
+
+Every item is **accepted**. S4 and S7 were decided earlier and are recorded in their sections. The rest are accepted as written, with one exception:
+
+- **S12 item 2** is accepted with one change. The `INVALID_SESSION_ID` rejection for an identifier that does not meet RFC-MACP-0004 §11.2 stands, and so does the duty to document accepted formats. The UUID v4/v7 and base64url forms are **non-exhaustive examples**, not a normative format list, so `session_start_reject_paths.json` carries no uppercase-UUID rejection.
+- **S13**: the parity-contract `error_status` table is deferred until macp-runtime's gRPC mapping conforms, because `schemas/parity/contract.json` cannot hold a disagreement. The reason identifiers in RFC-0012 §6.2 are examples, not a canonical list.
+- No reverse-domain identifier is specified for the reference runtime. Its `rules.audit` toggle moves to runtime configuration rather than into the `x-` namespace, because a logging level is not governance content.
+
+This proposal is not merged. Each item lands as an amendment to the RFC it changes; that PR merges once the matching macp-runtime change passes its vectors (S7: #187).
 
 ## Motivation
 
