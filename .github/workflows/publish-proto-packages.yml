@@ -15,6 +15,11 @@ on:
         required: true
         type: boolean
         default: true
+      npmjs_only:
+        description: 'Publish only @multiagentcoordinationprotocol/proto to npmjs (backfill an existing version)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -47,6 +52,10 @@ jobs:
     name: Publish npm Package (@multiagentcoordinationprotocol/proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # npm provenance
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -68,16 +77,32 @@ jobs:
         run: cd packages/proto-npm && npm pack --dry-run
 
       - name: Publish to GitHub Packages
-        if: needs.extract-version.outputs.dry_run != 'true'
+        if: needs.extract-version.outputs.dry_run != 'true' && inputs.npmjs_only != true
         run: cd packages/proto-npm && npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # macp-sdk-typescript is published to npmjs and depends on this package, so it must be on npmjs
+      # too, or `npm install macp-sdk-typescript` fails with E404 for anyone without a GitHub Packages
+      # .npmrc. GitHub Packages stays for existing consumers.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@multiagentcoordinationprotocol'
+
+      - name: Publish to npmjs
+        if: needs.extract-version.outputs.dry_run != 'true'
+        run: cd packages/proto-npm && npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # ── PyPI (macp-proto) ───────────────────────────────────────────────
   publish-pypi:
     name: Publish PyPI Package (macp-proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -121,6 +146,7 @@ jobs:
     name: Publish Rust Crate (macp-proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
 
@@ -146,6 +172,7 @@ jobs:
     name: Publish Go Module
     runs-on: ubuntu-latest
     needs: [extract-version]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
         with:
@@ -181,6 +208,7 @@ jobs:
     name: Publish Java Package (io.macp:macp-proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
       - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
@@ -212,6 +240,7 @@ jobs:
     name: Publish Kotlin Package (io.macp:macp-proto-kotlin)
     runs-on: ubuntu-latest
     needs: [extract-version, publish-java]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
       - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
@@ -256,6 +285,7 @@ jobs:
     name: Publish C# Package (Macp.Proto)
     runs-on: ubuntu-latest
     needs: [extract-version]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
       - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
@@ -289,6 +319,7 @@ jobs:
     name: Attach conformance bundle to the release
     runs-on: ubuntu-latest
     needs: [extract-version]
+    if: inputs.npmjs_only != true
     steps:
       - uses: actions/checkout@v7
 
@@ -340,7 +371,7 @@ jobs:
     name: Dispatch proto-released to consumers
     runs-on: ubuntu-latest
     needs: [extract-version, publish-npm, publish-pypi, publish-rust]
-    if: needs.extract-version.outputs.dry_run != 'true'
+    if: needs.extract-version.outputs.dry_run != 'true' && inputs.npmjs_only != true
     steps:
       - name: Mint GitHub App token
         id: app

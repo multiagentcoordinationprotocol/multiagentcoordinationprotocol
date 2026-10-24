@@ -8,7 +8,7 @@ const path = require('path');
  * other tool that needs to locate the raw .proto schemas.
  *
  * Example:
- *   const { protoDir } = require('@macp/proto');
+ *   const { protoDir } = require('@multiagentcoordinationprotocol/proto');
  *   // protoDir => "/path/to/node_modules/@macp/proto/proto"
  *   // Proto files are at: protoDir + "/macp/v1/core.proto", etc.
  */

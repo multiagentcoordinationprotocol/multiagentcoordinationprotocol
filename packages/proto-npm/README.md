@@ -1,11 +1,11 @@
-# @macp/proto
+# @multiagentcoordinationprotocol/proto
 
 Raw `.proto` files for the [Multi-Agent Coordination Protocol (MACP)](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol).
 
 ## Installation
 
 ```bash
-npm install @macp/proto
+npm install @multiagentcoordinationprotocol/proto
 ```
 
 ## Usage
@@ -14,14 +14,14 @@ This package ships raw `.proto` files under `proto/`. Use them with your preferr
 
 ```js
 const { resolve } = require('path');
-const protoDir = resolve(require.resolve('@macp/proto'), '..', 'proto');
+const protoDir = resolve(require.resolve('@multiagentcoordinationprotocol/proto'), '..', 'proto');
 // protoDir now points to the directory containing MACP .proto files
 ```
 
 The package also exports the proto directory path:
 
 ```js
-const { PROTO_DIR } = require('@macp/proto');
+const { PROTO_DIR } = require('@multiagentcoordinationprotocol/proto');
 ```
 
 ### Proto files included
@@ -38,5 +38,5 @@ const { PROTO_DIR } = require('@macp/proto');
 ## Versioning
 
 This package version tracks the proto schema version from the spec repo.
-Pin to a specific version range (e.g., `@macp/proto@^0.1.0`) to avoid
+Pin to a specific version range (e.g., `@multiagentcoordinationprotocol/proto@^0.1.0`) to avoid
 unexpected breaking changes when new proto versions are released.
