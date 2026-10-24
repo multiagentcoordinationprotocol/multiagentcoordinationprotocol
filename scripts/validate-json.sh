@@ -22,6 +22,7 @@ AGENT_BOOTSTRAP_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-bootstrap.schema
 DECISION_RECEIPT_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-decision-receipt.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
+POLICY_PACKS_DIR="${PROJECT_ROOT}/examples/policies"
 TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*.json"
 CONFORMANCE_DIR="${PROJECT_ROOT}/schemas/conformance"
 CONFORMANCE_SCHEMA="${CONFORMANCE_DIR}/schema.json"
@@ -34,7 +35,7 @@ RULES_EXTRACTOR="${PROJECT_ROOT}/scripts/extract-policy-rules.py"
 # a fence whose info string stops matching, a `mode` key renamed, a file deleted --
 # lowers this number while every remaining instance still passes. Without the pin the
 # run stays green with less coverage than it reports. Bump it when adding a rules object.
-EXPECTED_RULES_INSTANCES=30
+EXPECTED_RULES_INSTANCES=36
 INVALID_QUORUM_RULES_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-quorum-rules"
 QUORUM_RULES_SCHEMA="${PROJECT_ROOT}/schemas/json/policy/quorum-rules.schema.json"
 
@@ -158,6 +159,52 @@ if [ -d "$DISCOVERY_DIR" ]; then
         done
     done
 fi
+
+# Policy packs (docs/policy-packs.md). Each pack is a whole PolicyDescriptor; its
+# `rules` object is additionally validated against the matching per-mode rules
+# schema by the extractor loop below (and counted in EXPECTED_RULES_INSTANCES).
+# Each pack is exercised by exactly one conformance fixture whose inline `policy`
+# MUST equal the pack, so the fixture cannot drift from the file users copy.
+echo "-- Policy packs (${POLICY_PACKS_DIR}/*.json) --"
+PACK_COUNT=0
+for pack_file in "${POLICY_PACKS_DIR}"/*.json; do
+    [ -f "$pack_file" ] || continue
+    PACK_COUNT=$((PACK_COUNT + 1))
+    TOTAL=$((TOTAL + 1))
+    echo "Validating: policies/$(basename "$pack_file") against policy-descriptor schema"
+    if ! ajv validate -s "${POLICY_SCHEMA}" -d "${pack_file}" --spec=draft2020 --strict=false; then
+        echo "  [X] Invalid"
+        exit 1
+    fi
+    if ! python3 - "$pack_file" "$CONFORMANCE_DIR" <<'PY'
+import glob, json, os, sys
+pack = json.load(open(sys.argv[1]))
+hits = []
+for path in sorted(glob.glob(os.path.join(sys.argv[2], "*.json"))):
+    doc = json.load(open(path))
+    if isinstance(doc, dict) and isinstance(doc.get("policy"), dict) \
+            and doc["policy"].get("policy_id") == pack["policy_id"]:
+        hits.append((os.path.basename(path), doc["policy"] == pack))
+if len(hits) != 1:
+    sys.exit("  [X] expected exactly one conformance fixture with policy_id %s, found %d"
+             % (pack["policy_id"], len(hits)))
+if not hits[0][1]:
+    sys.exit("  [X] %s inlines policy %s but it differs from the pack file"
+             % (hits[0][0], pack["policy_id"]))
+print("  [OK] exercised by schemas/conformance/%s" % hits[0][0])
+PY
+    then
+        exit 1
+    fi
+    VALIDATED=$((VALIDATED + 1))
+    echo "  [OK] Valid"
+    echo ""
+done
+if [ "${PACK_COUNT}" -eq 0 ]; then
+    echo "[X] No policy packs found in ${POLICY_PACKS_DIR}."
+    exit 1
+fi
+echo ""
 
 echo "-- Composite transcripts and policy examples --"
 echo "  Syntax check, and (for transcripts with a 'messages' array) per-envelope validation."

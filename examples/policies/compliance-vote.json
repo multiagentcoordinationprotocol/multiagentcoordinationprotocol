@@ -1,0 +1,15 @@
+{
+  "policy_id": "policy.packs.compliance-vote",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 3,
+  "description": "Compliance vote: the compliance agent is the only weighted voter, so no positive Commitment is allowed until it has voted APPROVE. Other participants still vote and their ballots are recorded, but they are non-decisive. Select this policy at SessionStart for sessions that touch personal data; detecting PII is not expressible inside a policy. Replace agent://compliance with the compliance agent's sender identity.",
+  "rules": {
+    "voting": {
+      "algorithm": "weighted",
+      "threshold": 1,
+      "weights": {
+        "agent://compliance": 1
+      }
+    }
+  }
+}

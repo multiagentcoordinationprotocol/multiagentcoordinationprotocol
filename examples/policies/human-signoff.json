@@ -1,0 +1,15 @@
+{
+  "policy_id": "policy.packs.human-signoff",
+  "mode": "macp.mode.decision.v1",
+  "schema_version": 3,
+  "description": "Human sign-off: agents propose, evaluate and vote, but only the designated human approver may emit the Commitment that binds the decision. Select this policy at SessionStart for the sessions that need a human; the selection rule itself (for example an amount above a limit) is not expressible inside a policy. Replace agent://human-approver with the approver's authenticated sender identity.",
+  "rules": {
+    "voting": {
+      "algorithm": "none"
+    },
+    "commitment": {
+      "authority": "designated_role",
+      "designated_roles": ["agent://human-approver"]
+    }
+  }
+}

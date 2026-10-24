@@ -68,6 +68,7 @@ MACP/
     conformance.md
     quickstart.md
     positioning.md
+    policy-packs.md
 
   registries/
     README.md
@@ -161,6 +162,8 @@ MACP/
       decision_plurality.json
       decision_finalize_decline_empty_tally.json
       decision_finalize_decline_quorum_waiver.json
+      decision_policy_pack_human_signoff.json
+      decision_policy_pack_compliance_vote.json
       proposal_happy_path.json
       proposal_negative_outcome.json
       proposal_reject_paths.json
@@ -176,6 +179,7 @@ MACP/
       quorum_reject_paths.json
       quorum_unreachable_override.json
       quorum_percentage_override_reachable.json
+      quorum_policy_pack_two_agent_rule.json
       multi_round_happy_path.json
       multi_round_reject_paths.json
       session_start_reject_paths.json
@@ -201,6 +205,10 @@ MACP/
     discovery/
       agent_manifest.json
       mode_descriptor.json
+    policies/             # ready-made policy packs (docs/policy-packs.md)
+      human-signoff.json
+      two-agent-rule.json
+      compliance-vote.json
 
   governance/
     GOVERNANCE.md
