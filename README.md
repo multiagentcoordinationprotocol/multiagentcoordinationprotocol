@@ -14,7 +14,7 @@ MACP introduces one strict invariant:
 
 Ambient interaction remains continuous and non-binding through **Signals**. Binding interaction occurs only inside **Sessions**. That separation keeps coordination explicit, bounded, auditable, and replayable.
 
-**Try it:** the [Quickstart](docs/quickstart.md) runs a real Decision session against the reference runtime in about five minutes.
+**Try it:** the [Quickstart](docs/quickstart.md) runs a real Decision session against the reference runtime in about five minutes. **How it compares:** [Where MACP fits](docs/positioning.md) sets MACP beside MCP, A2A and framework orchestration, and says when not to use it.
 
 ## Project status
 
@@ -67,6 +67,7 @@ MACP/
     sdk-parity.md
     conformance.md
     quickstart.md
+    positioning.md
 
   registries/
     README.md
