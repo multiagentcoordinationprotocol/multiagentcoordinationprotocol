@@ -109,8 +109,8 @@ MACP/
       macp-mode-descriptor.schema.json
       macp-session-metadata.schema.json
       macp-session-lifecycle-event.schema.json
-      macp-run-descriptor.schema.json
-      macp-agent-bootstrap.schema.json
+      macp-run-descriptor.schema.json   # non-normative product contract (control plane)
+      macp-agent-bootstrap.schema.json  # non-normative product contract (agent hosts)
       macp-ack.schema.json
       macp-error.schema.json
       macp-policy-descriptor.schema.json

@@ -17,7 +17,6 @@
       { "id": "agent://growth" },
       { "id": "agent://compliance" }
     ],
-    "context": "ctx:txn:TXN-48000-SaoPaulo",
     "metadata": {
       "environment": "prod",
       "source": "checkout-service"

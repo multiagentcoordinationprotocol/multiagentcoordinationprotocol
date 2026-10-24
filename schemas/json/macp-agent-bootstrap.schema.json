@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://macp.dev/schemas/macp-agent-bootstrap.schema.json",
   "title": "MACP Agent Bootstrap Payload",
-  "description": "Canonical schema for the bootstrap payload written to MACP_BOOTSTRAP_FILE before an agent process is spawned. Consumed by the agent at startup to learn its session_id, participant_id, mode, runtime address + Bearer token, and — for the initiator agent only — the SessionStart payload and the first kickoff envelope template. Flat, snake_case top level: this is the shape every real producer emits and both SDK readers (macp-sdk-python's from_bootstrap(), macp-sdk-typescript's fromBootstrap()) accept. See direct-agent-auth architecture (§Invariants).",
+  "description": "NON-NORMATIVE product contract between components of the reference stack, used by the playground and agent hosts (macp-playground and the SDK bootstrap readers). It is not part of the MACP protocol, and no RFC requires an implementation to accept it. Canonical schema for the bootstrap payload written to MACP_BOOTSTRAP_FILE before an agent process is spawned. Consumed by the agent at startup to learn its session_id, participant_id, mode, runtime address + Bearer token, and — for the initiator agent only — the SessionStart payload and the first kickoff envelope template. Flat, snake_case top level: this is the shape every real producer emits and both SDK readers (macp-sdk-python's from_bootstrap(), macp-sdk-typescript's fromBootstrap()) accept. See direct-agent-auth architecture (§Invariants).",
   "type": "object",
   "required": ["session_id", "participant_id", "mode"],
   "additionalProperties": true,
