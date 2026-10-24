@@ -34,6 +34,16 @@ UPPER_SNAKE_CASE
 
 The **gRPC Status** column is the status code the gRPC binding MUST use when it surfaces a MACP error code as an RPC status ([RFC-MACP-0006 §3](../rfcs/RFC-MACP-0006-transport-bindings.md)). It is aligned with the **HTTP Status** column: 401 maps to `UNAUTHENTICATED`, 403 to `PERMISSION_DENIED`, 404 to `NOT_FOUND`, 400 to `INVALID_ARGUMENT`, 413 and 429 to `RESOURCE_EXHAUSTED`, and 500 to `INTERNAL`. 409 splits by cause: a lifecycle conflict (`SESSION_NOT_OPEN`) maps to `FAILED_PRECONDITION`, and an existence conflict (`DUPLICATE_MESSAGE`, `SESSION_ALREADY_EXISTS`) maps to `ALREADY_EXISTS`. The deprecated alias `UNAUTHORIZED` maps to `PERMISSION_DENIED`, the same status as the `FORBIDDEN` code it aliases. One code departs from the HTTP alignment: `STREAM_LAGGED` is HTTP 503, because the server shed the subscriber and the client did nothing wrong, but it is gRPC `RESOURCE_EXHAUSTED`, because a per-subscriber buffer was exhausted. That is the status gRPC clients of existing runtimes already receive, and `UNAVAILABLE` would wrongly invite a transparent retry of the same call.
 
+## Stability of Permanent Codes
+
+Runtimes, SDKs and embedders map these codes onto their own wire formats and client logic, so a `permanent` entry is a compatibility promise:
+
+- A `permanent` code MUST NOT be renamed or removed.
+- Its **HTTP Status** and **gRPC Status** mappings MUST NOT change.
+- Its description MAY be clarified, but MUST NOT be narrowed so that a condition it covered moves to a different code.
+
+A code that is superseded becomes `deprecated` and stays in this table, as `UNAUTHORIZED` has, so that recorded histories and older clients still resolve it. `provisional` codes carry no such promise until they are promoted.
+
 ## Error Design Principles
 
 Errors should:

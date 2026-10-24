@@ -96,7 +96,7 @@ All Envelopes in a session MUST use the same `macp_version`.
 
 - **Major version changes**: May alter core state transition logic
 - **Minor version changes**: SHOULD be backward compatible
-- **Replay requirement**: Use same MACP runtime version for replay
+- **Replay requirement**: Use the same protocol major version for replay. A later runtime release may replay an earlier history, under the semantics revision the history recorded (see below).
 
 ### Mode Version
 
@@ -125,6 +125,20 @@ re-resolved from the registry. Policy equality for this purpose is `policy_id` +
 the `schema_version` it declares even when a newer one exists. See
 [RFC-MACP-0012 §8 (Replay Invariant)](../rfcs/RFC-MACP-0012-policy.md) and
 [docs/policy.md](policy.md#replay-invariant).
+
+### Semantics Revision
+
+A runtime can tighten an acceptance rule without a new `mode_version`, either because a
+Mode RFC tightened it or because the runtime corrected its own behaviour. Without
+more information, a later release would then reject an envelope that an old history
+accepted. To prevent that, the runtime records a **semantics revision** with each Session
+when it accepts the `SessionStart`, and gates each tightening on that revision. Replay
+applies the recorded revision's rules, a later release in the same major version MUST
+still replay every revision it issued, and a history recorded under a revision the
+runtime doesn't know MUST be refused rather than reinterpreted. The revision is scoped to
+one implementation (for an embedded runtime, to the library it embeds) and is not an
+Envelope field. See
+[RFC-MACP-0003 §3.2 (Semantics Revisions)](../rfcs/RFC-MACP-0003-determinism.md).
 
 ### Suspension and Resume
 

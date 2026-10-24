@@ -54,6 +54,10 @@ A `rules` object MAY carry vendor-extension keys at its top level, for restricti
 
 The rule schemas enforce only the key's shape: its name, its top-level position and an object value. The extension's contents are validated by the runtime that implements it. A runtime that does not implement a given key rejects the descriptor at admission, and a runtime MAY advertise the keys it implements in `PolicyRegistryCapability.rule_extensions` (RFC-MACP-0012 §9).
 
-| Example key | Defined by | Purpose |
-|-------------|------------|---------|
-| `x-com.zer07labs.seam` | Seam (`zer07labs.com`) | `capture_dissent: true` refuses a `Vote` whose `reason` is empty or whitespace. This example is cited non-normatively in RFC-MACP-0012 §4 and is not a registration. |
+### Known Vendor Extensions (informative)
+
+This list helps implementers find published extensions and avoid accidental overlap. It is **not** an allocation: being listed confers no ownership beyond the domain the key is already derived from, and an unlisted key is just as valid. A vendor MAY add its own key by pull request, linking to the published definition of its keys, value types and restriction semantics.
+
+| Key | Defined by | Purpose | Definition |
+|-----|------------|---------|------------|
+| `x-com.zer07labs.seam` | Seam (`zer07labs.com`) | `capture_dissent: true` refuses a `Vote` whose `reason` is empty or whitespace. | [RFC-MACP-0012 §4](../rfcs/RFC-MACP-0012-policy.md) (non-normative example) |
