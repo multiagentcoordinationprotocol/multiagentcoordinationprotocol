@@ -242,10 +242,39 @@ jobs:
             echo "JS generation OK" || \
             (echo "ERROR: No JS files generated" && exit 1)
 
+  quickstart-smoke:
+    name: Quickstart Runs As Written
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      # docs/quickstart.md is the source of truth: the image tag and the script are both read from it,
+      # so editing the page is what changes the test.
+      - name: Start the runtime image named in docs/quickstart.md
+        run: |
+          image=$(grep -oE 'ghcr\.io/multiagentcoordinationprotocol/macp-runtime:[0-9A-Za-z._-]+' docs/quickstart.md | head -1)
+          test -n "$image"
+          echo "image: $image"
+          docker run -d --name macp -p 50051:50051 -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 "$image"
+          for i in $(seq 1 30); do nc -z 127.0.0.1 50051 && exit 0; sleep 1; done
+          docker logs macp; exit 1
+
+      - name: Run the quickstart script and compare its output
+        run: |
+          pip install macp-sdk-python
+          awk '/^```python$/{f=1;next} f&&/^```$/{exit} f' docs/quickstart.md > first_session.py
+          python first_session.py | tee out.txt
+          awk '/^```text$/{f=1;next} f&&/^```$/{exit} f' docs/quickstart.md > expected.txt
+          diff -u expected.txt out.txt
+
   validate-all:
     name: All Validations Passed
     runs-on: ubuntu-latest
-    needs: [validate, lint-protobuf, generate-code]
+    needs: [validate, lint-protobuf, generate-code, quickstart-smoke]
 
     steps:
       - name: Summary
@@ -256,3 +285,4 @@ jobs:
           echo "  - Protobuf schemas validated"
           echo "  - Protobuf linting passed"
           echo "  - Per-language code generation successful"
+          echo "  - docs/quickstart.md runs as written"

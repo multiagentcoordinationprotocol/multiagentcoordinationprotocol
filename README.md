@@ -14,6 +14,8 @@ MACP introduces one strict invariant:
 
 Ambient interaction remains continuous and non-binding through **Signals**. Binding interaction occurs only inside **Sessions**. That separation keeps coordination explicit, bounded, auditable, and replayable.
 
+**Try it:** the [Quickstart](docs/quickstart.md) runs a real Decision session against the reference runtime in about five minutes.
+
 ## Project status
 
 MACP is maintained by a single maintainer on a best-effort basis. Changes land when a consumer needs them; there is no release schedule and no SLA. That fact belongs at the top rather than in the commit graph, because it should inform how much of this you choose to build on.
@@ -64,6 +66,7 @@ MACP/
     agent-manifest-schema.md
     sdk-parity.md
     conformance.md
+    quickstart.md
 
   registries/
     README.md
