@@ -635,6 +635,8 @@ A common pattern is:
 
 This split keeps MACP coherent: it coordinates commitments, not ad-hoc effects.
 
+For how MACP compares with MCP, A2A and framework-native orchestration, and when not to use it, see [Where MACP fits](positioning.md).
+
 Modes that coordinate tool execution SHOULD treat tool calls as side effects and apply one of the replay-safe patterns described in this document's §9.5.
 
 ---
