@@ -20,19 +20,14 @@ Maintainers are responsible for:
 
 ## RFC Lifecycle
 
-1. Draft
-2. Review
-3. Accepted
-4. Final
+Every RFC's header carries a `**Version:**` (a semantic version with a `-draft` suffix) and a `**Status:**` of `Community Standards Track`. That status names a track, not a lifecycle stage.
 
-RFC status MUST be reflected in the document header.
+There is currently **no promotion ladder**. This repository defines no Draft → Review → Accepted → Final stages, no criteria for advancing an RFC between them, and no gate beyond [CONTRIBUTING.md](../CONTRIBUTING.md)'s community consensus. Every RFC should be read as draft-quality. The README's [Standards posture](../README.md#standards-posture) section and its version census say the same thing, and if the two documents ever disagree, the README is authoritative.
+
+A ladder will be defined here, with entry criteria for each stage, before any RFC drops its `-draft` suffix.
 
 ## Registry Authority
 
-The project maintains registries for:
-
-- Mode identifiers
-- Error codes
-- Media types
+The project maintains the registries in [`registries/`](../registries/README.md): modes, error codes, media types, capabilities, transports, policies and the commitment-hash label.
 
 Experimental identifiers SHOULD use reverse-domain notation.
