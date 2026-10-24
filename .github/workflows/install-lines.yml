@@ -1,0 +1,27 @@
+name: Install Lines Resolve
+
+# Network-gated: checks that each install line advertised in the README, the quickstart and
+# both SDK READMEs resolves on its public registry with no credentials. Kept out of
+# `make validate` and the required checks because it depends on third-party registries.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'docs/quickstart.md'
+      - 'scripts/check-install-lines.py'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python3 scripts/check-install-lines.py
