@@ -2,29 +2,58 @@ syntax = "proto3";
 
 package macp.modes.decision.v1;
 
+// Proposal: creates an option for the participants to consider
+// (RFC-MACP-0007 Section 4).
 message ProposalPayload {
+  // Identifier of this proposal, unique within the Session. Later
+  // Evaluation, Objection and Vote messages reference it.
   string proposal_id = 1;
+  // The option being proposed.
   string option = 2;
+  // Why the sender proposes this option.
   string rationale = 3;
+  // Opaque supporting data; empty if none.
   bytes supporting_data = 4;
 }
 
+// Evaluation: records an analysis of a proposal. It is advisory; a BLOCK
+// recommendation does not trigger veto logic (RFC-MACP-0007 Section 4).
 message EvaluationPayload {
+  // The proposal being evaluated.
   string proposal_id = 1;
-  string recommendation = 2; // APPROVE | REVIEW | BLOCK | REJECT
+  // The evaluator's recommendation. Values are case-sensitive. REVIEW means
+  // analyzed without a definitive stance.
+  // Values: APPROVE | REVIEW | BLOCK | REJECT
+  string recommendation = 2;
+  // The evaluator's confidence in its recommendation.
   double confidence = 3;
+  // Explanation of the recommendation.
   string reason = 4;
 }
 
+// Objection: records a formal concern or blocking issue with a proposal.
+// Objections are subject to the policy's objection_handling rules
+// (RFC-MACP-0007 Section 4).
 message ObjectionPayload {
+  // The proposal being objected to.
   string proposal_id = 1;
+  // The concern being raised.
   string reason = 2;
-  string severity = 3; // low | medium | high | critical
+  // Severity of the objection. Values are lowercase and case-sensitive; any
+  // other value, including the empty string, is rejected.
+  // Values: low | medium | high | critical
+  string severity = 3;
 }
 
+// Vote: records a participant's preference on a proposal
+// (RFC-MACP-0007 Section 4).
 message VotePayload {
+  // The proposal being voted on.
   string proposal_id = 1;
-  string vote = 2; // APPROVE | REJECT | ABSTAIN
+  // The ballot. Values are case-sensitive.
+  // Values: APPROVE | REJECT | ABSTAIN
+  string vote = 2;
+  // Explanation of the vote.
   string reason = 3;
 }
 

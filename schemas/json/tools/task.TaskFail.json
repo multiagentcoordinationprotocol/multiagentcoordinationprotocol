@@ -1,0 +1,37 @@
+{
+  "name": "macp_task_fail",
+  "description": "TaskFail: the assignee reports a bounded failure (RFC-MACP-0009 Section 4). Sent as message_type TaskFail in mode macp.mode.task.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "task_id": {
+        "description": "The task that failed.",
+        "type": "string"
+      },
+      "assignee": {
+        "description": "The assignee reporting the failure.",
+        "type": "string"
+      },
+      "error_code": {
+        "description": "Machine-readable failure code.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Human-readable explanation of the failure.",
+        "type": "string"
+      },
+      "retryable": {
+        "description": "Whether retrying the task may succeed.",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "task_id",
+      "assignee",
+      "error_code",
+      "reason",
+      "retryable"
+    ],
+    "additionalProperties": false
+  }
+}

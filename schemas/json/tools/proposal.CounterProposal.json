@@ -1,0 +1,37 @@
+{
+  "name": "macp_proposal_counter_proposal",
+  "description": "CounterProposal: submits a replacement or revised offer. It creates a new proposal and does not retire the one it supersedes; participants may accept either (RFC-MACP-0008 Section 5). Sent as message_type CounterProposal in mode macp.mode.proposal.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "Identifier of the new counteroffer, unique within the Session.",
+        "type": "string"
+      },
+      "supersedes_proposal_id": {
+        "description": "The existing proposal this counteroffer is meant to replace.",
+        "type": "string"
+      },
+      "title": {
+        "description": "Short title of the counteroffer.",
+        "type": "string"
+      },
+      "summary": {
+        "description": "Human-readable summary of the counteroffer.",
+        "type": "string"
+      },
+      "details": {
+        "description": "Opaque counteroffer details; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "supersedes_proposal_id",
+      "title",
+      "summary",
+      "details"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -138,6 +138,8 @@ MACP/
         proposal-rules.schema.json
         task-rules.schema.json
         handoff-rules.schema.json
+      tools/              # GENERATED mode-as-tool schemas, one per mode message type
+                          # (scripts/gen-tool-schemas.py; see tools/README.md)
     conformance/
       README.md
       schema.json         # fixture-format JSON Schema

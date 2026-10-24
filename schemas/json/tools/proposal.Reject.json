@@ -1,0 +1,27 @@
+{
+  "name": "macp_proposal_reject",
+  "description": "Reject: rejects a specific proposal (RFC-MACP-0008 Section 4). Sent as message_type Reject in mode macp.mode.proposal.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "The proposal being rejected.",
+        "type": "string"
+      },
+      "terminal": {
+        "description": "True marks the rejection as terminal, which makes the Session eligible for a negative Commitment.",
+        "type": "boolean"
+      },
+      "reason": {
+        "description": "Explanation of the rejection.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "terminal",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

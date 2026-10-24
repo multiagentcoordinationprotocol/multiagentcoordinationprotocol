@@ -1,0 +1,27 @@
+{
+  "name": "macp_task_reject",
+  "description": "TaskReject: the assignee declines responsibility for the task (RFC-MACP-0009 Section 4). Sent as message_type TaskReject in mode macp.mode.task.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "task_id": {
+        "description": "The task being declined.",
+        "type": "string"
+      },
+      "assignee": {
+        "description": "The participant declining the task.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the decline.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "task_id",
+      "assignee",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

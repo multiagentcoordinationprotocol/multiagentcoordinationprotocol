@@ -1,0 +1,27 @@
+{
+  "name": "macp_task_accept",
+  "description": "TaskAccept: the assignee accepts responsibility for the task (RFC-MACP-0009 Section 4). Sent as message_type TaskAccept in mode macp.mode.task.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "task_id": {
+        "description": "The task being accepted.",
+        "type": "string"
+      },
+      "assignee": {
+        "description": "The participant accepting the task.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the acceptance.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "task_id",
+      "assignee",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

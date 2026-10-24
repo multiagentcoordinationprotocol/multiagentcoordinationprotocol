@@ -1,0 +1,40 @@
+{
+  "name": "macp_proposal_proposal",
+  "description": "Proposal: submits an initial offer (RFC-MACP-0008 Section 4). Sent as message_type Proposal in mode macp.mode.proposal.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "Identifier of this proposal, unique within the Session.",
+        "type": "string"
+      },
+      "title": {
+        "description": "Short title of the offer.",
+        "type": "string"
+      },
+      "summary": {
+        "description": "Human-readable summary of the offer.",
+        "type": "string"
+      },
+      "details": {
+        "description": "Opaque offer details; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      },
+      "tags": {
+        "description": "Free-form labels for the offer; empty if none.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "proposal_id",
+      "title",
+      "summary",
+      "details",
+      "tags"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -65,3 +65,10 @@ fi
 echo
 echo "─────────────────────────────────────"
 echo "✓ All Protocol Buffer schemas are syntactically valid"
+
+# ── Generated mode-as-tool schemas (schemas/json/tools/) ──
+# Regenerate from the mode protos in memory and fail if the committed files
+# differ. Fix with: make gen-tool-schemas
+echo
+echo "── Mode-as-tool schemas ──"
+python3 "${SCRIPT_DIR}/gen-tool-schemas.py" --check

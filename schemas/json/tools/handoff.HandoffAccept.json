@@ -1,0 +1,32 @@
+{
+  "name": "macp_handoff_accept",
+  "description": "HandoffAccept: the target accepts the offered transfer (RFC-MACP-0010 Section 4). Sent as message_type HandoffAccept in mode macp.mode.handoff.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "handoff_id": {
+        "description": "The offer being accepted.",
+        "type": "string"
+      },
+      "accepted_by": {
+        "description": "The participant accepting; must be the offer's target.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the acceptance.",
+        "type": "string"
+      },
+      "implicit": {
+        "description": "True on the runtime-emitted synthetic accept produced by acceptance.implicit_accept_timeout_ms (RFC-MACP-0010 §5.1). Clients MUST NOT submit an accept with implicit = true; runtimes MUST reject it.",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "handoff_id",
+      "accepted_by",
+      "reason",
+      "implicit"
+    ],
+    "additionalProperties": false
+  }
+}

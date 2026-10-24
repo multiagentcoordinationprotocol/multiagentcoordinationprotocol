@@ -1,0 +1,42 @@
+{
+  "name": "macp_task_request",
+  "description": "TaskRequest: opens the delegated task (RFC-MACP-0009 Section 4). Sent as message_type TaskRequest in mode macp.mode.task.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "task_id": {
+        "description": "Identifier of the task. Later task messages reference it.",
+        "type": "string"
+      },
+      "title": {
+        "description": "Short title of the task.",
+        "type": "string"
+      },
+      "instructions": {
+        "description": "What the assignee is asked to do.",
+        "type": "string"
+      },
+      "requested_assignee": {
+        "description": "The participant asked to take the task. Empty means any eligible participant may accept it.",
+        "type": "string"
+      },
+      "input": {
+        "description": "Opaque task input; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      },
+      "deadline_unix_ms": {
+        "description": "Requested deadline in milliseconds since the Unix epoch.",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "task_id",
+      "title",
+      "instructions",
+      "requested_assignee",
+      "input",
+      "deadline_unix_ms"
+    ],
+    "additionalProperties": false
+  }
+}

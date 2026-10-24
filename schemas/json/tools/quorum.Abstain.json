@@ -1,0 +1,22 @@
+{
+  "name": "macp_quorum_abstain",
+  "description": "Abstain: records a neutral ballot. It counts neither as an approval nor as a rejection (RFC-MACP-0011 Section 5). Sent as message_type Abstain in mode macp.mode.quorum.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "request_id": {
+        "description": "The request being abstained on.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the ballot.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "request_id",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

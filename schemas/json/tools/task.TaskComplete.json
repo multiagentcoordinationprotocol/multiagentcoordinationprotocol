@@ -1,0 +1,32 @@
+{
+  "name": "macp_task_complete",
+  "description": "TaskComplete: the assignee reports successful completion (RFC-MACP-0009 Section 4). Sent as message_type TaskComplete in mode macp.mode.task.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "task_id": {
+        "description": "The task being completed.",
+        "type": "string"
+      },
+      "assignee": {
+        "description": "The assignee reporting completion.",
+        "type": "string"
+      },
+      "output": {
+        "description": "Opaque task output; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      },
+      "summary": {
+        "description": "Human-readable summary of the result.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "task_id",
+      "assignee",
+      "output",
+      "summary"
+    ],
+    "additionalProperties": false
+  }
+}
