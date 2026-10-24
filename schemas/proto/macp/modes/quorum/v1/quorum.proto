@@ -2,26 +2,47 @@ syntax = "proto3";
 
 package macp.modes.quorum.v1;
 
+// ApprovalRequest: opens the approval request. A Session accepts at most one
+// (RFC-MACP-0011 Sections 4 and 5).
 message ApprovalRequestPayload {
+  // Identifier of the request. Every ballot references it.
   string request_id = 1;
+  // What is being approved.
   string action = 2;
+  // Human-readable description of the request.
   string summary = 3;
+  // Opaque context for the request; empty if none.
   bytes details = 4;
+  // Number of approvals required. Must be greater than zero and must not
+  // exceed the number of eligible participants. A policy threshold, if any,
+  // replaces it.
   uint32 required_approvals = 5;
 }
 
+// Approve: records an approval ballot. Each eligible participant casts at
+// most one ballot per request (RFC-MACP-0011 Section 5).
 message ApprovePayload {
+  // The request being approved.
   string request_id = 1;
+  // Explanation of the ballot.
   string reason = 2;
 }
 
+// Reject: records a rejection ballot. Each eligible participant casts at
+// most one ballot per request (RFC-MACP-0011 Section 5).
 message RejectPayload {
+  // The request being rejected.
   string request_id = 1;
+  // Explanation of the ballot.
   string reason = 2;
 }
 
+// Abstain: records a neutral ballot. It counts neither as an approval nor
+// as a rejection (RFC-MACP-0011 Section 5).
 message AbstainPayload {
+  // The request being abstained on.
   string request_id = 1;
+  // Explanation of the ballot.
   string reason = 2;
 }
 

@@ -1,0 +1,37 @@
+{
+  "name": "macp_task_update",
+  "description": "TaskUpdate: a non-terminal progress or status update from the active assignee (RFC-MACP-0009 Section 4). No explicit assignee field; runtime validates authorship via Envelope.sender. Sent as message_type TaskUpdate in mode macp.mode.task.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "task_id": {
+        "description": "The task being reported on.",
+        "type": "string"
+      },
+      "status": {
+        "description": "Free-form status of the task.",
+        "type": "string"
+      },
+      "progress": {
+        "description": "Reported progress of the task.",
+        "type": "number"
+      },
+      "message": {
+        "description": "Human-readable progress message.",
+        "type": "string"
+      },
+      "partial_output": {
+        "description": "Opaque partial output; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "task_id",
+      "status",
+      "progress",
+      "message",
+      "partial_output"
+    ],
+    "additionalProperties": false
+  }
+}

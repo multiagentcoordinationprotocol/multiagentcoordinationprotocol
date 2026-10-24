@@ -1,0 +1,22 @@
+{
+  "name": "macp_proposal_accept",
+  "description": "Accept: accepts a specific live proposal (RFC-MACP-0008 Section 4). Sent as message_type Accept in mode macp.mode.proposal.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "The proposal being accepted.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the acceptance.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

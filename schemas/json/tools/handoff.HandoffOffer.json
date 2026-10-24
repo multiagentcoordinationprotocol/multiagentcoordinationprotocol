@@ -1,0 +1,32 @@
+{
+  "name": "macp_handoff_offer",
+  "description": "HandoffOffer: proposes transferring responsibility to a target participant (RFC-MACP-0010 Section 4). Sent as message_type HandoffOffer in mode macp.mode.handoff.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "handoff_id": {
+        "description": "Identifier of this offer. A new offer after a decline needs a new one.",
+        "type": "string"
+      },
+      "target_participant": {
+        "description": "The participant offered the responsibility. Only this participant may accept or decline.",
+        "type": "string"
+      },
+      "scope": {
+        "description": "The responsibility being transferred.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Why the handoff is offered.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "handoff_id",
+      "target_participant",
+      "scope",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

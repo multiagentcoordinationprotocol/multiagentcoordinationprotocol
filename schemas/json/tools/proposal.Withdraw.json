@@ -1,0 +1,22 @@
+{
+  "name": "macp_proposal_withdraw",
+  "description": "Withdraw: withdraws a previously submitted proposal (RFC-MACP-0008 Section 4). Sent as message_type Withdraw in mode macp.mode.proposal.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "The proposal being withdrawn.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the withdrawal.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

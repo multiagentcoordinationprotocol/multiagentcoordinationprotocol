@@ -2,35 +2,61 @@ syntax = "proto3";
 
 package macp.modes.proposal.v1;
 
+// Proposal: submits an initial offer (RFC-MACP-0008 Section 4).
 message ProposalPayload {
+  // Identifier of this proposal, unique within the Session.
   string proposal_id = 1;
+  // Short title of the offer.
   string title = 2;
+  // Human-readable summary of the offer.
   string summary = 3;
+  // Opaque offer details; empty if none.
   bytes details = 4;
+  // Free-form labels for the offer; empty if none.
   repeated string tags = 5;
 }
 
+// CounterProposal: submits a replacement or revised offer. It creates a new
+// proposal and does not retire the one it supersedes; participants may
+// accept either (RFC-MACP-0008 Section 5).
 message CounterProposalPayload {
+  // Identifier of the new counteroffer, unique within the Session.
   string proposal_id = 1;
+  // The existing proposal this counteroffer is meant to replace.
   string supersedes_proposal_id = 2;
+  // Short title of the counteroffer.
   string title = 3;
+  // Human-readable summary of the counteroffer.
   string summary = 4;
+  // Opaque counteroffer details; empty if none.
   bytes details = 5;
 }
 
+// Accept: accepts a specific live proposal (RFC-MACP-0008 Section 4).
 message AcceptPayload {
+  // The proposal being accepted.
   string proposal_id = 1;
+  // Explanation of the acceptance.
   string reason = 2;
 }
 
+// Reject: rejects a specific proposal (RFC-MACP-0008 Section 4).
 message RejectPayload {
+  // The proposal being rejected.
   string proposal_id = 1;
+  // True marks the rejection as terminal, which makes the Session eligible
+  // for a negative Commitment.
   bool terminal = 2;
+  // Explanation of the rejection.
   string reason = 3;
 }
 
+// Withdraw: withdraws a previously submitted proposal
+// (RFC-MACP-0008 Section 4).
 message WithdrawPayload {
+  // The proposal being withdrawn.
   string proposal_id = 1;
+  // Explanation of the withdrawal.
   string reason = 2;
 }
 

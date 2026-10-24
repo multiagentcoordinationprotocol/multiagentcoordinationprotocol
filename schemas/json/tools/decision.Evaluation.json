@@ -1,0 +1,38 @@
+{
+  "name": "macp_decision_evaluation",
+  "description": "Evaluation: records an analysis of a proposal. It is advisory; a BLOCK recommendation does not trigger veto logic (RFC-MACP-0007 Section 4). Sent as message_type Evaluation in mode macp.mode.decision.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "The proposal being evaluated.",
+        "type": "string"
+      },
+      "recommendation": {
+        "description": "The evaluator's recommendation. Values are case-sensitive. REVIEW means analyzed without a definitive stance.",
+        "type": "string",
+        "enum": [
+          "APPROVE",
+          "REVIEW",
+          "BLOCK",
+          "REJECT"
+        ]
+      },
+      "confidence": {
+        "description": "The evaluator's confidence in its recommendation.",
+        "type": "number"
+      },
+      "reason": {
+        "description": "Explanation of the recommendation.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "recommendation",
+      "confidence",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

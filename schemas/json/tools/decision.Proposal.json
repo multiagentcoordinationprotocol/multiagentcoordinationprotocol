@@ -1,0 +1,32 @@
+{
+  "name": "macp_decision_proposal",
+  "description": "Proposal: creates an option for the participants to consider (RFC-MACP-0007 Section 4). Sent as message_type Proposal in mode macp.mode.decision.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "Identifier of this proposal, unique within the Session. Later Evaluation, Objection and Vote messages reference it.",
+        "type": "string"
+      },
+      "option": {
+        "description": "The option being proposed.",
+        "type": "string"
+      },
+      "rationale": {
+        "description": "Why the sender proposes this option.",
+        "type": "string"
+      },
+      "supporting_data": {
+        "description": "Opaque supporting data; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "option",
+      "rationale",
+      "supporting_data"
+    ],
+    "additionalProperties": false
+  }
+}

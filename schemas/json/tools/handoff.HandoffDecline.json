@@ -1,0 +1,27 @@
+{
+  "name": "macp_handoff_decline",
+  "description": "HandoffDecline: the target declines the offered transfer (RFC-MACP-0010 Section 4). Sent as message_type HandoffDecline in mode macp.mode.handoff.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "handoff_id": {
+        "description": "The offer being declined.",
+        "type": "string"
+      },
+      "declined_by": {
+        "description": "The participant declining; must be the offer's target.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the decline.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "handoff_id",
+      "declined_by",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

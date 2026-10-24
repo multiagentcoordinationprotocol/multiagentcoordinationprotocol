@@ -22,6 +22,7 @@ package macp.modes.multi_round.v1;
 // presence via `optional` would be a breaking change to an already-shipped
 // public field, not a patch.
 message ContributePayload {
+  // The contribution, compared for equality only and never interpreted.
   string value = 1;
 }
 

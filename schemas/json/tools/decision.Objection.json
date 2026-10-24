@@ -1,0 +1,33 @@
+{
+  "name": "macp_decision_objection",
+  "description": "Objection: records a formal concern or blocking issue with a proposal. Objections are subject to the policy's objection_handling rules (RFC-MACP-0007 Section 4). Sent as message_type Objection in mode macp.mode.decision.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "The proposal being objected to.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "The concern being raised.",
+        "type": "string"
+      },
+      "severity": {
+        "description": "Severity of the objection. Values are lowercase and case-sensitive; any other value, including the empty string, is rejected.",
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high",
+          "critical"
+        ]
+      }
+    },
+    "required": [
+      "proposal_id",
+      "reason",
+      "severity"
+    ],
+    "additionalProperties": false
+  }
+}

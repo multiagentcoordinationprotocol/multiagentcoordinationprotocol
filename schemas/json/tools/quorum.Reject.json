@@ -1,0 +1,22 @@
+{
+  "name": "macp_quorum_reject",
+  "description": "Reject: records a rejection ballot. Each eligible participant casts at most one ballot per request (RFC-MACP-0011 Section 5). Sent as message_type Reject in mode macp.mode.quorum.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "request_id": {
+        "description": "The request being rejected.",
+        "type": "string"
+      },
+      "reason": {
+        "description": "Explanation of the ballot.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "request_id",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

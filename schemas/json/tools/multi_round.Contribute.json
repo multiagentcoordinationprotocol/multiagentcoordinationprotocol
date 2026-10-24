@@ -1,0 +1,17 @@
+{
+  "name": "macp_multi_round_contribute",
+  "description": "Contribution submitted by a participant during a round of the ext.multi_round.v1 iterative-convergence mode. Sent as message_type Contribute in mode ext.multi_round.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "description": "The contribution, compared for equality only and never interpreted.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "value"
+    ],
+    "additionalProperties": false
+  }
+}

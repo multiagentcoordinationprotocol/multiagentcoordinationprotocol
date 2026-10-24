@@ -2,48 +2,86 @@ syntax = "proto3";
 
 package macp.modes.task.v1;
 
+// TaskRequest: opens the delegated task (RFC-MACP-0009 Section 4).
 message TaskRequestPayload {
+  // Identifier of the task. Later task messages reference it.
   string task_id = 1;
+  // Short title of the task.
   string title = 2;
+  // What the assignee is asked to do.
   string instructions = 3;
+  // The participant asked to take the task. Empty means any eligible
+  // participant may accept it.
   string requested_assignee = 4;
+  // Opaque task input; empty if none.
   bytes input = 5;
+  // Requested deadline in milliseconds since the Unix epoch.
   int64 deadline_unix_ms = 6;
 }
 
+// TaskAccept: the assignee accepts responsibility for the task
+// (RFC-MACP-0009 Section 4).
 message TaskAcceptPayload {
+  // The task being accepted.
   string task_id = 1;
+  // The participant accepting the task.
   string assignee = 2;
+  // Explanation of the acceptance.
   string reason = 3;
 }
 
+// TaskReject: the assignee declines responsibility for the task
+// (RFC-MACP-0009 Section 4).
 message TaskRejectPayload {
+  // The task being declined.
   string task_id = 1;
+  // The participant declining the task.
   string assignee = 2;
+  // Explanation of the decline.
   string reason = 3;
 }
 
+// TaskUpdate: a non-terminal progress or status update from the active
+// assignee (RFC-MACP-0009 Section 4).
 // No explicit assignee field; runtime validates authorship via Envelope.sender.
 message TaskUpdatePayload {
+  // The task being reported on.
   string task_id = 1;
+  // Free-form status of the task.
   string status = 2;
+  // Reported progress of the task.
   double progress = 3;
+  // Human-readable progress message.
   string message = 4;
+  // Opaque partial output; empty if none.
   bytes partial_output = 5;
 }
 
+// TaskComplete: the assignee reports successful completion
+// (RFC-MACP-0009 Section 4).
 message TaskCompletePayload {
+  // The task being completed.
   string task_id = 1;
+  // The assignee reporting completion.
   string assignee = 2;
+  // Opaque task output; empty if none.
   bytes output = 3;
+  // Human-readable summary of the result.
   string summary = 4;
 }
 
+// TaskFail: the assignee reports a bounded failure
+// (RFC-MACP-0009 Section 4).
 message TaskFailPayload {
+  // The task that failed.
   string task_id = 1;
+  // The assignee reporting the failure.
   string assignee = 2;
+  // Machine-readable failure code.
   string error_code = 3;
+  // Human-readable explanation of the failure.
   string reason = 4;
+  // Whether retrying the task may succeed.
   bool retryable = 5;
 }
 

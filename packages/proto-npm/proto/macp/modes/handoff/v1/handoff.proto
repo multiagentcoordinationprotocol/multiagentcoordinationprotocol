@@ -2,22 +2,39 @@ syntax = "proto3";
 
 package macp.modes.handoff.v1;
 
+// HandoffOffer: proposes transferring responsibility to a target participant
+// (RFC-MACP-0010 Section 4).
 message HandoffOfferPayload {
+  // Identifier of this offer. A new offer after a decline needs a new one.
   string handoff_id = 1;
+  // The participant offered the responsibility. Only this participant may
+  // accept or decline.
   string target_participant = 2;
+  // The responsibility being transferred.
   string scope = 3;
+  // Why the handoff is offered.
   string reason = 4;
 }
 
+// HandoffContext: attaches supplemental context to a handoff offer
+// (RFC-MACP-0010 Section 4).
 message HandoffContextPayload {
+  // The offer this context belongs to.
   string handoff_id = 1;
+  // Media type of the context bytes.
   string content_type = 2;
+  // The opaque context.
   bytes context = 3;
 }
 
+// HandoffAccept: the target accepts the offered transfer
+// (RFC-MACP-0010 Section 4).
 message HandoffAcceptPayload {
+  // The offer being accepted.
   string handoff_id = 1;
+  // The participant accepting; must be the offer's target.
   string accepted_by = 2;
+  // Explanation of the acceptance.
   string reason = 3;
   // True on the runtime-emitted synthetic accept produced by
   // acceptance.implicit_accept_timeout_ms (RFC-MACP-0010 §5.1). Clients
@@ -25,9 +42,14 @@ message HandoffAcceptPayload {
   bool implicit = 4;
 }
 
+// HandoffDecline: the target declines the offered transfer
+// (RFC-MACP-0010 Section 4).
 message HandoffDeclinePayload {
+  // The offer being declined.
   string handoff_id = 1;
+  // The participant declining; must be the offer's target.
   string declined_by = 2;
+  // Explanation of the decline.
   string reason = 3;
 }
 

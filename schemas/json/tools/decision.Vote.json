@@ -1,0 +1,32 @@
+{
+  "name": "macp_decision_vote",
+  "description": "Vote: records a participant's preference on a proposal (RFC-MACP-0007 Section 4). Sent as message_type Vote in mode macp.mode.decision.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "description": "The proposal being voted on.",
+        "type": "string"
+      },
+      "vote": {
+        "description": "The ballot. Values are case-sensitive.",
+        "type": "string",
+        "enum": [
+          "APPROVE",
+          "REJECT",
+          "ABSTAIN"
+        ]
+      },
+      "reason": {
+        "description": "Explanation of the vote.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "proposal_id",
+      "vote",
+      "reason"
+    ],
+    "additionalProperties": false
+  }
+}

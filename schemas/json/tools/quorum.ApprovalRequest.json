@@ -1,0 +1,37 @@
+{
+  "name": "macp_quorum_approval_request",
+  "description": "ApprovalRequest: opens the approval request. A Session accepts at most one (RFC-MACP-0011 Sections 4 and 5). Sent as message_type ApprovalRequest in mode macp.mode.quorum.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "request_id": {
+        "description": "Identifier of the request. Every ballot references it.",
+        "type": "string"
+      },
+      "action": {
+        "description": "What is being approved.",
+        "type": "string"
+      },
+      "summary": {
+        "description": "Human-readable description of the request.",
+        "type": "string"
+      },
+      "details": {
+        "description": "Opaque context for the request; empty if none. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      },
+      "required_approvals": {
+        "description": "Number of approvals required. Must be greater than zero and must not exceed the number of eligible participants. A policy threshold, if any, replaces it.",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "request_id",
+      "action",
+      "summary",
+      "details",
+      "required_approvals"
+    ],
+    "additionalProperties": false
+  }
+}

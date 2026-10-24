@@ -1,6 +1,6 @@
 .PHONY: prose-check prose-check-selftest parity-contract-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors parity-contract check-indexes clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync envelope-coverage envelope-coverage-selftest conformance-bundle
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync gen-tool-schemas envelope-coverage envelope-coverage-selftest conformance-bundle
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -23,7 +23,7 @@ help:
 	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
 	@echo "  make prose-check-selftest  Prove check-prose.py survives an unreadable file (issue #129)"
 	@echo "  make proto-lint            Lint Protocol Buffer schemas"
-	@echo "  make proto-compile         Compile Protocol Buffer schemas (validation)"
+	@echo "  make proto-compile         Compile Protocol Buffer schemas, and check schemas/json/tools/ is regenerated"
 	@echo "  make envelope-coverage     Check envelope schema covers core.proto's Core payloads (issue #173)"
 	@echo "  make envelope-coverage-selftest  Prove the envelope-coverage assertions reject what they promise"
 	@echo ""
@@ -39,6 +39,7 @@ help:
 	@echo "Proto Sync (raw-proto packages):"
 	@echo "  make sync-protos           Copy canonical protos → proto-npm, proto-rust"
 	@echo "  make check-proto-sync      Verify raw-proto packages match canonical (CI guard)"
+	@echo "  make gen-tool-schemas      Regenerate schemas/json/tools/ (mode-as-tool schemas) from the mode protos"
 	@echo ""
 	@echo "Release:"
 	@echo "  make conformance-bundle VERSION=x.y.z  Build dist/macp-conformance-<version>.tar.gz + SHA256SUMS"
@@ -120,6 +121,11 @@ sync-protos:
 check-proto-sync:
 	@echo "Checking proto package sync..."
 	@./scripts/sync-proto-packages.sh --check
+
+# Regenerate the mode-as-tool schemas from the mode protos. The matching
+# check (--check) runs inside proto-compile via scripts/validate-proto.sh.
+gen-tool-schemas:
+	@python3 scripts/gen-tool-schemas.py
 
 envelope-coverage:
 	@echo "Checking envelope schema covers core.proto's Core payloads..."

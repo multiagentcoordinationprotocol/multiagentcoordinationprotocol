@@ -1,0 +1,27 @@
+{
+  "name": "macp_handoff_context",
+  "description": "HandoffContext: attaches supplemental context to a handoff offer (RFC-MACP-0010 Section 4). Sent as message_type HandoffContext in mode macp.mode.handoff.v1.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "handoff_id": {
+        "description": "The offer this context belongs to.",
+        "type": "string"
+      },
+      "content_type": {
+        "description": "Media type of the context bytes.",
+        "type": "string"
+      },
+      "context": {
+        "description": "The opaque context. Base64-encoded (RFC-MACP-0001 Section 10.3).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "handoff_id",
+      "content_type",
+      "context"
+    ],
+    "additionalProperties": false
+  }
+}
