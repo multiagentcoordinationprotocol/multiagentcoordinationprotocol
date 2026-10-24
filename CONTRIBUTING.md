@@ -34,6 +34,8 @@ Breaking changes require:
 - Migration notes
 - Explicit compatibility statement
 
+CI runs `buf breaking` (the `FILE` rule set in `buf.yaml`) against `main` on every pull request, and fails on a breaking change to `schemas/proto`. Runtimes and embedders decode the generated `macp-proto` types directly, so a break there is a break for them. To land one deliberately, label the PR `proto-breaking` and include the migration notes above.
+
 ## Registry Additions
 
 To add an entry to a registry (capabilities, error codes, media types, modes, or transports), submit a PR that adds a row to the relevant table in `registries/`. Each entry MUST include a `Status` value (see `registries/README.md` for valid statuses). New identifiers MUST NOT conflict with existing entries. A brand-new registry *file* must also be added to `registries/README.md` and `README.md`'s repo tree — `make check-indexes` enforces this.

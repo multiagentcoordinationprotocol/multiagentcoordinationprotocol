@@ -2,9 +2,11 @@
 # Multi-Agent Coordination Protocol (MACP) — Determinism and Replay Integrity
 
 **Document:** RFC-MACP-0003  
-**Version:** 1.0.1-draft  
+**Version:** 1.1.0-draft  
 **Status:** Community Standards Track  
 **Updates:** RFC-MACP-0001
+
+> **Changelog — 1.1.0-draft:** New §3.2 defines the per-session **semantics revision**. The RFC-MACP-0009 1.1.0-draft and RFC-MACP-0010 1.2.0-draft changelogs already told runtimes to gate tightened rules "on a per-session semantics revision recorded at `SessionStart`", but no RFC defined one. §3.2 says when an implementation MUST record one, what replay does with it, and what compatibility a later release owes a history recorded under an earlier revision: it MUST replay it under that revision's rules, and it MUST refuse a history whose revision it does not know. The revision is scoped to the implementation, or to the library for an embedded runtime; it is not an Envelope field and is not comparable across implementations. Source: Seam embedder review of the adoption roadmap (Wave E, unit E0). **Replay:** no new exposure. §3.2 states how an implementation keeps replay faithful across its own releases. A runtime that already records such a revision (the reference runtime's `CURRENT_SEMANTICS_REV`) conforms without change.
 
 > **Changelog — 1.0.1-draft:** §1's terminal-state list now reads "(RESOLVED, EXPIRED, or CANCELLED)", and §5's structural-only lifecycle list now reads "(OPEN, SUSPENDED, RESOLVED, EXPIRED, CANCELLED)". RFC-MACP-0001 §7.2 defines five states, three of them terminal. These two sites still listed the earlier two-terminal lifecycle, although §2 of this document already named `CANCELLED` (seam-embedder-findings proposal S10, issue #185). Editorial: RFC-MACP-0001 §7.2 was always normative for the state set, and no implementation obligation changes. `make prose-check` now holds both lists to RFC-MACP-0001 §7.2 and the `SessionState` enum in `envelope.proto`. **Replay:** no exposure. A replay that reproduced `SUSPENDED` transitions or a `CANCELLED` terminal state was already required to by RFC-MACP-0001; this text now says so too.
 
@@ -92,6 +94,20 @@ Replay with mode_version=2.0.0, configuration_version=org-2026.01
 ```
 
 This is not a valid historical replay. It is a what-if analysis under different semantics.
+
+### 3.2 Semantics Revisions
+
+The bound versions in this section do not capture every rule a runtime applies. A Mode RFC can tighten a validation rule without changing `mode_version` (see the RFC-MACP-0009 1.1.0-draft and RFC-MACP-0010 1.2.0-draft changelogs), and an implementation can correct its own acceptance behaviour between releases. Either change can make a later release reject an envelope that a stored history accepted, and §1 then no longer holds for that history. A **semantics revision** is the mechanism that keeps it holding.
+
+1. **Definition.** A semantics revision is a non-negative integer that identifies the set of acceptance rules an implementation applied to a Session. Revisions increase monotonically across an implementation's releases. Revision `0` denotes a Session recorded before the implementation recorded revisions.
+2. **Recording.** An implementation that has ever changed acceptance behaviour for an unchanged Mode version MUST record, when it accepts a `SessionStart`, the revision it accepted the Session under. The revision is bound with the Session like the values in §3 and the suspension cap in §2, and MUST NOT change for the life of the Session. A stored Session with no recorded revision MUST be treated as revision `0`.
+3. **When a new revision is required.** A change that makes the implementation reject an envelope its previous release accepted, or that changes the state or outcome an accepted history produces, MUST be introduced under a new revision, and MUST apply only to Sessions recorded under that revision or a later one. A change that only accepts envelopes the previous release rejected MAY apply to every revision without a new one, because the rejected envelopes never entered any history. Mode RFC changelogs SHOULD say which of the two a normative change is, in a **Replay:** note.
+4. **Replay.** Replay MUST apply the rules of the Session's recorded revision, never the implementation's current revision. Replaying a Session under a different revision is a what-if analysis, like the incorrect replay in §3.1, not historical reconstruction.
+5. **Compatibility across releases.** A release of an implementation MUST be able to replay every revision that the same implementation issued in an earlier release with the same major version. An implementation MAY drop an old revision only in a new major version, and MUST document the drop.
+6. **Unknown revisions.** An implementation MUST refuse to replay a Session whose recorded revision is higher than any revision it knows, and MUST NOT reinterpret it under its own current rules.
+7. **Scope.** A revision is scoped to the implementation that recorded it. For a runtime that embeds an implementation as a library, the scope is that library: the embedder records the library's revision with each Session and supplies it on replay. Revisions are not comparable across independent implementations, and the revision is not an Envelope field. A different implementation replaying the same history is bound by §1 and §3, not by another implementation's revision numbers.
+
+A change large enough to alter the outcome of histories that comply with the published Mode RFC SHOULD be a new `mode_version` instead (RFC-MACP-0002). Semantics revisions are for tightenings and corrections under an unchanged Mode version.
 
 ## 4. External Side Effects
 

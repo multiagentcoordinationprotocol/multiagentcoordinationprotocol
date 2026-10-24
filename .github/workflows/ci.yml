@@ -2,6 +2,8 @@ name: MACP CI
 
 on:
   pull_request:
+    # labeled/unlabeled re-run the breaking-change gate when `proto-breaking` changes.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [ main ]
 
@@ -127,11 +129,11 @@ jobs:
         run: buf lint
 
       - name: Check for breaking changes
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
+        # Blocking: embedders decode the generated macp-proto types directly, so a
+        # breaking proto change must be deliberate. Label the PR `proto-breaking`
+        # to accept one, and add migration notes (CONTRIBUTING.md).
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'proto-breaking')
         run: |
-          # Informational during pre-1.0 development; breaking changes are expected.
-          # Compare against main branch
           git fetch origin main
           buf breaking --against '.git#branch=origin/main'
 
