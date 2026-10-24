@@ -63,6 +63,7 @@ MACP/
     transports.md
     agent-manifest-schema.md
     sdk-parity.md
+    conformance.md
 
   registries/
     README.md
@@ -214,6 +215,7 @@ If you are new to MACP, start here:
 8. **[RFC-MACP-0005-discovery-and-manifests.md](rfcs/RFC-MACP-0005-discovery-and-manifests.md)** - agent and runtime discovery, manifest schemas.
 9. **[RFC-MACP-0006-transport-bindings.md](rfcs/RFC-MACP-0006-transport-bindings.md)** - standard transport bindings.
 10. **[docs/architecture.md](docs/architecture.md)** and **[docs/runtime.md](docs/runtime.md)** - how to implement and operate a runtime.
+11. **[docs/conformance.md](docs/conformance.md)** and **[IMPLEMENTATIONS.md](IMPLEMENTATIONS.md)** - conformance levels and profiles, and the implementations that claim them.
 
 ## Standards posture
 
@@ -255,7 +257,7 @@ The base capability model supports:
 
 ## Embedding MACP as a library
 
-MACP does not require a network server. A runtime MAY embed an implementation as a library and drive sessions in-process, with no `MACPRuntimeService` endpoint. The reference runtime's `macp-core`, `macp-modes`, `macp-policy` and `macp-pb` crates support this (see the runtime's `docs/embedding.md`). An embedded runtime has the same obligations as a server: acceptance obligations ([RFC-MACP-0001 §7.6](rfcs/RFC-MACP-0001-core.md)), replay integrity and semantics revisions ([RFC-MACP-0003 §3.2](rfcs/RFC-MACP-0003-determinism.md)), and the conformance fixtures under `schemas/conformance/`.
+MACP does not require a network server. A runtime MAY embed an implementation as a library and drive sessions in-process, with no `MACPRuntimeService` endpoint. The reference runtime's `macp-core`, `macp-modes`, `macp-policy` and `macp-pb` crates support this (see the runtime's `docs/embedding.md`). An embedded runtime has the same obligations as a server: acceptance obligations ([RFC-MACP-0001 §7.6](rfcs/RFC-MACP-0001-core.md)), replay integrity and semantics revisions ([RFC-MACP-0003 §3.2](rfcs/RFC-MACP-0003-determinism.md)), and the conformance fixtures under `schemas/conformance/`. [docs/conformance.md](docs/conformance.md) defines an Embedded profile for claiming conformance this way.
 
 ## Compatibility model
 
