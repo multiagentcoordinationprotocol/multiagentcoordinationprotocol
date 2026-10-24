@@ -20,6 +20,30 @@ first, then sync downstream. This directory is not the only tree downstream cons
 vendor from — `schemas/parity/` is a sibling non-fixture pack pinning cross-implementation
 values (see `schemas/parity/README.md`).
 
+## Pinning a release bundle
+
+Each spec release (`proto-v*` tag) attaches `macp-conformance-<version>.tar.gz`,
+`SHA256SUMS` and `MANIFEST.json` to its GitHub release. The tarball holds this
+directory's fixtures and `cmt-hash/` vectors, `schemas/parity/` and its schema,
+and the five `schemas/json/policy/` rule schemas, all **at their repo paths**,
+plus a `MANIFEST.json` (bundle format, version, spec commit, and the sha256 of
+every file) and `moved-files.json`. The contents are declared in
+`schemas/conformance-bundle.json`. Embedders, including runtimes that embed a
+library, can pin one tarball and one checksum instead of copying files:
+
+```bash
+gh release download proto-v<version> -R multiagentcoordinationprotocol/multiagentcoordinationprotocol \
+  --pattern 'macp-conformance-*' --pattern SHA256SUMS
+sha256sum -c SHA256SUMS
+```
+
+The tarball is reproducible: `make conformance-bundle VERSION=<version>` at the
+tagged commit yields the same checksum. **Path stability:** after a path has
+shipped in a bundle, moving or renaming it needs an `old → new` entry under
+`moved` in `schemas/conformance-bundle.json`, kept for at least one minor
+release. The release job fails if a path from the previous bundle disappears
+without one.
+
 `schema.json` is the JSON Schema (draft 2020-12) for the fixture format —
 payload-type names are fully-qualified proto names
 (`macp.modes.decision.v1.ProposalPayload`, `macp.v1.CommitmentPayload`).

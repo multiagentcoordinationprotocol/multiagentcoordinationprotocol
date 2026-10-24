@@ -1,6 +1,6 @@
 .PHONY: prose-check prose-check-selftest parity-contract-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors parity-contract check-indexes clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync envelope-coverage envelope-coverage-selftest
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync envelope-coverage envelope-coverage-selftest conformance-bundle
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -39,6 +39,9 @@ help:
 	@echo "Proto Sync (raw-proto packages):"
 	@echo "  make sync-protos           Copy canonical protos → proto-npm, proto-rust"
 	@echo "  make check-proto-sync      Verify raw-proto packages match canonical (CI guard)"
+	@echo ""
+	@echo "Release:"
+	@echo "  make conformance-bundle VERSION=x.y.z  Build dist/macp-conformance-<version>.tar.gz + SHA256SUMS"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean                 Remove generated files"
@@ -180,6 +183,10 @@ clean:
 	@rm -rf packages/proto-kotlin/src/main/kotlin/io/
 	@rm -rf packages/proto-npm/generated/
 	@echo "✓ Cleaned"
+
+# Release conformance bundle (not part of `validate`; CI builds it as its own step)
+conformance-bundle:
+	@python3 scripts/build-conformance-bundle.py --version $(or $(VERSION),dev) --out dist
 
 # Install development tools
 install-tools:

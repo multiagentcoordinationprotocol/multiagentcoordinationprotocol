@@ -1,0 +1,14 @@
+{
+  "$comment": "Contents of the release conformance bundle; see scripts/build-conformance-bundle.py and schemas/conformance/README.md. Moving or renaming a bundled path needs a `moved` entry (old -> new) kept for at least one minor release.",
+  "include": [
+    "schemas/conformance/*.json",
+    "schemas/conformance/README.md",
+    "schemas/conformance/cmt-hash/*.json",
+    "schemas/parity/contract.json",
+    "schemas/parity/README.md",
+    "schemas/json/macp-parity-contract.schema.json",
+    "schemas/json/policy/*.schema.json"
+  ],
+  "exclude": [],
+  "moved": {}
+}
