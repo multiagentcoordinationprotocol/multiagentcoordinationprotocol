@@ -20,7 +20,7 @@ Ambient interaction remains continuous and non-binding through **Signals**. Bind
 
 MACP is maintained by a single maintainer on a best-effort basis. Changes land when a consumer needs them; there is no release schedule and no SLA. That fact belongs at the top rather than in the commit graph, because it should inform how much of this you choose to build on.
 
-**What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI and crates.io, to GitHub Packages for the npm, Java, Kotlin, and C# artifacts, and as a Go module resolved from the tag itself. They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
+**What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI, crates.io and npmjs, and to GitHub Packages for the npm, Java, Kotlin and C# artifacts. A Go module tag is also pushed, but it is not installable yet (see [Using MACP Proto Packages](#using-macp-proto-packages)). They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
 
 **What is not frozen:** the RFC text. All thirteen RFCs are drafts — two at `**Version:** 1.0.0-draft`, RFC-MACP-0002, RFC-MACP-0003, RFC-MACP-0009 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0004, RFC-MACP-0010 and RFC-MACP-0013 at `1.2.0-draft`, RFC-MACP-0001 at `1.3.0-draft`, RFC-MACP-0007 at `1.4.0-draft`, RFC-MACP-0012 at `1.7.0-draft`, and RFC-MACP-0006 at `1.6.0-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
 
@@ -277,33 +277,30 @@ Major protocol version mismatches are not compatible. Minor versions are expecte
 
 ## Using MACP Proto Packages
 
-Proto definitions are published as versioned packages. Install them as regular dependencies:
+Most users want an SDK rather than raw protos:
 
 ```bash
-# TypeScript / Node.js
-npm install @macp/proto
-
-# Python
-pip install macp-proto
-
-# Go
-go get github.com/multiagentcoordinationprotocol/macp-proto-go@proto-v0.1.0
-
-# Java (build.gradle.kts)
-# implementation("io.macp:macp-proto:0.1.0")
-
-# Kotlin (build.gradle.kts)
-# implementation("io.macp:macp-proto-kotlin:0.1.0")
-
-# C# (.csproj)
-# <PackageReference Include="Macp.Proto" Version="0.1.0" />
-
-# Swift (Package.swift)
-# .package(url: "https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol.git", from: "0.1.0")
-
-# Rust (Cargo.toml)
-# macp-proto = { git = "https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol.git", tag = "proto-v0.1.0" }
+pip install macp-sdk-python      # Python 3.11+
+npm install macp-sdk-typescript  # Node 20+
 ```
+
+The [Quickstart](docs/quickstart.md) runs a session with the Python SDK. To generate your own stubs, the canonical protos are published as versioned packages on every `proto-v*` tag (currently `0.1.11`):
+
+```bash
+# Buf Schema Registry: generate stubs for any language (uses your buf.gen.yaml)
+buf generate buf.build/multiagentcoordinationprotocol/macp
+
+# Python (generated stubs)
+pip install macp-proto==0.1.11
+
+# Rust (raw .proto files; generate with prost/tonic in build.rs)
+cargo add macp-proto@0.1.11
+
+# TypeScript / Node.js (raw .proto files)
+npm install @multiagentcoordinationprotocol/proto@0.1.11
+```
+
+The Java (`io.macp:macp-proto`), Kotlin (`io.macp:macp-proto-kotlin`) and C# (`Macp.Proto`) packages are published to GitHub Packages, which needs a GitHub token to install from. The Go module is not installable from its tag yet: its `go.mod` declares a module path that does not match where the tag lives. Until that is fixed, generate Go stubs with `buf generate`.
 
 See `CONTRIBUTING.md` for the release workflow.
 

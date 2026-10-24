@@ -64,20 +64,19 @@ Proto definitions are published as versioned packages for downstream consumers:
 
 | Package | Language | Registry |
 |---------|----------|----------|
-| `@macp/proto` | TypeScript / Node.js | npm (GitHub Packages) |
+| `@multiagentcoordinationprotocol/proto` | TypeScript / Node.js | npmjs and GitHub Packages |
 | `macp-proto` | Python | PyPI |
-| `macp-proto` | Rust | Crate (git tag) |
-| `macp-proto-go` | Go | Go module proxy (git tag) |
+| `macp-proto` | Rust | crates.io |
+| `macp-proto-go` | Go | git tag (not installable yet: the `go.mod` module path does not match the tag's location) |
 | `io.macp:macp-proto` | Java | Maven (GitHub Packages) |
 | `io.macp:macp-proto-kotlin` | Kotlin | Maven (GitHub Packages) |
 | `Macp.Proto` | C# | NuGet (GitHub Packages) |
-| `MACPProto` | Swift | Swift Package (git tag) |
 
 ### Releasing a new proto version
 
 1. Merge proto schema changes to `main` (the BSR push happens automatically).
 2. Tag the commit: `git tag proto-v0.X.0 && git push origin proto-v0.X.0`
-3. The `publish-proto-packages.yml` workflow publishes all three packages.
+3. The `publish-proto-packages.yml` workflow publishes every package in the table above. To backfill npmjs for a version that is already tagged, run it with `workflow_dispatch`, `npmjs_only: true` and `dry_run: false`.
 4. Downstream projects upgrade by bumping the dependency version in their manifest.
 
 Each downstream project pins a specific proto version and upgrades on its own schedule.
