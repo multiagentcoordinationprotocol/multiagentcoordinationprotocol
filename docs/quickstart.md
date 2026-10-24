@@ -23,7 +23,6 @@ pip install macp-sdk-python
 
 Save this as `first_session.py` and run `python first_session.py`:
 
-<!-- quickstart-script: CI extracts the first python block on this page and runs it against the image above. -->
 ```python
 from macp.v1.envelope_pb2 import SessionState
 from macp_sdk import AuthConfig, DecisionSession, MacpClient

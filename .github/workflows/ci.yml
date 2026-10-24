@@ -252,8 +252,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      # docs/quickstart.md is the source of truth: the image tag and the script are both read from it,
-      # so editing the page is what changes the test.
+      # docs/quickstart.md is the source of truth: the image tag, the first python block and the first
+      # text block (expected output) are all read from it, so keep those blocks first on the page;
+      # editing the page is what changes the test. No HTML comments there: the website renders it as MDX.
       - name: Start the runtime image named in docs/quickstart.md
         run: |
           image=$(grep -oE 'ghcr\.io/multiagentcoordinationprotocol/macp-runtime:[0-9A-Za-z._-]+' docs/quickstart.md | head -1)
