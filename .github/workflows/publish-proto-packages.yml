@@ -280,6 +280,57 @@ jobs:
             --source "https://nuget.pkg.github.com/multiagentcoordinationprotocol/index.json" \
             --api-key "${{ secrets.GITHUB_TOKEN }}"
 
+  # ── Conformance bundle (GitHub release asset) ───────────────────────
+  # One reproducible tarball of the conformance fixtures, commitment-hash
+  # vectors, parity contract and rule schemas, plus SHA256SUMS, so embedders
+  # pin one file and one checksum. The previous release's MANIFEST.json gates
+  # path stability (schemas/conformance-bundle.json `moved`).
+  conformance-bundle:
+    name: Attach conformance bundle to the release
+    runs-on: ubuntu-latest
+    needs: [extract-version]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch the previous bundle manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          set -euo pipefail
+          prev=$(gh release list --limit 50 --json tagName -q '.[].tagName' \
+            | grep '^proto-v' | grep -vx "proto-v$VERSION" | while read -r tag; do
+                if gh release view "$tag" --json assets -q '.assets[].name' | grep -qx MANIFEST.json; then
+                  echo "$tag"; break
+                fi
+              done || true)
+          if [ -n "$prev" ]; then
+            gh release download "$prev" --pattern MANIFEST.json --dir prev
+            echo "PREV_MANIFEST=prev/MANIFEST.json" >> "$GITHUB_ENV"
+            echo "Path-stability baseline: $prev"
+          else
+            echo "No earlier bundle; skipping the path-stability baseline."
+          fi
+
+      - name: Build bundle
+        env:
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          python3 scripts/build-conformance-bundle.py --version "$VERSION" --out dist \
+            ${PREV_MANIFEST:+--previous-manifest "$PREV_MANIFEST"}
+          cat dist/SHA256SUMS
+
+      - name: Upload to the release
+        if: needs.extract-version.outputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: proto-v${{ needs.extract-version.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --verify-tag --title "$TAG" --notes "Proto packages and conformance bundle for $TAG."
+          gh release upload "$TAG" dist/*.tar.gz dist/SHA256SUMS dist/MANIFEST.json --clobber
+
   # ── Notify in-org proto consumers (event-driven bump) ───────────────
   # After the ecosystems this org consumes have published, dispatch
   # proto-released {version, ecosystem} to each of the 4 in-org consumers.

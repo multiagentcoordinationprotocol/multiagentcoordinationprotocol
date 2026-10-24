@@ -99,6 +99,9 @@ jobs:
           echo "Checking the envelope-coverage assertions reject what they promise..."
           python3 scripts/check-envelope-coverage-test.py
 
+      - name: Build the release conformance bundle (E4)
+        run: python3 scripts/build-conformance-bundle.py --version ci --out dist
+
       - name: Check SDK proto parity (W3a / direct-agent-auth)
         run: |
           echo "Checking typescript-sdk + python-sdk proto ranges match the canonical packages..."
