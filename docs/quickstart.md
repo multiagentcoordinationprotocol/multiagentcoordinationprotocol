@@ -2,7 +2,9 @@
 
 Run a real MACP session on your machine in about five minutes. You start the reference runtime in Docker, then three agents use the Python SDK to propose, evaluate, vote and commit a binding decision.
 
-You need Docker and **Python 3.11 or later**.
+**No install:** open the [showcase](https://console.multiagentcoordinationprotocol.io/showcase) in the hosted console. It starts a real Decision session among rule-based agents (no LLM is called) and shows the run graph, the Decision panel and a timeline you can scrub back through. It finishes in about ten seconds.
+
+To run one yourself, you need Docker and **Python 3.11 or later**.
 
 ## 1. Start the runtime
 
