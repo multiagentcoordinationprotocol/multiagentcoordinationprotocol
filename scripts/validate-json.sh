@@ -19,6 +19,7 @@ SESSION_METADATA_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-session-metadata.sche
 SESSION_LIFECYCLE_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-session-lifecycle-event.schema.json"
 RUN_DESCRIPTOR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-run-descriptor.schema.json"
 AGENT_BOOTSTRAP_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-bootstrap.schema.json"
+DECISION_RECEIPT_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-decision-receipt.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
 TRANSCRIPT_GLOB="${PROJECT_ROOT}/examples/*.json"
@@ -133,6 +134,7 @@ if [ -d "$DISCOVERY_DIR" ]; then
         "session_lifecycle_event:${SESSION_LIFECYCLE_SCHEMA}:session-lifecycle-event"
         "run_descriptor:${RUN_DESCRIPTOR_SCHEMA}:run-descriptor"
         "agent_bootstrap:${AGENT_BOOTSTRAP_SCHEMA}:agent-bootstrap"
+        "decision_receipt:${DECISION_RECEIPT_SCHEMA}:decision-receipt"
     )
     for pair in "${EXTRA_DISCOVERY_PAIRS[@]}"; do
         prefix="${pair%%:*}"
