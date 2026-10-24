@@ -1,0 +1,12 @@
+{
+  "policy_id": "policy.packs.two-agent-rule",
+  "mode": "macp.mode.quorum.v1",
+  "schema_version": 3,
+  "description": "Two-agent rule (four eyes): an approval request resolves positively only after two distinct declared participants have approved it. The threshold replaces the required_approvals value in the ApprovalRequest, so the requester cannot lower it, and each participant casts at most one ballot.",
+  "rules": {
+    "threshold": {
+      "type": "n_of_m",
+      "value": 2
+    }
+  }
+}

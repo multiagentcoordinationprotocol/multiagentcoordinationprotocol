@@ -15,6 +15,7 @@ This repository includes illustrative transcripts for each standards-track mode 
 | [`examples/quorum-mode-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/quorum-mode-session.json) | `macp.mode.quorum.v1` | threshold approval leading to a final commitment |
 | [`examples/policy-decision-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-decision-session.json) | `macp.mode.decision.v1` | policy-governed Decision Mode with supermajority voting, quorum, and critical-severity veto (RFC-MACP-0012) |
 | [`examples/policy-registration-exchange.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-registration-exchange.json) | N/A (gRPC exchange) | dynamic policy registration request and response (RFC-MACP-0012 Section 7) |
+| [`examples/policies/`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/tree/main/examples/policies) | `macp.mode.decision.v1`, `macp.mode.quorum.v1` | ready-made policy packs: human sign-off, two-agent rule, compliance vote ([Policy packs](policy-packs.md)) |
 
 ## Single-envelope examples
 

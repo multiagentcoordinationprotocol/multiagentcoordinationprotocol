@@ -268,6 +268,7 @@ The resolved `PolicyDescriptor` MUST be persisted as part of the session snapsho
 
 - [`examples/policy-decision-session.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-decision-session.json) — Decision Mode session governed by a supermajority voting policy with quorum and critical-severity veto
 - [`examples/policy-registration-exchange.json`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/examples/policy-registration-exchange.json) — Dynamic policy registration request and response via gRPC
+- [Policy packs](policy-packs.md) — ready-made policies (human sign-off, two-agent rule, compliance vote) in [`examples/policies/`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/tree/main/examples/policies), each backed by a conformance fixture, plus the rules that are not expressible yet
 
 ## What CI Validates
 
