@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Canonical Commitment Hash
 
 **Document:** RFC-MACP-0013
-**Version:** 1.1.0-draft
+**Version:** 1.2.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0003
 
+> **Changelog — 1.2.0-draft:** New informative Appendix A defines `macp-receipt/1`, a portable decision receipt that anchors one Commitment on its canonical `commitment_hash`. Integrity is recomputed from the receipt's Section 3 projection, or verified through Section 6.1 when the wire encoding is included. Authenticity comes from typed attestations: a detached JWS (EdDSA) over the JCS receipt body, or a vendor attestation that declares what its preimage binds, so a vendor token over some other digest is reported as informative rather than as authenticity. The design is key-source-agnostic, so it does not depend on any one key service. Adds `schemas/json/macp-decision-receipt.schema.json` and a signed example. Additive and informative: nothing in Sections 1–12 changes, and no implementation is required to issue receipts. **Replay:** no exposure. A receipt is produced after resolution and never feeds session state (adoption roadmap W3.10, design pulled forward as E5).
+>
 > **Changelog — 1.1.0-draft:** New §6.1 (Verification) gives the three outcomes of Sections 5 and 6 — *match*, *mismatch*, *cannot-verify* — an operation and vectors. Until now every vector was a compute vector (payload in, hash out), so nothing pinned the other two outcomes: an implementation that dropped unknown fields and hashed the rest passed every vector while violating Section 5. An implementation that offers verification MUST now expose it as an operation distinct from computation, taking the payload's **wire encoding** (so unknown fields stay observable) and a claimed hash. §6.1 also states three wire-decoding rules (an unparseable encoding is *cannot-verify*; a repeated known field takes Protobuf merge semantics; a zero-length encoding is the all-default payload of vector `003` and is hashable) and that a claimed hash not in canonical form is *mismatch*, never normalized and never *cannot-verify*. §11 gains five verify vectors, `cmt_hash_006` through `cmt_hash_010`, and `vector-schema.json` gains the optional `wire_hex`, `claimed_hash` and `expected_outcome` fields that carry them; the values match the ones macp-runtime pins in its `verify_commitment_hash` crate tests. Vectors `001`–`005` are unchanged and continue to mean *match* on their computed hash. Additive: the computation, every existing hash value and the label `macp-commitment-hash/1` are unchanged, and an implementation that does not offer verification is unaffected. **Replay:** no exposure. Verification is a read-only check over a payload and a claim, and it never changes session state; no previously computed hash changes (seam-embedder-findings proposal S14, issue #185).
 
 ## Abstract
@@ -169,3 +171,60 @@ The canonical commitment hash is a content digest, not a message authentication 
 Because this is a public content digest rather than a keyed value, comparisons against a claimed `commitment_hash` need not be constant-time in the way a MAC or signature comparison would; SHA-256's second-preimage and collision resistance assumptions [FIPS 180-4] are the load-bearing security property here, not comparison timing.
 
 The frozen field set (Section 5) and the RFC 8785 subset restricted to strings, one boolean, and one nested object (Section 4) are correctness properties that keep independent implementations aligned; they are not, by themselves, security boundaries. An implementation that reintroduces general JCS number or array handling on a conforming `CommitmentPayload` projection does not create a divergence, because no number or array is reachable in a well-formed projection under Section 3 — but an implementation that fails to enforce the frozen field set of Section 5 (for example, by silently including or excluding a field) produces a value that is not a canonical commitment hash at all, and MUST NOT be presented to a counterparty as one.
+
+## Appendix A. Decision Receipts (Informative)
+
+This appendix defines **`macp-receipt/1`**, a portable record of one binding Commitment that a third party can check offline. It is informative: no implementation is required to issue or verify receipts. An implementation that does issue them, and calls them MACP decision receipts, SHOULD follow this format so that one verifier works for every issuer. The JSON Schema is [`schemas/json/macp-decision-receipt.schema.json`](../schemas/json/macp-decision-receipt.schema.json), and [`examples/discovery/decision_receipt.json`](../examples/discovery/decision_receipt.json) is a signed example.
+
+### A.1 Two properties, kept apart
+
+A receipt claims two different things, and a verifier reports them separately:
+
+1. **Integrity.** The recorded Commitment has the recorded `commitment_hash`. This needs no keys: the verifier recomputes the hash from `commitment` by Section 4. When `commitment_wire_b64` is present, the verifier also runs Section 6.1 on the wire encoding, which is the only way to see unknown fields, and checks that the wire projects to `commitment`.
+2. **Authenticity.** Some party vouches for that Commitment. This comes only from `attestations`, and only from an attestation whose preimage covers `commitment_hash`.
+
+Everything is anchored on `commitment_hash`, not on any signing key or key service. That way, issuers that use different key sources (a runtime's own key, a bring-your-own key, an identity service, a vendor trust token) produce receipts that are checked the same way up to the last step.
+
+### A.2 Fields
+
+| Field | Required | Meaning |
+|---|---|---|
+| `receipt_format` | yes | the literal `macp-receipt/1` |
+| `session_id`, `mode` | yes | the session the Commitment resolved |
+| `commitment` | yes | the Section 3 projection of the `CommitmentPayload`. It already carries `mode_version`, `policy_version` and `configuration_version`, so the receipt does not repeat them |
+| `commitment_hash` | yes | the Section 4 hash of `commitment` |
+| `commitment_wire_b64` | no | the payload's Protobuf wire encoding, for full Section 6.1 verification |
+| `semantics_rev` | no | `{implementation, rev}`: the RFC-MACP-0003 §3.2 revision, named together with the implementation that scopes it |
+| `transcript` | no | `{digest_alg, digest, message_count}`: a digest of the session history. Its construction is implementation-defined (Section 10), so `digest_alg` names it |
+| `issuer` | yes | an opaque identifier of who issued the receipt. It is not a trust anchor |
+| `issued_at` | yes | RFC 3339 UTC time of issue. It is informational |
+| `attestations` | yes | an array, possibly empty, of the entries in A.3 |
+
+The **receipt body** is the receipt with `attestations` removed, canonicalized with JCS [RFC 8785]. Unlike the Section 3 projection, the body can contain integers (`rev`, `message_count`), so an issuer needs the JCS number rules for non-negative integers. Because the body contains `commitment_hash`, anything that signs the body also binds the hash.
+
+### A.3 Attestations
+
+- **`jws`**: a compact JWS [RFC 7515] with a detached payload (Appendix F of RFC 7515): `<protected header>..<signature>`, where the signing input uses the base64url of the receipt body. An issuer SHOULD use `EdDSA` (Ed25519) and MAY use `ES256`. A verifier that implements `jws` MUST support `EdDSA`. The protected header SHOULD carry a `kid`. How a verifier gets the key for that `kid` is outside this appendix.
+- **`vendor`**: `{format, binds, value}`, an attestation in a format this appendix does not define, for example an AITP Trust Context Token. `format` names it without collisions (reverse-domain is recommended). `binds` states what its own preimage covers:
+  - `commitment_hash`: the hash string itself, or a preimage that contains it verbatim.
+  - `receipt`: the same receipt body a `jws` attestation signs.
+  - `other`: anything else, for example a vendor digest over the vendor's own commitment fields.
+
+  An attestation with `binds: other` is informative only and MUST NOT be reported as establishing authenticity of the receipt's Commitment, even if the verifier implements its format.
+
+### A.4 Verification
+
+A verifier reports one outcome for integrity and one per attestation:
+
+1. If `receipt_format` is one it does not implement, it **refuses** the receipt.
+2. **Integrity:** *match* or *mismatch*, using the Section 6.1 outcome vocabulary. If `commitment_wire_b64` is present and cannot be decoded, the result is *cannot-verify*. A *mismatch* ends verification: an attestation over a body whose hash does not match vouches for nothing.
+3. **Each attestation:** *valid*, *invalid*, *unknown-key* (the format is understood but no trusted key matches), or *unsupported* (the format or `alg` is not implemented, or `binds` is `other`).
+4. The receipt is **attested** for that verifier if integrity is *match* and at least one attestation is *valid*. A receipt with integrity *match* and no valid attestation is **integrity-only**. That is still useful, because it pins exactly what was decided, but nobody has vouched for it.
+
+### A.5 Example key
+
+The example's `jws` attestation is signed with an Ed25519 key that exists only for this example: the seed is SHA-256 of the ASCII string `macp-receipt example key`, and the public key, as a JWK `x`, is `TDVzkxaSf6_Oxu7mmn5TbCkF80s8Ulh33qKQsi0gnZM` with `kid` `example-1`. Its `commitment` is the payload of vector `cmt_hash_002_supersedes`, so its `commitment_hash` is that vector's pinned hash. Receipt vectors, and the SDK `build_receipt` and `verify_receipt` operations, are planned to follow this design. They are not part of this revision.
+
+### A.6 Security notes
+
+A receipt reveals the full Commitment, including `reason`. An issuer that must withhold fields cannot redact them, because redaction changes `commitment_hash`; it has to withhold the receipt instead. `issued_at` is not evidence of when the Commitment was made. A deployment that needs that proves it with a timestamping attestation. Revoking a signing key does not revoke receipts signed before the revocation: deciding whether to accept them is a verifier policy, outside this appendix.
