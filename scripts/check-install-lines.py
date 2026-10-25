@@ -20,6 +20,7 @@ LOCAL = ["README.md", "docs/quickstart.md"]
 REMOTE = [
     "https://raw.githubusercontent.com/multiagentcoordinationprotocol/macp-sdk-python/main/README.md",
     "https://raw.githubusercontent.com/multiagentcoordinationprotocol/macp-sdk-typescript/main/README.md",
+    "https://raw.githubusercontent.com/multiagentcoordinationprotocol/macp-mcp/main/README.md",
     "https://raw.githubusercontent.com/multiagentcoordinationprotocol/macp-mcp-typescript/main/README.md",
 ]
 

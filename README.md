@@ -294,6 +294,13 @@ pip install macp-sdk-python      # Python 3.11+
 npm install macp-sdk-typescript  # Node 20+
 ```
 
+To let an MCP client (Claude Desktop, Claude Code, Cursor) start or join a session, run one of the two MACP MCP servers. Both expose the same tools; [macp-mcp](https://github.com/multiagentcoordinationprotocol/macp-mcp) and [macp-mcp-typescript](https://github.com/multiagentcoordinationprotocol/macp-mcp-typescript) version independently:
+
+```bash
+pip install macp-mcp                                # Python 3.11+, or: uvx macp-mcp
+npx -y @multiagentcoordinationprotocol/mcp          # Node
+```
+
 The [Quickstart](docs/quickstart.md) runs a session with the Python SDK. To generate your own stubs, the canonical protos are published as versioned packages on every `proto-v*` tag (currently `0.1.11`):
 
 ```bash
