@@ -29,6 +29,11 @@ A level says *what* passes. A profile says *how* the implementation was driven, 
 
 A claim names both, for example "Standard modes, Server profile" or "Standard modes, Embedded profile". An Embedded claim SHOULD also state the semantics revision it was tested at ([RFC-MACP-0003 §3.2](../rfcs/RFC-MACP-0003-determinism.md)), since that revision decides which rules replay applies.
 
+Two things a Server-profile run cannot observe over the wire, and how a claim handles them:
+
+- **Commitment hash.** `MACPRuntimeService` has no RPC that returns a commitment hash, so a Server claim at Core or above counts the commitment-hash vectors `cmt_hash_001`–`010` when they pass in-process against the same implementation and release. The claim says so, for example "Standard modes, Server profile (hash vectors in-process)".
+- **Clock-dependent fixtures.** A fixture that needs the session clock advanced (TTL expiry) is reported as skipped with the reason `needs-clock-control` over the network, and does not count against a level. Embedded runs drive it with a controlled clock.
+
 ## Verifier role
 
 Some implementations do not run sessions at all but check results, for example an SDK that verifies a `CommitmentRef` it received. Such an implementation claims the **Verifier** role by passing the commitment-hash vectors `cmt_hash_001`–`010`. The role is listed separately because it is not a runtime level.
