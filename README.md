@@ -14,7 +14,7 @@ MACP introduces one strict invariant:
 
 Ambient interaction remains continuous and non-binding through **Signals**. Binding interaction occurs only inside **Sessions**. That separation keeps coordination explicit, bounded, auditable, and replayable.
 
-**Try it:** the [Quickstart](docs/quickstart.md) runs a real Decision session against the reference runtime in about five minutes. **How it compares:** [Where MACP fits](docs/positioning.md) sets MACP beside MCP, A2A and framework orchestration, and says when not to use it.
+**Try it:** the [Quickstart](docs/quickstart.md) runs a real Decision session against the reference runtime in about five minutes. **Self-host:** `git clone https://github.com/multiagentcoordinationprotocol/macp-runtime && cd macp-runtime/deploy && docker compose up` starts the whole stack (runtime, control plane, console, playground) from pinned images, with no tokens or LLM keys. Open http://localhost:3000 and launch the Showcase. **How it compares:** [Where MACP fits](docs/positioning.md) sets MACP beside MCP, A2A and framework orchestration, and says when not to use it.
 
 ## Project status
 

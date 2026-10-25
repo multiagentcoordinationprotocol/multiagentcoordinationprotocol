@@ -4,6 +4,14 @@ Run a real MACP session on your machine in about five minutes. You start the ref
 
 **No install:** open the [showcase](https://console.multiagentcoordinationprotocol.io/showcase) in the hosted console. It starts a real Decision session among rule-based agents (no LLM is called) and shows the run graph, the Decision panel and a timeline you can scrub back through. It finishes in about ten seconds.
 
+**The whole stack on your machine:** one command starts the runtime, control plane, console, playground, auth service and Postgres from pinned public images. It needs no tokens and no LLM keys:
+
+```bash
+git clone https://github.com/multiagentcoordinationprotocol/macp-runtime && cd macp-runtime/deploy && docker compose up
+```
+
+Then open http://localhost:3000, go to Showcase and launch a run. It reaches Verified about a minute after a cold start, image downloads included. The stack is for evaluation, not production: auth runs on a throwaway development key. See [`deploy/README.md`](https://github.com/multiagentcoordinationprotocol/macp-runtime/blob/main/deploy/README.md) in macp-runtime.
+
 To run one yourself, you need Docker and **Python 3.11 or later**.
 
 ## 1. Start the runtime
