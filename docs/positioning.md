@@ -37,7 +37,7 @@ The MCP, A2A and ACP "not defined" cells follow the survey above and those proto
 MACP does not replace any of these. It sits next to them:
 
 - **With MCP.** A MACP session decides *whether* a tool may be invoked. The resulting Commitment authorizes the call, and MCP carries it out ([architecture §14](architecture.md#14-integration-tools-prompts-and-external-capability-layers)).
-- **With A2A.** An A2A task can be the work that a MACP Task or Handoff session delegates. MACP records who agreed to own it and when.
+- **With A2A.** An A2A task can be the work that a MACP Task or Handoff session delegates. MACP records who agreed to own it and when. Agents that already speak A2A can also take part in MACP sessions over A2A itself, through the extension binding in [RFC-MACP-0014](../rfcs/RFC-MACP-0014-a2a-binding.md).
 - **With frameworks.** A framework can drive participants from one process, while MACP holds the binding record. MACP can also be embedded in-process as a library rather than spoken over gRPC (see [Embedding MACP as a library](../README.md#embedding-macp-as-a-library) and the reference runtime's [`docs/embedding.md`](https://github.com/multiagentcoordinationprotocol/macp-runtime/blob/main/docs/embedding.md)).
 
 ## When not to use MACP

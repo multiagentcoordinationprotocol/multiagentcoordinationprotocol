@@ -247,18 +247,29 @@ msgs = doc.get('messages')
 if not isinstance(msgs, list):
     msgs = doc.get('transcript')
 if not isinstance(msgs, list):
-    print(0); sys.exit(0)
+    msgs = []
+# Only validate dict entries that look like MACP envelopes
+# (i.e. have both 'macp_version' and 'message_type').
+envs = [m for m in msgs
+        if isinstance(m, dict) and 'macp_version' in m and 'message_type' in m]
+# RFC-MACP-0014 carries an Envelope as an A2A Part's 'data'. Any Part that
+# claims the envelope media type is validated whatever it contains, so a
+# malformed embedded envelope fails instead of being skipped.
+def parts(node):
+    if isinstance(node, dict):
+        if node.get('mediaType') == 'application/macp-envelope+json' and 'data' in node:
+            yield node['data']
+        for v in node.values():
+            yield from parts(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from parts(v)
+envs.extend(parts(doc))
 out_dir = sys.argv[2]
-count = 0
-for i, msg in enumerate(msgs):
-    # Only validate dict entries that look like MACP envelopes
-    # (i.e. have both 'macp_version' and 'message_type').
-    if not (isinstance(msg, dict) and 'macp_version' in msg and 'message_type' in msg):
-        continue
+for i, msg in enumerate(envs):
     with open(os.path.join(out_dir, f'msg_{i:03d}.json'), 'w') as f:
         json.dump(msg, f)
-    count += 1
-print(count)
+print(len(envs))
 " "$transcript" "${TMP_ENV_DIR}" 2>/dev/null || echo 0)
 
             if [ "${MSG_COUNT}" -gt 0 ]; then

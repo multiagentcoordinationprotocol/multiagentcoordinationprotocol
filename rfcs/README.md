@@ -15,6 +15,7 @@ The MACP standard is intentionally split.
 - **RFC-MACP-0011 Quorum Mode** - threshold approval and rejection
 - **RFC-MACP-0012 Policy** - governance policy framework for declarative, replay-safe session governance
 - **RFC-MACP-0013 Canonical Commitment Hash** - canonical algorithm for computing `CommitmentRef.commitment_hash`
+- **RFC-MACP-0014 A2A Extension Binding** - MACP Envelopes carried over A2A 1.0 as a profile extension; sessions mapped to A2A Tasks
 
 ### Companion Content
 
