@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Security Considerations
 
 **Document:** RFC-MACP-0004  
-**Version:** 1.2.0-draft  
+**Version:** 1.3.0-draft  
 **Status:** Community Standards Track  
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.3.0-draft:** New informative Appendix A, **Bearer claims profile**, documents the JWT claims the reference runtime reads: `sub` as the authenticated `sender` (Section 3), and an optional `macp_scopes` object with `can_start_sessions`, `allowed_modes`, `max_open_sessions`, `is_observer` and `can_manage_mode_registry`, with their defaults and the Section 4 checks each one feeds. Until now these claims appeared only in implementation code, and the auth service cited Section 4 as its "claims contract" although Section 4 defines no claims. The appendix is informative: Section 3 still allows any authentication mechanism, and a deployment that uses mTLS, OIDC or different claim names is unaffected. **Replay: neutral.** Claims decide who may submit an envelope, not what an accepted envelope does to session state (adoption roadmap W3.6).
+>
 > **Changelog — 1.2.0-draft:** two changes from the Seam runtime's protocol pass (issue #185). **(1) `session_id` length floor.** §11.2 set a minimum strength for `session_id` but no length bound, so a runtime that capped id length could refuse an id that another conformant runtime had issued. §11.2 now lets a runtime cap `session_id` length, but the cap MUST NOT fall below 128 bytes. A `session_id` over the runtime's cap MUST be rejected with `INVALID_SESSION_ID`. Every id of 128 bytes or fewer that meets the strength requirement is therefore portable across conformant runtimes. **(2) `macp.security.delegated_submission.v1` is now `permanent`** in `registries/capabilities.md` (it was `provisional`). Its identifier and the §3.1 obligations it advertises are fixed: a semantic change ships under a new identifier (`.v2`), and the `.v1` identifier will not be reused. **Replay: neutral.** The length cap applies at `SessionStart` admission, before a session has any accepted history, and the registry status changes no behaviour.
 >
 > **Changelog — 1.1.0-draft:** two additions, both from the seam-embedder-findings proposal (issue #185). **(S3)** New §3.1 defines **delegated submission**: a runtime MAY accept a session-scoped envelope whose `sender` differs from the authenticated principal of the submitting connection (the *submitter*) only when the submitter is itself authenticated, holds a delegation naming that `sender` that is scoped to a session (or set of sessions) and to the message types it covers, the runtime records the submitter alongside the accepted envelope outside `Envelope`, and the runtime advertises the new capability `macp.security.delegated_submission.v1` (`registries/capabilities.md`) and documents the delegation mechanisms it accepts. §4's first bullet now reads "authenticated, or covered by a delegation per §3.1"; the delegation never substitutes for §4's session- and message-type authorization of the delegated `sender`, and an unscoped submitter credential MUST NOT be treated as a delegation for every participant. Previously §3's "MUST be derived from authenticated identity" made every gateway, human-in-the-loop UI and embedding service that submits on behalf of panel members non-conformant by construction, and gave the specification no vocabulary to distinguish a gateway that binds each participant to a grant from one that accepts any string. The change is additive: a runtime that never accepts delegated submissions is unaffected and need not advertise the capability; a deployment that already delegates gains a conformant path but must add the item-3 audit record and the item-4 advertisement. **(S8)** §4.1's requirement that an unauthenticated Signal not reach `WatchSignals` subscribers "without annotation" had no wire field to carry the annotation on the gRPC binding — `WatchSignalsResponse` held only the `Envelope`, which has no authentication field. `core.proto` gains `bool sender_authenticated = 2` on `WatchSignalsResponse`, and §4.1 now names it. The field is additive; in proto3 an absent field reads as `false`, so an old runtime, or a client built before the field existed, reads every Signal as unauthenticated — the safe direction. **Replay: neutral.** Neither change alters what a session's accepted history contains or how it is evaluated: delegation changes who may *submit* an envelope, not the envelope's content or its effect on session state, and the item-3 submitter record lives outside `Envelope` and outside the history replay re-drives ([RFC-MACP-0003](RFC-MACP-0003-determinism.md) §1). `sender_authenticated` is a delivery annotation on the ambient Signal plane, which never affects session state. The one exposure is audit, not replay: sessions a deployment accepted by delegation before this revision carry no submitter record, and an auditor cannot reconstruct one after the fact.
@@ -150,3 +152,49 @@ Runtimes MUST enforce tenant authorization boundaries:
 - agents MUST be bound to one or more tenants,
 - session-scoped messages MUST be rejected if the sender's tenant does not match the session's tenant,
 - cross-tenant coordination, if supported, MUST use explicit inter-tenant session linking rather than shared session access.
+
+## Appendix A. Bearer claims profile (informative)
+
+Section 3 allows any machine-appropriate authentication mechanism. This appendix records the JWT bearer profile the reference runtime (macp-runtime) and the reference token issuer (auth-service) share, so other issuers and runtimes can interoperate with them. It adds no requirement. A runtime MAY use other claims, and a deployment MAY use mTLS or OIDC instead.
+
+### A.1 Token
+
+A compact JWS (RFC 7519) sent as `Authorization: Bearer <token>`, or as the transport binding's equivalent metadata ([RFC-MACP-0006](RFC-MACP-0006-transport-bindings.md)). The runtime verifies the signature against configured keys or a JWKS, and checks `iss`, `aud`, `exp` and `iat`. The reference runtime accepts RS256 and ES256 by default. A symmetric algorithm is not recommended, because every holder of the secret can mint any identity.
+
+### A.2 Claims
+
+| Claim | Type | When absent | Used for |
+|---|---|---|---|
+| `sub` | string, required | token rejected | The authenticated `sender` (Section 3). An envelope whose `sender` differs is rejected unless a delegation covers it (Section 3.1). |
+| `macp_scopes` | object | every member takes its default | Container for the members below. A runtime ignores members it does not recognize. |
+| `macp_scopes.can_start_sessions` | boolean | `true` | Whether `sub` may send `SessionStart` (Section 4). |
+| `macp_scopes.allowed_modes` | array of strings | no restriction | The modes `sub` may send in. A mode outside the list is rejected. The empty string covers ambient Signals, whose `mode` is empty ([RFC-MACP-0001](RFC-MACP-0001-core.md) Section 6). |
+| `macp_scopes.max_open_sessions` | non-negative integer | no limit | The most sessions `sub` may have open as initiator at once (Section 7). |
+| `macp_scopes.is_observer` | boolean | `false` | Lets `sub` read and watch sessions it does not participate in (`GetSession`, `StreamSession` subscribe). It grants no right to send. |
+| `macp_scopes.can_manage_mode_registry` | boolean | `false` | Lets `sub` call `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`, `RegisterPolicy` and `UnregisterPolicy`. |
+
+A `SessionStart` beyond `max_open_sessions` is rejected with `RATE_LIMITED`. Every other rejection on these grounds is `FORBIDDEN` ([`registries/error-codes.md`](../registries/error-codes.md)).
+
+### A.3 Notes
+
+- The `can_start_sessions` default is permissive, so a token without `macp_scopes` can start sessions in any mode. An issuer that wants least privilege SHOULD always emit `macp_scopes`, with `can_start_sessions` and `allowed_modes` set explicitly.
+- These claims never replace the per-session checks of Section 4. A token whose `allowed_modes` includes a mode still does not authorize `sub` for a session it is not a participant of.
+- Tokens SHOULD be short-lived. The reference issuer caps TTL at one hour by default.
+- Example payload:
+
+```json
+{
+  "iss": "macp-auth-service",
+  "aud": "macp-runtime",
+  "sub": "agent://risk-agent",
+  "iat": 1792857600,
+  "exp": 1792857900,
+  "macp_scopes": {
+    "can_start_sessions": true,
+    "allowed_modes": ["macp.mode.decision.v1", ""],
+    "max_open_sessions": 3,
+    "is_observer": false,
+    "can_manage_mode_registry": false
+  }
+}
+```
