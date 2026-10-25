@@ -211,12 +211,16 @@ jobs:
           cd packages/proto-kotlin
           gradle compileKotlin
 
+      # ubuntu-latest ships a .NET 8 SDK; fall back to it when the download feed is
+      # down (it returned HTTP 409 for over an hour on 2026-10-25).
       - uses: actions/setup-dotnet@v6
+        continue-on-error: true
         with:
           dotnet-version: '8.0.x'
 
       - name: Generate C# and verify
         run: |
+          dotnet --list-sdks | grep -q '^8\.' || { echo "no .NET 8 SDK available"; exit 1; }
           buf generate --template buf/buf.gen.csharp.yaml
           cd packages/proto-csharp
           dotnet build
