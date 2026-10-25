@@ -1,0 +1,25 @@
+name: SDK Sync
+
+# Network-gated: checks that macp-sdk-python and macp-sdk-typescript vendor byte-identical
+# copies of the conformance fixtures, commitment-hash vectors and parity contract on their
+# `main`. Kept out of `make validate` and the required checks: a spec change is expected to
+# turn this red until both SDKs have synced it, which is the point.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python3 scripts/check-sdk-sync.py
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
