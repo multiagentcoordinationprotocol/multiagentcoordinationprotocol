@@ -929,6 +929,41 @@ while IFS=$'\t' read -r rule_mode rule_file rule_label; do
     echo ""
 done < "${RULES_TMP}/index.tsv"
 
+# --- Decision-receipt vectors (RFC-MACP-0013 Appendix A) ---
+# Each vector is held to its own vector schema; its embedded receipt is held to
+# macp-decision-receipt.schema.json too, unless it is a receipt a verifier must
+# refuse (receipt_format other than macp-receipt/1). The outcomes themselves are
+# checked by scripts/check-receipt-vectors.py.
+RECEIPT_VECTORS_DIR="${PROJECT_ROOT}/schemas/conformance/receipt"
+RECEIPT_VECTOR_SCHEMA="${RECEIPT_VECTORS_DIR}/vector-schema.json"
+echo "-- Decision-receipt vectors (${RECEIPT_VECTORS_DIR}) --"
+for vector_file in "${RECEIPT_VECTORS_DIR}"/receipt_*.json; do
+    [ -f "$vector_file" ] || continue
+    TOTAL=$((TOTAL + 1))
+    echo "Validating: receipt/$(basename "$vector_file") against receipt-vector schema"
+    if ! ajv validate -s "${RECEIPT_VECTOR_SCHEMA}" -d "${vector_file}" --spec=draft2020 --strict=false; then
+        echo "  [X] Invalid"
+        exit 1
+    fi
+    VALIDATED=$((VALIDATED + 1))
+    receipt_tmp="${RULES_TMP}/receipt-$(basename "$vector_file")"
+    python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["receipt"]; json.dump(r, open(sys.argv[2], "w")); sys.exit(0 if r.get("receipt_format") == "macp-receipt/1" else 3)' "$vector_file" "$receipt_tmp" && rc=0 || rc=$?
+    if [ "$rc" -eq 3 ]; then
+        echo "  [--] embedded receipt is one a verifier refuses; not held to the receipt schema"
+    elif [ "$rc" -ne 0 ]; then
+        echo "  [X] could not extract the embedded receipt"
+        exit 1
+    else
+        TOTAL=$((TOTAL + 1))
+        if ! ajv validate -s "${DECISION_RECEIPT_SCHEMA}" -d "${receipt_tmp}" --spec=draft2020 --strict=false; then
+            echo "  [X] embedded receipt invalid against decision-receipt schema"
+            exit 1
+        fi
+        VALIDATED=$((VALIDATED + 1))
+    fi
+    echo ""
+done
+
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON example files found"
     exit 1

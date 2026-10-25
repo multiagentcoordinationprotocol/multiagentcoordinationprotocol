@@ -46,6 +46,10 @@ jobs:
           echo "Checking canonical commitment-hash vectors..."
           python3 scripts/check-cmt-hash-vectors.py
 
+      - name: Check decision-receipt vectors (RFC-MACP-0013 Appendix A)
+        run: |
+          python3 scripts/check-receipt-vectors.py
+
       - name: Check parity-contract manifest (issue #134)
         run: |
           echo "Checking cross-implementation parity-contract manifest..."

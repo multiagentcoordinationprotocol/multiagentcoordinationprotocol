@@ -272,3 +272,28 @@ zero-length payload) that no vector file spells out.
 2. `python3 schemas/conformance/lint_fixtures.py` — must pass.
 3. `make sync-fixtures` in **both** SDKs; review `git diff tests/conformance/`.
 4. Conformance tests must pass in **both SDKs and the runtime** before the change is done.
+
+## `receipt/` — decision-receipt vectors (RFC-MACP-0013 Appendix A)
+
+`receipt/` holds reference vectors for the `macp-receipt/1` decision receipt.
+Each vector gives a `receipt`, the `trusted_keys` a verifier holds (kid to
+Ed25519 JWK `x`), and the `expected` Appendix A.4 outcomes: `integrity`
+(`match`, `mismatch`, `cannot_verify`, or `null` when refused), one entry per
+attestation (`valid`, `invalid`, `unknown_key`, `unsupported`), and a
+`verdict` (`attested`, `integrity_only`, `unverified`, `refused`).
+`receipt/vector-schema.json` documents the shape.
+
+`scripts/validate-json.sh` validates every vector against that schema, and
+every embedded receipt with `receipt_format` `macp-receipt/1` against
+`schemas/json/macp-decision-receipt.schema.json`. `make receipt-vectors`
+(in `make validate` and CI) runs `scripts/check-receipt-vectors.py`, a
+stdlib-only reference verifier with its own JCS serializer and RFC 8032
+Ed25519 implementation, and asserts it returns `expected` for every vector.
+It also asserts that `receipt_001_attested` is
+`examples/discovery/decision_receipt.json` unchanged, and that every outcome
+above appears in at least one vector.
+
+Vectors are **generated** by `scripts/gen-receipt-vectors.py` (dev-only; needs
+`jcs` and `cryptography`) and must never be hand-edited. Ed25519 signatures are
+deterministic, so regenerating leaves the directory unchanged unless the
+generator changed.
