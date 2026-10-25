@@ -43,6 +43,8 @@ The session is an ordinary Quorum ([RFC-MACP-0011](../rfcs/RFC-MACP-0011-quorum-
 - `server`: the upstream's name as configured in the gate.
 - `tool`: the tool name.
 
+JSON numbers are hashed as RFC 8785 serializes them, which is exact only for integers within ±(2^53−1). The gate refuses a call whose arguments hold a larger integer (see the refusal table below) rather than hash a rounded value the upstream never sees.
+
 For the object above, the canonical bytes are `{"arguments":{"mode":"w","path":"/etc/hosts"},"server":"filesystem","tool":"write_file"}`, and the `context_id` is `sha256:e8272f181497f6286a735f2bd9a2bd535b65e377fc85b6ece9d3a6bac5b73057`.
 
 An approver can recompute the digest from the call it is shown and confirm that the session is about that exact call. An auditor can find every session that gated a given call.
@@ -72,6 +74,7 @@ A refused call returns an MCP tool error (`isError: true`), and the upstream is 
 |---|---|
 | The session commits a non-positive outcome | `POLICY_DENIED: ` |
 | The session expires or is cancelled without a Commitment | `SESSION_NOT_OPEN: ` |
+| An argument holds an integer outside ±(2^53−1); no session is opened | `INVALID_ARGUMENT: ` |
 
 ## Where the shared contract lives
 
