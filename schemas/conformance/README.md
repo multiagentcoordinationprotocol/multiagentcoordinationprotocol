@@ -24,7 +24,8 @@ values (see `schemas/parity/README.md`).
 
 Each spec release (`proto-v*` tag) attaches `macp-conformance-<version>.tar.gz`,
 `SHA256SUMS` and `MANIFEST.json` to its GitHub release. The tarball holds this
-directory's fixtures and `cmt-hash/` vectors, `schemas/parity/` and its schema,
+directory's fixtures, its `cmt-hash/` and `receipt/` vectors with the decision-receipt
+schema, `schemas/parity/` and its schema,
 and the five `schemas/json/policy/` rule schemas, all **at their repo paths**,
 plus a `MANIFEST.json` (bundle format, version, spec commit, and the sha256 of
 every file) and `moved-files.json`. The contents are declared in

@@ -4,6 +4,8 @@
     "schemas/conformance/*.json",
     "schemas/conformance/README.md",
     "schemas/conformance/cmt-hash/*.json",
+    "schemas/conformance/receipt/*.json",
+    "schemas/json/macp-decision-receipt.schema.json",
     "schemas/parity/contract.json",
     "schemas/parity/README.md",
     "schemas/json/macp-parity-contract.schema.json",
