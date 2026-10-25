@@ -21,6 +21,23 @@ package macp.modes.multi_round.v1;
 // zero-byte Contribute outright, citing this among its reasons. Restoring
 // presence via `optional` would be a breaking change to an already-shipped
 // public field, not a patch.
+//
+// Decoding (normative; this mode has no RFC, so this comment is its home).
+// Canonical encoding: protobuf. A sender MUST encode ContributePayload as
+// canonical protobuf. A receiver MAY also accept the legacy JSON form
+// `{"value": "<string>"}`. A receiver that does MUST use decode order: JSON,
+// then protobuf -- it attempts JSON first, trusts a successful JSON parse only
+// when the same bytes do NOT also round-trip byte-identically through the
+// canonical protobuf encoding, and otherwise decodes the bytes as protobuf.
+// The tie-break exists because some canonical encodings are also valid JSON:
+// at value byte-lengths such as 10, 13, 32 and 123 the tag and length bytes
+// read as JSON whitespace or `{`. A session a runtime recorded before it
+// applied the tie-break replays under the decode in force when it was
+// recorded (RFC-MACP-0003).
+//
+// Empty payload: a runtime acting as this mode's acceptance gate MUST reject
+// a zero-byte Contribute. A decoder that is not an acceptance gate, such as an
+// SDK reading history, MAY return its "nothing decodable" result instead.
 message ContributePayload {
   // The contribution, compared for equality only and never interpreted.
   string value = 1;

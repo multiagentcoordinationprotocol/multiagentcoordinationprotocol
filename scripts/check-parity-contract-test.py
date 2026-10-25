@@ -4,20 +4,25 @@ the contribute_payload ones re-derivation alone cannot make.
 
 Scope note, because it changed: this file was written for `contribute_payload`
 alone, and the exhaustive-coverage claim below is still scoped to that tree. It
-is no longer the only thing here. Three AREAS elsewhere in the checker now carry
+is no longer the only thing here. Five AREAS elsewhere in the checker now carry
 mutations -- `retry.retryable_error_codes`, `check_own_contribute_error_paths`,
-and (issue #176) `check_proposal_disposition` -- which is **seven** covered
-out-of-tree `errors.append` sites, not three: the retry membership loop is one
-site, the guard contributes three of its four, and `check_proposal_disposition`
+(issue #176) `check_proposal_disposition`, and (issues #136/#137)
+`check_default_versions` and `check_contribute_rules` -- which is **twelve**
+covered out-of-tree `errors.append` sites: the retry membership loop is one
+site, the guard contributes three of its four, `check_proposal_disposition`
 contributes three of its nine (A2, A3, A9 -- A8 also fires alongside A3 on the
-same mutation, but is not itself credited; see the credit-rule paragraph below).
+same mutation, but is not itself credited; see the credit-rule paragraph below),
+and the two normative-home checks contribute all five of theirs, one mutation
+each. Those two are the exception to "opportunistic" below: they were written
+with full coverage, because a value read out of a spec sentence is exactly the
+kind of assertion that would pass silently if its comparison were deleted.
 They are as real as the rest; they are
 just outside what the "every append is covered" count counts, for the reason
 spelled out under "The `contribute_payload` check tree" below.
 
 Do NOT read that as a policy this file follows. It is not "every assertion that
 would pass silently if deleted has a mutation" -- measured at this commit, the
-checker holds **44** `errors.append` sites and this file covers **22** of them.
+checker holds **49** `errors.append` sites and this file covers **27** of them.
 The 22 uncovered ones are all outside the contribute tree, and they include the
 backoff-schedule assertion in the very same function as the covered retry
 membership check, and six of `check_proposal_disposition`'s nine (A1, A4, A5,
@@ -45,8 +50,9 @@ assertion; see the lines-vs-sites note below.)
 Every `errors.append` in the `contribute_payload` check tree is covered: 15
 error paths, covered by 17 of this script's mutations. Read "of" literally, and
 here is the arithmetic in full so no remainder is left unexplained: the script
-carries **25** mutations = 17 tree + 1 `retry` + 4 for the count guard + 3 for
-`check_proposal_disposition` (issue #176: A2, A3, A9 -- see below). The two
+carries **30** mutations = 17 tree + 1 `retry` + 4 for the count guard + 3 for
+`check_proposal_disposition` (issue #176: A2, A3, A9 -- see below) + 5 for the
+normative-home checks (issues #136/#137). The two
 numbers 15 and 17 are not equal and are not meant to be -- some appends need more
 than one mutation (see `check_first_byte_markers` above), and no mutation is
 *credited* with covering two appends, so the designated cover map stays
@@ -680,6 +686,32 @@ def mutate_proposal_acceptance_tracking_flipped(data: dict) -> str:
     return "acceptance_tracking"
 
 
+def _flip(section: str, key: str, expected, replacement):
+    """Shared body for the five normative-home mutations (issues #136/#137): each
+    swaps one value the checker now reads out of an RFC, registry or proto
+    sentence for a different one, so only that sentence's comparison can object."""
+    def mutate(data: dict) -> str:
+        sec = data["sections"][section]
+        if sec[key] != expected:
+            raise SystemExit(
+                "FAIL: %s.%s is not %r -- mutation is stale" % (section, key, expected)
+            )
+        sec[key] = replacement
+        return key
+    return mutate
+
+
+mutate_configuration_version_unreserved = _flip(
+    "defaults", "configuration_version", "config.default", "config.custom")
+mutate_mode_version_drifts = _flip("defaults", "mode_version", "1.0.0", "1.1.0")
+mutate_contribute_canonical_encoding_flipped = _flip(
+    "contribute_payload", "canonical_encoding", "protobuf", "json")
+mutate_contribute_decode_order_reversed = _flip(
+    "contribute_payload", "decode_order", ["json", "protobuf"], ["protobuf", "json"])
+mutate_contribute_empty_payload_accepted = _flip(
+    "contribute_acceptance", "empty_payload", "reject", "accept")
+
+
 MUTATIONS = (
     (
         "a retryable error code is not a member of error_codes.permanent",
@@ -785,6 +817,31 @@ MUTATIONS = (
         "acceptance_tracking flipped to the other schema-legal value",
         mutate_proposal_acceptance_tracking_flipped,
         "never denormalized onto the proposal record",
+    ),
+    (
+        "defaults.configuration_version no longer the value RFC-MACP-0001 Section 7.1 reserves",
+        mutate_configuration_version_unreserved,
+        "Section 7.1 reserves",
+    ),
+    (
+        "defaults.mode_version drifts from registries/modes.md",
+        mutate_mode_version_drifts,
+        "states for the standards-track Modes",
+    ),
+    (
+        "contribute_payload.canonical_encoding drifts from multi_round.proto",
+        mutate_contribute_canonical_encoding_flipped,
+        '"Canonical encoding"',
+    ),
+    (
+        "contribute_payload.decode_order reversed against multi_round.proto",
+        mutate_contribute_decode_order_reversed,
+        "normative decode order",
+    ),
+    (
+        "contribute_acceptance.empty_payload drifts from multi_round.proto",
+        mutate_contribute_empty_payload_accepted,
+        '"Empty payload" rule',
     ),
 )
 
