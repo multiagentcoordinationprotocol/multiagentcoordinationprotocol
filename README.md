@@ -69,6 +69,7 @@ MACP/
     quickstart.md
     positioning.md
     policy-packs.md
+    mcp-tool-gating.md
 
   registries/
     README.md
