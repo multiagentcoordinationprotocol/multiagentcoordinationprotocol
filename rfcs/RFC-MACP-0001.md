@@ -17,6 +17,7 @@ The MACP standards set has been split into focused documents.
 - [RFC-MACP-0011 Quorum Mode](RFC-MACP-0011-quorum-mode.md)
 - [RFC-MACP-0012 Governance Policy Framework](RFC-MACP-0012-policy.md)
 - [RFC-MACP-0013 Canonical Commitment Hash](RFC-MACP-0013-commitment-hash.md)
+- [RFC-MACP-0014 A2A Extension Binding](RFC-MACP-0014-a2a-binding.md)
 
 ## Notes
 

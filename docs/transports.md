@@ -112,6 +112,16 @@ Examples: Kafka, NATS, RabbitMQ
 
 OPTIONAL binding; see [RFC-MACP-0006 §6 (Message Bus Binding)](../rfcs/RFC-MACP-0006-transport-bindings.md).
 
+## A2A
+
+Best for:
+- agents that already speak [A2A](https://a2a-protocol.org/latest/specification/)
+- joining MACP sessions without opening a second transport
+
+Each Envelope travels as one A2A `Part` under the MACP extension URI, and each session is one A2A Task whose id is the `session_id`. MACP states map onto A2A task states, with the exact state carried in metadata. Per-envelope acceptance comes back as an Ack in the response Message.
+
+OPTIONAL, `provisional` binding; see [RFC-MACP-0014 (A2A Extension Binding)](../rfcs/RFC-MACP-0014-a2a-binding.md) and the worked exchange in [`examples/a2a-binding-session.json`](../examples/a2a-binding-session.json).
+
 ## Transport Identifiers
 
 Each transport binding has a registered identifier:
@@ -120,5 +130,6 @@ Each transport binding has a registered identifier:
 - `macp.transport.http.v1`
 - `macp.transport.websocket.v1`
 - `macp.transport.messagebus.v1`
+- `macp.transport.a2a.v1`
 
 These identifiers are used in agent manifest `transport_endpoints` to declare how an agent can be reached. [`registries/transports.md`](../registries/transports.md) is authoritative for the identifier set; the list above is a convenience copy.
