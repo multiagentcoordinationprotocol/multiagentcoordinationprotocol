@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.3.0-draft
+**Version:** 1.4.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,13 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.4.0-draft:** §7.1 reserves the `configuration_version` value
+> `config.default` for a Mode's default configuration profile. The runtime and both SDKs
+> already defaulted to it, but no specification said so: the only statement of the value was
+> `schemas/parity/contract.json`, which is non-normative and cannot be cited as a source
+> (issues #136, #137). The reservation changes no accepted envelope — `configuration_version`
+> stays opaque, and every other value remains implementation-defined — so it is replay-neutral.
 
 > **Changelog — 1.3.0-draft:** New §7.6 (Acceptance obligations), and §2's definition of a
 > MACP Runtime gains a sentence pointing at it. The per-envelope obligations a runtime owes
@@ -249,6 +256,8 @@ A valid `SessionStart` message consists of an Envelope with a non-empty `session
 - `extensions` when present (see §7.4.2).
 
 `configuration_version` is an opaque string that identifies a mode-specific configuration profile. Its format and interpretation are implementation-defined and not part of the MACP interoperability contract. Runtimes MUST store the bound `configuration_version` in session metadata for replay integrity.
+
+The `configuration_version` value `config.default` is reserved: it names the Mode's default configuration profile, with no mode-specific overrides. A client or SDK that binds no specific configuration profile SHOULD bind `config.default`, and a runtime MUST accept `config.default` for every Mode it implements. A runtime MUST NOT give `config.default` a meaning other than that Mode's default profile. No other `configuration_version` value is reserved.
 
 `intent` is a human-readable description of why the session was opened. It MAY be empty, and a runtime MUST NOT reject a `SessionStart` solely because `intent` is empty. When present, a runtime MUST preserve it verbatim and MUST NOT modify it after the `SessionStart` is accepted — like the other bound values, it is immutable for the life of the session.
 

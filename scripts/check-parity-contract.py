@@ -27,6 +27,14 @@ VALUE that has an in-repo source to that source:
     fenced JSON block, cross-checked against registries/policies.md
   - defaults.policy_builder_schema_version  <- schemas/json/
     macp-policy-descriptor.schema.json's schema_version enum
+  - defaults.configuration_version         <- RFC-MACP-0001 Section 7.1's
+    reservation sentence for `config.default` (issue #136)
+  - defaults.mode_version                  <- registries/modes.md's statement
+    of the standards-track Modes' mode_version
+  - contribute_payload.canonical_encoding / decode_order and
+    contribute_acceptance.empty_payload    <- the normative "Decoding" and
+    "Empty payload" paragraphs of multi_round.proto's ContributePayload
+    comment (ext.multi_round.v1 has no RFC; its proto is canonical)
   - retry.backoff_schedule_seconds          <- recomputed from max_retries /
     backoff_base_seconds / backoff_max_seconds
   - retry.retryable_error_codes             <- every member must appear in this
@@ -119,6 +127,24 @@ EXAMPLES_DIR = ROOT / "examples" / "json"
 RFC_0012 = ROOT / "rfcs" / "RFC-MACP-0012-policy.md"
 POLICY_DESCRIPTOR_SCHEMA = ROOT / "schemas" / "json" / "macp-policy-descriptor.schema.json"
 CMT_HASH_VECTOR_SCHEMA = ROOT / "schemas" / "conformance" / "cmt-hash" / "vector-schema.json"
+RFC_0001 = ROOT / "rfcs" / "RFC-MACP-0001-core.md"
+MULTI_ROUND_PROTO = ROOT / "schemas" / "proto" / "macp" / "modes" / "multi_round" / "v1" / "multi_round.proto"
+
+# The normative sentences check_default_versions() and check_contribute_rules()
+# read their values out of (issues #136/#137). Each captures the literal the
+# sentence states, so a manifest edit and a spec edit are caught alike; a
+# sentence reworded past its regex reads as "not found", never as a pass.
+RESERVED_CONFIGURATION_VERSION_RE = re.compile(
+    r"The `configuration_version` value `([^`]+)` is reserved"
+)
+STANDARD_MODE_VERSION_RE = re.compile(
+    r"Every standards-track Mode in the table above is at `mode_version` `([^`]+)`"
+)
+CONTRIBUTE_CANONICAL_RE = re.compile(r"Canonical encoding: (\w+)\.")
+CONTRIBUTE_DECODE_ORDER_RE = re.compile(r"MUST use decode order: (\w+),\s*(?://\s*)?then (\w+)")
+CONTRIBUTE_EMPTY_RE = re.compile(
+    r"Empty payload: a runtime acting as this mode's acceptance gate MUST (\w+)"
+)
 
 # A manifest count, not a convenience -- see Makefile's EXPECTED_RULES_INSTANCES
 # for the same idiom. A silently deleted section/vector/reject case must fail
@@ -334,6 +360,72 @@ def check_policy_version(sections: dict) -> list[str]:
 
     if "policy.default" not in POLICIES_REGISTRY.read_text(encoding="utf-8"):
         errors.append("registries/policies.md no longer mentions policy.default")
+    return errors
+
+
+def check_default_versions(sections: dict) -> list[str]:
+    """defaults.configuration_version <- RFC-MACP-0001 Section 7.1's reservation;
+    defaults.mode_version <- registries/modes.md's standards-track statement."""
+    errors = []
+    defaults = sections["defaults"]
+
+    m = RESERVED_CONFIGURATION_VERSION_RE.search(RFC_0001.read_text(encoding="utf-8"))
+    stated = m.group(1) if m else None
+    if defaults["configuration_version"] != stated:
+        errors.append(
+            "defaults.configuration_version %r != the value RFC-MACP-0001 Section 7.1 "
+            "reserves (%s)"
+            % (defaults["configuration_version"],
+               repr(stated) if stated else "reservation sentence not found")
+        )
+
+    m = STANDARD_MODE_VERSION_RE.search(MODES_REGISTRY.read_text(encoding="utf-8"))
+    stated = m.group(1) if m else None
+    if defaults["mode_version"] != stated:
+        errors.append(
+            "defaults.mode_version %r != the mode_version registries/modes.md states "
+            "for the standards-track Modes (%s)"
+            % (defaults["mode_version"],
+               repr(stated) if stated else "statement not found")
+        )
+    return errors
+
+
+def check_contribute_rules(sections: dict) -> list[str]:
+    """contribute_payload.{canonical_encoding,decode_order} and
+    contribute_acceptance.empty_payload <- multi_round.proto's normative
+    ContributePayload comment. Deliberately NOT called from
+    check_contribute_payload, so EXPECTED_CONTRIBUTE_ERROR_PATHS is unaffected."""
+    errors = []
+    text = MULTI_ROUND_PROTO.read_text(encoding="utf-8")
+    cp = sections["contribute_payload"]
+
+    m = CONTRIBUTE_CANONICAL_RE.search(text)
+    stated = m.group(1).lower() if m else None
+    if cp["canonical_encoding"] != stated:
+        errors.append(
+            "contribute_payload.canonical_encoding %r != multi_round.proto's "
+            "\"Canonical encoding\" (%s)"
+            % (cp["canonical_encoding"], repr(stated) if stated else "not found")
+        )
+
+    m = CONTRIBUTE_DECODE_ORDER_RE.search(text)
+    stated = [m.group(1).lower(), m.group(2).lower()] if m else None
+    if cp["decode_order"] != stated:
+        errors.append(
+            "contribute_payload.decode_order %r != multi_round.proto's normative "
+            "decode order (%s)"
+            % (cp["decode_order"], repr(stated) if stated else "not found")
+        )
+
+    m = CONTRIBUTE_EMPTY_RE.search(text)
+    stated = m.group(1).lower() if m else None
+    empty = sections["contribute_acceptance"]["empty_payload"]
+    if empty != stated:
+        errors.append(
+            "contribute_acceptance.empty_payload %r != multi_round.proto's "
+            "\"Empty payload\" rule (%s)" % (empty, repr(stated) if stated else "not found")
+        )
     return errors
 
 
@@ -1095,9 +1187,11 @@ CHECKS = (
     check_macp_version,
     check_policy_version,
     check_policy_builder_schema_version,
+    check_default_versions,
     check_retry_schedule,
     check_commitment_hash,
     check_contribute_payload,
+    check_contribute_rules,
     check_proposal_disposition,
     check_own_contribute_error_paths,
 )

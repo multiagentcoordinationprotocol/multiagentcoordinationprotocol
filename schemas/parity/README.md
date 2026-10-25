@@ -50,6 +50,40 @@ Every section carries:
 - `source` — where the value actually comes from. Honest about the absence of a normative
   home where one doesn't exist, rather than inventing a citation.
 
+## Which values have a normative home
+
+Contract 1.4.1 (issues #136, #137) moved every value that has a wire or binding consequence and
+was sourced "convention" into the spec, and `check-parity-contract.py` now reads each one back out
+of the sentence that states it:
+
+| Value | Normative home | Checker |
+|---|---|---|
+| `protocol.macp_version` (`1.0`) | RFC-MACP-0001 Section 6 (already normative before 1.4.1) | `check_macp_version` (held to the examples corpus) |
+| `defaults.configuration_version` (`config.default`) | RFC-MACP-0001 Section 7.1: the value is reserved for a Mode's default profile | `check_default_versions` |
+| `defaults.mode_version` (`1.0.0`) | `registries/modes.md`, Standards-track modes: every standards-track Mode is at `1.0.0` | `check_default_versions` |
+| `defaults.policy_version` (`policy.default`) | RFC-MACP-0012 Section 5.1 | `check_policy_version` |
+| `contribute_payload.canonical_encoding`, `.decode_order` | `multi_round.proto`, `ContributePayload` comment, "Decoding" paragraph (the extension mode has no RFC; its proto is canonical) | `check_contribute_rules` |
+| `contribute_acceptance.empty_payload` (`reject`) | `multi_round.proto`, `ContributePayload` comment, "Empty payload" rule | `check_contribute_rules` |
+
+Each of those checks has one mutation in `check-parity-contract-test.py`, and a reworded spec
+sentence reads as "not found" rather than passing. Spec edits move first. Changing one of these
+values means changing its home, and then making a MAJOR bump here.
+
+Deliberately left as convention, because nothing on the wire or in a session's binding depends on
+them (class 1 and the RFC-MACP-0013 Section 3 precedent below):
+
+- `retry.*`: how often and how fast an SDK retries is client behaviour. A runtime cannot tell
+  three retries from four. Only `retryable_error_codes` touches the spec, and it is registry-gated
+  through `error_codes.permanent`.
+- `projection_anomaly.*`, including `field_case_rule`: a projection's diagnostics. The runtime has
+  no such concept and no message carries them.
+- `proposal_disposition.projection_status_values`: an SDK projection's status vocabulary. The
+  wire-visible half, `mode_state_dispositions` and `acceptance_tracking`, is already held to the
+  conformance corpus and RFC-MACP-0008.
+- `defaults.policy_builder_schema_version` (`3`): a policy-builder default. RFC-MACP-0012
+  Section 3 already recommends it (SHOULD), and the checker holds it to the descriptor schema's
+  enum. Making a builder default mandatory would constrain library surface, not the wire.
+
 ## What this manifest does not pin, and why
 
 The admission rule above is positive — "values that today already agree". Its consequence is the

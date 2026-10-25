@@ -258,8 +258,12 @@ this repo's issue #176 for the parity-manifest follow-up.
   vectors, `ProjectionAnomaly`'s shape, and Proposal mode's per-proposal disposition and
   acceptance-tracking domain). It is non-normative: where a value has an
   actual normative home, the manifest's `source` field names it — e.g. `policy_version`
-  traces to RFC-MACP-0012 Section 5.1, and the commitment-hash format traces to
-  RFC-MACP-0013 Section 7 — and the manifest MUST NOT itself be cited as that home.
+  traces to RFC-MACP-0012 Section 5.1, `configuration_version`'s `config.default` to
+  RFC-MACP-0001 Section 7.1, the standard modes' `mode_version` to `registries/modes.md`, the
+  `Contribute` decode order and empty-payload rule to `multi_round.proto`, and the
+  commitment-hash format to RFC-MACP-0013 Section 7 — and the manifest MUST NOT itself be
+  cited as that home. `schemas/parity/README.md`'s "Which values have a normative home" lists
+  which values are held to a spec sentence and which stay SDK conventions, and why.
 - **`applies_to` semantics**: each section names which of `macp-runtime` /
   `macp-sdk-python` / `macp-sdk-typescript` MUST assert it. Adding a consumer to a
   section's `applies_to` is a MINOR manifest bump and is expected to turn that consumer's

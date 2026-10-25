@@ -22,6 +22,8 @@ Example:
 | `macp.mode.handoff.v1` | Responsibility transfer across participants | delegated | context-frozen | provisional | [RFC-MACP-0010](../rfcs/RFC-MACP-0010-handoff-mode.md) |
 | `macp.mode.quorum.v1` | Threshold approval or rejection for one bounded action | quorum | semantic-deterministic | provisional | [RFC-MACP-0011](../rfcs/RFC-MACP-0011-quorum-mode.md) |
 
+Every standards-track Mode in the table above is at `mode_version` `1.0.0`, its first and current semantic profile; validation-rule revisions recorded in each Mode RFC's changelog have kept it there. A client or SDK that binds one of these Modes without selecting a specific revision SHOULD bind `mode_version` `1.0.0`, and a runtime that implements one of them MUST accept `1.0.0` for it. A later semantic profile of one of these Modes MUST be recorded in this registry before an implementation binds it.
+
 ## Main-repo boundary
 
 The main MACP standards repo standardizes only foundational coordination primitives. The following kinds of modes SHOULD live in incubator or vendor repos unless they become widely interoperable:
