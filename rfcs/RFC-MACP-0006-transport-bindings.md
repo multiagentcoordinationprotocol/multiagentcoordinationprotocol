@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.9.0-draft
+**Version:** 1.10.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.10.0-draft:** §4 is now a normative HTTP/JSON binding, replacing the former example endpoints. Every RPC in the §3 listing is `POST {base}/macp/v1/{Method}`, with the request and response messages as `application/json` in the canonical JSON mapping of RFC-MACP-0001 §10; server-streaming RPCs and the subscribe form of `StreamSession` answer as server-sent events (§4.3); `Send` keeps every per-envelope rejection in band; request-level errors carry the registry's HTTP status and an `{"error": <MACPError>}` body (§4.5, [`schemas/json/macp-http-error.schema.json`](../schemas/json/macp-http-error.schema.json)); worked exchanges are in [`examples/http/`](../examples/http/). The binding also fixes authentication (`Authorization: Bearer`), retries, size limits, HTTP versions, browser access and discovery (§4.6–§4.11). Two error reports in §3 move from "transport status, not a MACP error code" to registry codes, with unchanged gRPC statuses: a subscribe resume below the compacted base is `HISTORY_UNAVAILABLE` (`FAILED_PRECONDITION`), and an undecodable `ListSessions` `page_token` is `INVALID_REQUEST` (`INVALID_ARGUMENT`). `macp.transport.http.v1` stays `provisional` in `registries/transports.md` and is corrected from `permanent` to `provisional` in `registries/capabilities.md`. **Behaviour:** the old example paths (`/macp/envelope`, `/macp/session/...`) were never normative and are withdrawn; a gRPC client sees the same status codes as before. **Replay:** no exposure. A JSON payload is converted to Protobuf bytes before acceptance (RFC-MACP-0001 §10.13), so accepted history, commitment hashes and receipts are over the same bytes whichever binding carried the Envelope.
+>
 > **Changelog — 1.9.0-draft:** New §2.1 (Trace Context Propagation). Implementations SHOULD propagate W3C Trace Context (`traceparent`, `tracestate`) in transport metadata: gRPC metadata, HTTP headers, message-bus message headers, and the WebSocket handshake for a connection. A runtime MUST NOT read or write trace context in Envelope fields or in `SessionStartPayload.extensions`, and `tracestate` MUST NOT carry MACP data. On a bidirectional `StreamSession`, every Envelope inherits the stream-open context; per-message context is deferred. Names for spans, attributes and metrics are in [docs/opentelemetry.md](../docs/opentelemetry.md) (informative). Additive. **Replay:** no exposure. Trace context never enters an Envelope or accepted history, so replay of the same Envelope sequence is unaffected by whether, or how, it was traced.
 >
 > **Changelog — 1.8.0-draft:** §3's `MACPRuntimeService` listing and the new §3.9 add two optional RPCs for runtime-issued decision receipts, `GetDecisionReceipt` and `GetReceiptKeys` ([RFC-MACP-0013](RFC-MACP-0013-commitment-hash.md) §13). Both are advertised by the new `Capabilities.decision_receipt`. Additive: a runtime that does not advertise them answers `UNIMPLEMENTED` and changes nothing else.
@@ -153,7 +155,7 @@ Session-scoped `Signal` envelopes are invalid in the base protocol and MUST NOT 
 - `envelope` — a session-scoped coordination envelope. Standard `StreamSession` behavior as specified above.
 - `subscribe_session_id` (with optional `after_sequence`) — a passive-subscribe frame that binds the stream to an existing session's broadcast without emitting a coordination message.
 
-A single `StreamSessionRequest` MUST NOT set both `envelope` and `subscribe_session_id`; a runtime MUST reject such a request as an invalid argument.
+A single `StreamSessionRequest` MUST NOT set both `envelope` and `subscribe_session_id`; a runtime MUST reject such a request as an invalid argument (`INVALID_REQUEST`).
 
 On a request with `subscribe_session_id` set, a runtime that advertises `sessions.stream = true` MUST:
 
@@ -173,7 +175,7 @@ The Envelope carries no sequence field on the wire (RFC-MACP-0001 §6), so a cli
 1. The envelopes delivered on a subscribe stream MUST be exactly those that consume ordinals. A runtime MUST NOT deliver an internal annotation on this stream: a client cannot distinguish it from an ordinal-consuming envelope, and would over-count.
 2. An ordinal MUST be stable for the life of the session — across runtime restarts, storage migration, and log compaction. A runtime that renumbers accepted envelopes breaks every resuming client silently, because the client asks to continue from a position that no longer denotes the same envelope and history is skipped or repeated with no error surface.
 
-**Compaction.** A runtime that compacts session history MUST record, in the compaction checkpoint, the number of accepted ordinals it discarded, so that surviving envelopes retain their original ordinals instead of being renumbered from 1. A resume whose `after_sequence` falls below the compacted base MUST be rejected with gRPC status `FAILED_PRECONDITION`, identifying the lowest ordinal still available; it MUST NOT be silently served from the oldest surviving envelope. As with §3.8's `INVALID_ARGUMENT`, this is a transport status rather than a MACP error code — the codes in [`registries/error-codes.md`](../registries/error-codes.md) are envelope-scoped, and a resume request carries no Envelope.
+**Compaction.** A runtime that compacts session history MUST record, in the compaction checkpoint, the number of accepted ordinals it discarded, so that surviving envelopes retain their original ordinals instead of being renumbered from 1. A resume whose `after_sequence` falls below the compacted base MUST be rejected with error code `HISTORY_UNAVAILABLE` ([`registries/error-codes.md`](../registries/error-codes.md)), which the gRPC binding reports as status `FAILED_PRECONDITION` and the HTTP binding as `409` before the stream opens (§4.3); it MUST NOT be silently served from the oldest surviving envelope. The rejection identifies the lowest ordinal still available: the `MACPError`'s `details` are the UTF-8 JSON text `{"lowest_available_sequence": N}`, on both bindings (base64 in JSON form, RFC-MACP-0001 §10.3), and a gRPC status message SHOULD also state `N`.
 
 **Redelivery.** A client MUST tolerate being delivered an envelope it has already observed. Two independent mechanisms produce this, and neither is a malfunction:
 
@@ -265,7 +267,7 @@ rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
 
 **Page size.** `page_size` is the maximum number of entries the client wants in one response. `page_size = 0` means server-chosen default; a runtime MUST substitute a bounded default rather than returning every known session. A runtime MAY cap the effective page size below the requested value, and the cap MUST be applied silently — clamping is not an error, and the client observes it only as a page smaller than it asked for. A runtime MUST reject a negative `page_size`.
 
-**Continuation.** `page_token` is an opaque continuation token; an empty `page_token` begins a new traversal. The client MUST pass a non-empty `next_page_token` back verbatim as the next request's `page_token`. Tokens are implementation-defined and MAY be short-lived; clients MUST NOT parse them, construct them, or carry one across runtimes. A runtime that cannot decode a supplied `page_token` — malformed, expired, or issued elsewhere — MUST reject the request with gRPC status `INVALID_ARGUMENT`; the HTTP binding maps this to `400 Bad Request`. `INVALID_ARGUMENT` here is a transport status, not a MACP error code — the codes in [`registries/error-codes.md`](../registries/error-codes.md) are envelope-scoped, and `ListSessions` carries no Envelope.
+**Continuation.** `page_token` is an opaque continuation token; an empty `page_token` begins a new traversal. The client MUST pass a non-empty `next_page_token` back verbatim as the next request's `page_token`. Tokens are implementation-defined and MAY be short-lived; clients MUST NOT parse them, construct them, or carry one across runtimes. A runtime that cannot decode a supplied `page_token` — malformed, expired, or issued elsewhere — MUST reject the request with error code `INVALID_REQUEST` ([`registries/error-codes.md`](../registries/error-codes.md)), which the gRPC binding reports as status `INVALID_ARGUMENT` and the HTTP binding as `400 Bad Request`.
 
 **Completion.** Only an **empty** `next_page_token` means the result set is complete. A short page — one carrying fewer entries than `page_size`, including an empty one — does **not** mean completion while `next_page_token` is non-empty. Clients MUST continue paging until the token comes back empty, and MUST NOT treat page length as a termination signal.
 
@@ -288,19 +290,91 @@ rpc GetReceiptKeys(GetReceiptKeysRequest) returns (GetReceiptKeysResponse);
 
 ## 4. HTTP Binding
 
-The HTTP binding is OPTIONAL. Implementations providing it MUST preserve Envelope semantics and MUST map error codes to HTTP status codes per the [error-codes registry](../registries/error-codes.md).
+The HTTP binding is OPTIONAL. Its transport identifier is `macp.transport.http.v1` ([`registries/transports.md`](../registries/transports.md)), currently `provisional`. Implementations providing it MUST preserve Envelope semantics and MUST map error codes to HTTP status codes per the [error-codes registry](../registries/error-codes.md), as §4.5 details.
 
-Example endpoints:
+The binding carries the RPCs of the gRPC binding (§3) as JSON over HTTP. It defines no resource-style URLs and no operation that §3 does not. Worked exchanges are in [`examples/http/`](../examples/http/). They are informative; `make validate` checks their error bodies against [`schemas/json/macp-http-error.schema.json`](../schemas/json/macp-http-error.schema.json) and their Envelopes against [`schemas/json/macp-envelope.schema.json`](../schemas/json/macp-envelope.schema.json).
+
+### 4.1 Paths and Methods
+
+Every RPC in the §3 `MACPRuntimeService` listing is available at
 
 ```text
-POST /macp/envelope
-POST /macp/session/start
-GET  /macp/session/{id}
-POST /macp/session/{id}/cancel
-GET  /.well-known/macp.json
+POST {base}/macp/v1/{Method}
 ```
 
-An HTTP binding that delivers Signals to observers, for example as a server-sent-event stream or a polling response, MUST deliver each Signal with the same `sender_authenticated` flag that `WatchSignalsResponse.sender_authenticated` carries (§3.4). `false` means the sender is unauthenticated. The flag is a sibling of the Envelope and MUST NOT be placed inside it, so each delivered item is the canonical JSON mapping of `WatchSignalsResponse` (RFC-MACP-0001 §10): `{"envelope": {...}, "sender_authenticated": true}`. A receiver MUST treat an absent `sender_authenticated` as `false`, because proto3 JSON encoders commonly omit a bool whose value is `false`.
+`{Method}` is the RPC name exactly as it appears in the listing (`Send`, `GetSession`, `WatchSignals`, and so on). `{base}` is the binding's base URL: an `https` URL with an optional path prefix and no trailing slash, as advertised in discovery (§4.11). The method set is defined by reference to the §3 listing, so an RPC added there is available here with no change to this section.
+
+The HTTP method is `POST` for every RPC, including the read-only ones. A request to a path under `{base}/macp/v1/` that names no RPC is answered `404`, and so is a request for an optional RPC the runtime does not implement (gRPC `UNIMPLEMENTED`). A method other than `POST` (or `OPTIONS`, §4.10) is answered `405` with `Allow: POST`.
+
+### 4.2 Bodies and Media Types
+
+The request body is the JSON form of the RPC's request message, and a `200` response body is the JSON form of its response message, both in the canonical JSON mapping of [RFC-MACP-0001 §10](RFC-MACP-0001-core.md#10-canonical-json-mapping). A request message with no fields set is sent as `{}`. Bodies are UTF-8 and labelled `Content-Type: application/json`. A request with any other `Content-Type` is answered `415`.
+
+`application/macp-envelope+json` ([`registries/media-types.md`](../registries/media-types.md)) labels a bare Envelope. An HTTP body in this binding is always a request or response message, which may contain Envelopes (`SendRequest`, `WatchSignalsResponse`), and is never a bare Envelope. `application/macp-envelope+json` therefore MUST NOT label an HTTP request or response body.
+
+A JSON `payload` enters accepted history only after the runtime converts it to Protobuf bytes under RFC-MACP-0001 §10.13. Commitment hashes and receipts are computed over those bytes ([RFC-MACP-0013](RFC-MACP-0013-commitment-hash.md)), never over a JSON form of `CommitmentPayload`, and this binding defines no JSON form for hashing. A client that needs control of the exact payload bytes sends `payload_b64` (RFC-MACP-0001 §10.13).
+
+### 4.3 Streaming
+
+The server-streaming RPCs of the §3 listing (those whose response is a `stream`) and the passive-subscribe form of `StreamSession` (§3.2) answer `200` with `Content-Type: text/event-stream`, in the [server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html) (SSE) format:
+
+- Each response message is one event. Its `data:` field holds the message's JSON form on a single line, and it has no `event:` field. On `WatchSignals` the message is `WatchSignalsResponse`, so the `sender_authenticated` rule of §4.4 applies.
+- On a `StreamSession` subscribe stream, each event that carries an Envelope also has an `id:` field whose value is that Envelope's ordinal (§3.2) in decimal. No other event has an `id:` field. Watch streams never carry one, because they are not resumable (§3.3, §3.4, §3.7, §3.8).
+- A subscribe request MAY carry a `Last-Event-ID` header. Its value is the request's `after_sequence`, so a client resumes by echoing the last `id:` it processed. If the header is present and the body's `after_sequence` is neither `0` nor equal to it, the runtime MUST answer `400` with `INVALID_REQUEST` and open no stream.
+- A runtime ends a stream fatally by sending one event with `event: error` whose `data:` field holds `{"error": <MACPError>}`, the body of §4.5, and then closing the response. `STREAM_LAGGED` is reported this way. A `StreamSessionResponse` whose `error` member is set, delivered as an ordinary event, is the non-fatal error of `core.proto`: the stream stays open, the event consumes no ordinal, and a client MUST NOT treat it as the end of the stream.
+- A runtime SHOULD send an SSE comment line (`: keepalive`) on a stream that has carried nothing for 30 seconds, so that intermediaries do not close it as idle. Clients MUST ignore comment lines.
+
+An error the runtime can detect before the first event is a request-level error (§4.5), and the stream is not opened. This covers an unauthorized subscriber, an unknown session, and a resume whose `after_sequence` falls below the compacted base, which is answered `409` with `HISTORY_UNAVAILABLE` and the `details` of §3.2.
+
+The HTTP `StreamSession` request body is a `StreamSessionRequest` carrying only the subscribe fields: `subscribe_session_id` and, optionally, `after_sequence`. A body with `envelope` set, or with an empty `subscribe_session_id`, MUST be answered `400` with `INVALID_REQUEST`. This binding has no bidirectional stream: a client that coordinates on a session submits Envelopes with `Send`. It has no long-polling either; SSE is its only streaming form.
+
+### 4.4 `Send` and Signals
+
+`Send` keeps every per-envelope decision in band, as on gRPC (§3.1). When the body is a `SendRequest`, the runtime answers `200` with a `SendResponse` whatever it decides about the Envelope. An accepted Envelope has `ack.ok = true`. A duplicate has `ack.duplicate = true` (RFC-MACP-0001 §8.2). A rejected Envelope has `ack.ok = false` and the registry code in `ack.error`, for example `INVALID_ENVELOPE`, `SESSION_NOT_OPEN` or `POLICY_DENIED`. The registry's HTTP Status column does not apply to these in-band rejections. A body that is not a `SendRequest` (not JSON, not a JSON object, or without an `envelope` member) is answered `400` with `INVALID_REQUEST`.
+
+Signals are ambient Envelopes (RFC-MACP-0001 §5.1) submitted with `Send`. Admission of a Signal whose sender is not authenticated follows [RFC-MACP-0004](RFC-MACP-0004-security.md) §4.1. Observers receive Signals from `WatchSignals` (§4.3).
+
+An HTTP binding that delivers Signals to observers MUST deliver each Signal with the same `sender_authenticated` flag that `WatchSignalsResponse.sender_authenticated` carries (§3.4). `false` means the sender is unauthenticated. The flag is a sibling of the Envelope and MUST NOT be placed inside it, so each delivered item is the canonical JSON mapping of `WatchSignalsResponse` (RFC-MACP-0001 §10): `{"envelope": {...}, "sender_authenticated": true}`. A receiver MUST treat an absent `sender_authenticated` as `false`, because proto3 JSON encoders commonly omit a bool whose value is `false`.
+
+### 4.5 Request-Level Errors
+
+An error that the gRPC binding reports as the RPC's own status is a request-level error in this binding. The runtime answers with the code's **HTTP Status** from the [error-codes registry](../registries/error-codes.md) and an `application/json` body that is an object whose `error` member is the JSON form of `MACPError`:
+
+```json
+{"error": {"code": "SESSION_NOT_FOUND", "message": "session not found", "session_id": "01HV0Q2A8W0Y2XQ5N1R8Y2K9B3", "message_id": "", "details": ""}}
+```
+
+The response SHOULD also carry the code in a `MACP-Error-Code` header, so that a client can branch without parsing the body. A `401` (`UNAUTHENTICATED`) MUST carry a `WWW-Authenticate: Bearer` header ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750)). [`schemas/json/macp-http-error.schema.json`](../schemas/json/macp-http-error.schema.json) defines the body. A client MUST ignore members it does not recognize (RFC-MACP-0001 §10.6).
+
+Three statuses are transport statuses outside the registry: `404` for a path that names no implemented RPC (§4.1), `405` for a method other than `POST` (§4.1), and `415` for a body that is not `application/json` (§4.2). They carry no MACP error code, and a client MUST NOT read their body as a `MACPError`. A `404` that carries the body above, such as one for `SESSION_NOT_FOUND`, is a request-level error.
+
+### 4.6 Authentication
+
+A client authenticates with an `Authorization: Bearer <token>` header ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750)); token validation, and the identity a token yields, follow [RFC-MACP-0004](RFC-MACP-0004-security.md). It is the only HTTP credential this binding defines. An implementation-specific header, such as a runtime's own token header, is not part of the binding, and a client MUST NOT rely on one. A runtime MUST NOT use cookies for authentication or for any state, so the binding needs no CSRF defence. TLS client-certificate authentication, where RFC-MACP-0004 permits it, happens below HTTP and is unaffected.
+
+### 4.7 Initialization and Versions
+
+HTTP requests are independent, so a runtime keeps no per-connection state from `Initialize`. A client SHOULD call `Initialize` once per client process, to negotiate the protocol version and read the runtime's capabilities, and not once per request. A runtime MUST NOT require a prior `Initialize` before it serves another RPC. It validates each Envelope's `macp_version` on its own, and reports a mismatch in band as `UNSUPPORTED_PROTOCOL_VERSION`.
+
+### 4.8 Retries
+
+The binding defines no idempotency header. Envelope submission is already idempotent by `message_id` (RFC-MACP-0001 §8.2), so a client that retries a `Send` after a timeout or a lost connection MUST reuse the Envelope's `message_id`; if the first attempt was accepted, the retry is answered with `ack.duplicate = true`. A control-plane mutation (`CancelSession`, `SuspendSession`, `ResumeSession`, `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`, `RegisterPolicy`, `UnregisterPolicy`) has no such key. A `409` on a retry of one of them means the first attempt was possibly applied: the client confirms the state with `GetSession`, `GetPolicy` or `ListExtModes` instead of treating the `409` as a failure.
+
+### 4.9 Limits and HTTP Versions
+
+The payload size limit is the one the runtime applies on gRPC, and it is measured on the Protobuf payload bytes after conversion (RFC-MACP-0001 §10.13), not on the JSON text. A request over the limit is answered `413` with `PAYLOAD_TOO_LARGE`. Base64 makes data a third larger, so a runtime's cap on the JSON request body MUST be at least 4/3 of the payload limit plus room for the rest of the request, so that a `payload_b64` at the limit is not refused.
+
+A runtime MUST support HTTP/1.1 and SHOULD support HTTP/2, negotiated with TLS ALPN. Server-sent events work on both.
+
+### 4.10 Browser Clients
+
+A runtime that serves browser clients answers CORS preflight (`OPTIONS`) requests only for origins on a deployment-configured allowlist. The list SHOULD be empty by default, which disables cross-origin access. Preflight responses MUST allow the request headers `Authorization`, `Content-Type`, `Last-Event-ID`, `traceparent` and `tracestate`. Responses SHOULD expose `MACP-Error-Code`, and MUST NOT carry `Access-Control-Allow-Credentials: true`, since the binding uses no cookies (§4.6). `EventSource` cannot send an `Authorization` header or a `POST` body, so a browser client reads a stream with `fetch` and a streaming response body.
+
+### 4.11 Discovery and Trace Context
+
+A manifest advertises the binding with a `transport_endpoints` entry whose `transport` is `macp.transport.http.v1`, whose `uri` is `{base}` (§4.1) without the `/macp/v1/` suffix, and whose `content_types` is `["application/json"]` ([RFC-MACP-0005](RFC-MACP-0005-discovery-and-manifests.md) §6). The well-known manifest is served at `/.well-known/macp.json` at the origin root (RFC-MACP-0005 §7.1), whatever path prefix `{base}` has. `GetManifest` is also available at `{base}/macp/v1/GetManifest`.
+
+Trace context travels in the `traceparent` and `tracestate` request headers (§2.1). It is per request, so every event on a stream inherits the context of the request that opened it.
 
 ## 5. WebSocket Binding
 
@@ -330,7 +404,7 @@ Possible systems:
 Implementations MUST support at least the gRPC binding. Additional transports are OPTIONAL.
 
 - gRPC -- high throughput coordination
-- HTTP -- simple integrations
+- HTTP -- simple integrations, browsers, and environments where gRPC is restricted (§4)
 - WebSocket -- interactive coordination
 - Message Bus -- distributed systems
 
@@ -338,3 +412,5 @@ Implementations MUST support at least the gRPC binding. Additional transports ar
 
 All transports MUST use encrypted transport.
 Authentication requirements follow RFC-MACP-0004.
+
+The HTTP binding authenticates with `Authorization: Bearer` only, uses no cookies, and is closed to cross-origin browser access unless a deployment allowlists an origin (§4.6, §4.10). It applies the same authorization, rate limits and payload limits as the gRPC binding (§4.9).

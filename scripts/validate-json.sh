@@ -563,7 +563,10 @@ done
 #         agent-bootstrap row: the receipt_keys: prefix table over
 #         examples/discovery/ validates it positively earlier in this script.
 #         Kept as defense in depth for the checkout that lacks that example.
-#     So the table is 4 rows with 2 DIFFERENT shadowing states. Do not read the
+#       - macp-http-error.schema.json's guard is NOT shadowed, same as the
+#         parity-contract row: its positive consumer is the examples/http/
+#         block at the end of this script, which runs AFTER this loop.
+#     So the table is 5 rows with 2 DIFFERENT shadowing states. Do not read the
 #     rows as sharing a single property -- add the row's status here when adding
 #     a row, or this comment stops describing the table below it.
 INVALID_DESCRIPTOR_PAIRS=(
@@ -571,6 +574,7 @@ INVALID_DESCRIPTOR_PAIRS=(
     "invalid-parity-contract:macp-parity-contract.schema.json:parity-contract"
     "invalid-agent-bootstrap:macp-agent-bootstrap.schema.json:agent-bootstrap"
     "invalid-receipt-keys:macp-receipt-keys.schema.json:receipt-keys"
+    "invalid-http-errors:macp-http-error.schema.json:http-error"
 )
 
 for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
@@ -1001,6 +1005,114 @@ else
     echo "  [X] Invalid"
     exit 1
 fi
+echo ""
+
+# HTTP binding exchanges (RFC-MACP-0006 §4). Each examples/http/*.json is a list of
+# request/response exchanges. The extractor pulls out every Envelope (any object under
+# an `envelope` key) and every error body (a response body with status >= 400, and the
+# data of an `event: error` server-sent event), and checks that each `raw` SSE text
+# parses to exactly the `events` beside it, so the two renderings cannot drift. A
+# directory with no Envelope or no error body is a failure: it would mean the
+# extractor silently lost one of the two things this block exists to check.
+HTTP_EXAMPLES_DIR="${PROJECT_ROOT}/examples/http"
+HTTP_ERROR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-http-error.schema.json"
+HTTP_TMP="${TMP_ENV_DIR}/http"
+mkdir -p "${HTTP_TMP}"
+echo "-- HTTP binding exchanges (${HTTP_EXAMPLES_DIR}/*.json) --"
+echo "Envelopes: ${ENVELOPE_SCHEMA}"
+echo "Error bodies: ${HTTP_ERROR_SCHEMA}"
+if [ ! -f "${HTTP_ERROR_SCHEMA}" ]; then
+    echo "  [X] HTTP error schema not found: ${HTTP_ERROR_SCHEMA}"
+    exit 1
+fi
+HTTP_EXTRACT_PY="${TMP_ENV_DIR}/extract-http.py"
+cat > "${HTTP_EXTRACT_PY}" <<'PYHTTP'
+import glob, json, os, sys
+src, out = sys.argv[1], sys.argv[2]
+files = sorted(glob.glob(os.path.join(src, "*.json")))
+if not files:
+    print("  [X] no examples in %s" % src)
+    sys.exit(1)
+counts = {"envelope": 0, "error": 0}
+manifest = open(os.path.join(out, "manifest.txt"), "w")
+
+
+def emit(kind, label, obj):
+    path = os.path.join(out, "%s_%03d.json" % (kind, counts[kind]))
+    counts[kind] += 1
+    json.dump(obj, open(path, "w"))
+    manifest.write("%s\t%s\t%s\n" % (kind, path, label))
+
+
+def envelopes(node, label):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == "envelope" and isinstance(v, dict):
+                emit("envelope", label, v)
+            else:
+                envelopes(v, label)
+    elif isinstance(node, list):
+        for v in node:
+            envelopes(v, label)
+
+
+def parse_sse(raw):
+    events = []
+    for block in raw.split("\n\n"):
+        if not block:
+            continue
+        ev = {}
+        for line in block.split("\n"):
+            if line.startswith(":"):
+                ev["comment"] = line[1:].lstrip(" ")
+                continue
+            field, _, value = line.partition(":")
+            value = value[1:] if value.startswith(" ") else value
+            ev[field] = json.loads(value) if field == "data" else value
+        events.append(ev)
+    return events
+
+
+bad = 0
+for f in files:
+    base = os.path.basename(f)
+    doc = json.load(open(f))
+    for i, ex in enumerate(doc.get("exchanges", [])):
+        label = "%s exchange %d" % (base, i)
+        envelopes(ex, label)
+        resp = ex.get("response", {})
+        if resp.get("status", 0) >= 400 and "body" in resp:
+            emit("error", label + " response body", resp["body"])
+        for j, ev in enumerate(resp.get("events", [])):
+            if ev.get("event") == "error":
+                emit("error", "%s event %d" % (label, j), ev.get("data"))
+        if "raw" in resp and parse_sse(resp["raw"]) != resp.get("events"):
+            print("  [X] %s: `raw` does not parse to `events`" % label)
+            bad += 1
+    if not doc.get("exchanges"):
+        print("  [X] %s has no exchanges" % base)
+        bad += 1
+for kind, n in counts.items():
+    if n == 0:
+        print("  [X] examples/http yielded no %s to validate" % kind)
+        bad += 1
+sys.exit(1 if bad else 0)
+PYHTTP
+if ! python3 "${HTTP_EXTRACT_PY}" "${HTTP_EXAMPLES_DIR}" "${HTTP_TMP}"; then
+    exit 1
+fi
+while IFS="$(printf '\t')" read -r kind path label; do
+    TOTAL=$((TOTAL + 1))
+    if [ "${kind}" = "envelope" ]; then schema="${ENVELOPE_SCHEMA}"; else schema="${HTTP_ERROR_SCHEMA}"; fi
+    if ajv validate -s "${schema}" -d "${path}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+        VALIDATED=$((VALIDATED + 1))
+        echo "  [OK] ${kind}: ${label}"
+    else
+        echo "  [X] ${kind}: ${label} failed $(basename "${schema}"):"
+        ajv validate -s "${schema}" -d "${path}" --spec=draft2020 --strict=false || true
+        exit 1
+    fi
+done < "${HTTP_TMP}/manifest.txt"
 echo ""
 
 if [ $TOTAL -eq 0 ]; then

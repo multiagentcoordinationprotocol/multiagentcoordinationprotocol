@@ -11,12 +11,12 @@ macp.transport.<name>.v<version>
 | Transport | Description | Status | Reference |
 |----------|-------------|--------|-----------|
 | macp.transport.grpc.v1 | gRPC over HTTP/2 | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
-| macp.transport.http.v1 | HTTP JSON API | provisional | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
+| macp.transport.http.v1 | HTTP/JSON binding: `POST {base}/macp/v1/{Method}`, server-sent events for streams | provisional | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.websocket.v1 | WebSocket streaming | provisional | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.messagebus.v1 | Message bus (Kafka/NATS/RabbitMQ) | provisional | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.a2a.v1 | A2A 1.0 extension binding (Envelope carried as an A2A Part) | provisional | [RFC-MACP-0014](../rfcs/RFC-MACP-0014-a2a-binding.md) |
 
-Only gRPC is `permanent`. The HTTP, WebSocket and message-bus bindings are specified in RFC-MACP-0006, and the A2A binding in RFC-MACP-0014, but all four are `provisional`: the reference runtime implements only gRPC, and no implementation has yet shown that those bindings interoperate. A binding becomes `permanent` once two independent implementations do. Status terms are defined in [README.md](README.md).
+Only gRPC is `permanent`. The HTTP, WebSocket and message-bus bindings are specified in RFC-MACP-0006, and the A2A binding in RFC-MACP-0014, but all four are `provisional`: the reference runtime implements only gRPC, and no implementation has yet shown that those bindings interoperate. A binding becomes `permanent` once two independent implementations do. A transport identifier is never reused: if a binding changes incompatibly, it gets a new version (`.v2`), and `macp.transport.http.v1` keeps meaning the binding of RFC-MACP-0006 §4. Status terms are defined in [README.md](README.md).
 
 ## Transport Requirements
 
