@@ -982,6 +982,27 @@ for vector_file in "${RECEIPT_VECTORS_DIR}"/receipt_*.json; do
     echo ""
 done
 
+# The OpenTelemetry semantic-conventions registry (docs/opentelemetry.md). A standalone
+# block: the file is not an example, a fixture or a discovery document, and a missing
+# file must fail rather than skip, since it is the single list of macp.* telemetry names.
+SEMCONV_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-semconv.schema.json"
+SEMCONV_FILE="${PROJECT_ROOT}/schemas/otel/macp-semconv.json"
+echo "-- OpenTelemetry semantic conventions (schemas/otel/macp-semconv.json) --"
+echo "Schema: ${SEMCONV_SCHEMA}"
+if [ ! -f "${SEMCONV_FILE}" ]; then
+    echo "  [X] ${SEMCONV_FILE} is missing"
+    exit 1
+fi
+TOTAL=$((TOTAL + 1))
+if ajv validate -s "${SEMCONV_SCHEMA}" -d "${SEMCONV_FILE}" --spec=draft2020 --strict=false; then
+    VALIDATED=$((VALIDATED + 1))
+    echo "  [OK] Valid"
+else
+    echo "  [X] Invalid"
+    exit 1
+fi
+echo ""
+
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON example files found"
     exit 1
