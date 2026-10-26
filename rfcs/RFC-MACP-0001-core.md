@@ -519,7 +519,7 @@ Protobuf `bytes` fields MUST be represented as base64-encoded strings in JSON. T
 
 ### 10.4 Enum Representation
 
-Protobuf enum values MUST be represented as their string names (for example `"SESSION_STATE_OPEN"`) in JSON, not as integer values.
+Encoders MUST represent Protobuf enum values as their string names (for example `"SESSION_STATE_OPEN"`) in JSON, not as integer values. Decoders MUST also accept the integer value, as the proto3 JSON mapping does. A decoder that meets an enum name it does not know treats it as an unrecognized value under §10.6: the field is left at its default (or, inside a `repeated` field, the element is dropped), and the rest of the message is decoded normally.
 
 ### 10.5 Media Types
 
@@ -546,7 +546,7 @@ The JSON form of any MACP message is the proto3 JSON mapping of that message ([P
 
 The deviations are:
 
-1. **Original field names only.** Encoders MUST use each field's name exactly as written in the `.proto` file (`session_id`, `ttl_ms`, `accepted_at_unix_ms`). The proto3 mapping's lowerCamelCase `json_name` is not a MACP field name: a decoder MUST NOT map `sessionId` to `session_id`, and treats such a key as an unrecognized field, ignored under §10.6. An Envelope sent with `sessionId` therefore has an empty `session_id` and fails the validation of §6 and §7.6 like any other Envelope missing that field. `timestamp` is the one renamed field (§10.1, §10.11).
+1. **Original field names only.** Encoders MUST use each field's name exactly as written in the `.proto` file (`session_id`, `ttl_ms`, `accepted_at_unix_ms`). The proto3 mapping's lowerCamelCase `json_name` is not a MACP field name: a decoder MUST NOT map `sessionId` to `session_id`, and treats such a key as an unrecognized field, ignored under §10.6. Stock proto3 JSON parsers accept both spellings, so an implementation built on one removes lowerCamelCase keys that differ from the original name before parsing. An Envelope sent with `sessionId` therefore has an empty `session_id` and fails the validation of §6 and §7.6 like any other Envelope missing that field. `timestamp` is the one renamed field (§10.1, §10.11).
 2. **64-bit integers as JSON numbers** (§10.9), where proto3 JSON uses quoted strings.
 3. **Default values emitted** (§10.10), where proto3 JSON omits them.
 4. **Three structural transforms** (§10.11): `Envelope.timestamp`, `Envelope.payload`/`payload_b64`, and `PolicyDescriptor.rules`.
@@ -566,7 +566,7 @@ Every 64-bit field MACP defines today stays below 2^53 in practice, so a conform
 
 Encoders SHOULD emit every field whose value is the proto3 default: `""` for strings, `0` for numbers, `false` for `bool`, the zero-valued name (for example `"SESSION_STATE_UNSPECIFIED"`) for enums, `[]` for `repeated` fields and `{}` for maps. Empty strings MUST be `""`, never `null` and never omitted (§10.7). A field with explicit presence — a message-typed field, a `proto3 optional` field such as `WhatIfReplayResponse.first_divergence`, or a member of a `oneof` — is emitted when it is set, including when it is set to its default value, and omitted when it is unset.
 
-Decoders MUST treat an absent field as its default value (or, for a field with explicit presence, as unset), and MUST treat a JSON `null` the same way, as the proto3 JSON mapping does.
+Decoders MUST treat an absent field as its default value (or, for a field with explicit presence, as unset), and MUST treat a JSON `null` the same way, as the proto3 JSON mapping does. Library options that produce this encoding include Go protojson's `EmitDefaultValues` (not `EmitUnpopulated`, which writes `null` for unset message fields) and protobuf-java `JsonFormat`'s `alwaysPrintFieldsWithNoPresence`, both with original field names.
 
 ### 10.11 Structural Transforms
 
@@ -592,13 +592,14 @@ A JSON `payload` is the JSON form (§10.8) of the payload message selected by th
 A receiver that accepts an Envelope whose payload arrived as JSON `payload` converts it to Protobuf bytes, and those bytes are the payload of the accepted Envelope. Accepted history stores them (§8.3), replay reads them ([RFC-MACP-0003](RFC-MACP-0003-determinism.md)), the commitment hash is computed over the `CommitmentPayload` they decode to ([RFC-MACP-0013](RFC-MACP-0013-commitment-hash.md)), and a runtime-issued receipt's `commitment_wire_b64` is these bytes verbatim (RFC-MACP-0013 §13, requirement 4). Two conforming receivers MUST therefore produce the same bytes from the same JSON `payload`. The conversion MUST:
 
 1. emit fields in ascending field-number order;
-2. omit every field whose value is the proto3 default, unless the field has explicit presence and is set (§10.10);
+2. omit every field whose value is the proto3 default, unless the field has explicit presence and is set (§10.10); a `double` or `float` of `-0.0` is not the default and is emitted, and rule 2 does not apply inside `map` entries or to elements of `repeated` fields;
 3. omit every unrecognized JSON member (§10.6), so that no unknown field reaches the bytes;
 4. encode `repeated` scalar numeric fields packed, as proto3 does by default;
-5. emit `map` entries in ascending order of their key's UTF-8 bytes, each entry with its key before its value; and
-6. apply the decoding rules of §10.3 and §10.9–§10.11 (base64 alphabets, quoted 64-bit integers, `rules` string form) before encoding, so that equivalent JSON yields identical bytes.
+5. emit `map` entries in ascending order of their key's UTF-8 bytes, each entry always encoding both its key (field 1) and its value (field 2), in that order, even when either is the default;
+6. encode a `double` or `float` NaN as the canonical quiet NaN (`0x7FF8000000000000` for `double`, `0x7FC00000` for `float`); and
+7. apply the decoding rules of §10.3, §10.4 and §10.9–§10.11 (base64 alphabets, quoted 64-bit integers, `rules` string form) before encoding, so that equivalent JSON yields identical bytes.
 
-This is the deterministic Protobuf serialization of the decoded message, and is what common Protobuf libraries produce in their deterministic mode. A client that needs control of the exact bytes, for example one that must keep a field this receiver does not know or one that pre-computes a commitment hash over its own encoding, MUST send `payload_b64` instead.
+Implementations MUST check their conversion against these rules: Protobuf libraries' own deterministic modes are not guaranteed to match them or each other (for example, some order string map keys by UTF-16 code unit rather than by UTF-8 byte). A client that relies on the exact bytes, for example one that must keep a field this receiver does not know, or one that will check RFC-MACP-0013 §6.1 or a receipt's `commitment_wire_b64` against bytes it encoded itself, MUST send `payload_b64` instead.
 
 ### 10.14 Scope
 
