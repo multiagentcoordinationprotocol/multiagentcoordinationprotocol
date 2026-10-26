@@ -158,7 +158,7 @@
       }
     },
     {
-      "title": "A non-JSON body: a transport 415 with no MACPError body",
+      "title": "A wrong Content-Type: a transport 415 with no MACPError body",
       "request": {
         "method": "POST",
         "url": "https://runtime.example.com/api/macp/v1/Send",
