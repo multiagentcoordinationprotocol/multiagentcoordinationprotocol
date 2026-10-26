@@ -1,0 +1,72 @@
+name: Adoption Metrics
+
+# Network-gated: collects one week of adoption metrics (hosted runs, registry downloads,
+# GitHub stars and external issues/PRs) from public sources and appends it to
+# adoption/metrics.jsonl on the `adoption-data` branch. History lives on that branch so
+# `main` never gets weekly data commits. Aggregates only: no run ids, people or IPs.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Recollect every week since 2026-09-28'
+        type: boolean
+        default: false
+      ttfs_minutes:
+        description: 'A timed time-to-first-session run, in minutes (optional)'
+        required: false
+      ttfs_path:
+        description: 'Which path was timed'
+        type: choice
+        options: [none, console, docker-pip]
+        default: none
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adoption-metrics
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Check out the adoption-data branch
+        run: |
+          if git ls-remote --exit-code --heads origin adoption-data >/dev/null; then
+            git fetch --depth=1 origin adoption-data
+            git worktree add data FETCH_HEAD
+          else
+            git worktree add --detach data
+            git -C data checkout --orphan adoption-data
+            git -C data rm -rf --quiet .
+          fi
+      - name: Collect
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BACKFILL: ${{ inputs.backfill }}
+          TTFS_MINUTES: ${{ inputs.ttfs_minutes }}
+          TTFS_PATH: ${{ inputs.ttfs_path }}
+        run: |
+          args=(--out data/adoption)
+          [ "$BACKFILL" = "true" ] && args+=(--backfill)
+          [ -n "$TTFS_MINUTES" ] && [ "$TTFS_PATH" != none ] && args+=(--ttfs-minutes "$TTFS_MINUTES" --ttfs-path "$TTFS_PATH")
+          python3 scripts/collect-adoption.py "${args[@]}"
+          cat data/adoption/REPORT.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Push to adoption-data
+        run: |
+          cd data
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add adoption
+          git diff --cached --quiet && { echo 'no change'; exit 0; }
+          git commit -q -m "adoption: collected $(date -u +%F)"
+          git push origin HEAD:refs/heads/adoption-data
