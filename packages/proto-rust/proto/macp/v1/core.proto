@@ -54,6 +54,15 @@ message RootsCapability {
   bool list_changed = 2;
 }
 
+// Optional runtime-issued decision receipts (RFC-MACP-0013 §13).
+message DecisionReceiptCapability {
+  // The runtime implements GetDecisionReceipt and GetReceiptKeys.
+  bool get_decision_receipt = 1;
+  // Every receipt issued from now on carries at least one `jws` attestation
+  // with alg EdDSA. Says nothing about receipts issued earlier.
+  bool signed = 2;
+}
+
 message ExperimentalCapabilities {
   map<string, string> features = 1;
 }
@@ -66,6 +75,7 @@ message Capabilities {
   ModeRegistryCapability mode_registry = 5;
   RootsCapability roots = 6;
   PolicyRegistryCapability policy_registry = 7;
+  DecisionReceiptCapability decision_receipt = 8;
   ExperimentalCapabilities experimental = 100;
 }
 
@@ -461,6 +471,30 @@ message WatchSessionsResponse {
   SessionLifecycleEvent event = 1;
 }
 
+// Runtime-issued decision receipts (RFC-MACP-0013 §13). Optional; advertised
+// by Capabilities.decision_receipt. The receipt and the key set travel as JSON
+// text: both formats are JSON (the receipt is signed over its JCS body), so a
+// Protobuf mirror would be a second source of truth.
+
+message GetDecisionReceiptRequest {
+  string session_id = 1;
+}
+
+message GetDecisionReceiptResponse {
+  // A `macp-receipt/1` document (RFC-MACP-0013 Appendix A), served
+  // byte-identical once an attested receipt has been issued.
+  string receipt_json = 1;
+}
+
+message GetReceiptKeysRequest {}
+
+message GetReceiptKeysResponse {
+  // A JWK Set [RFC 7517] of public verification keys
+  // (schemas/json/macp-receipt-keys.schema.json). `{"keys":[]}` when the
+  // runtime has no signing key.
+  string jwks_json = 1;
+}
+
 service MACPRuntimeService {
   rpc Initialize(InitializeRequest) returns (InitializeResponse);
   rpc Send(SendRequest) returns (SendResponse);
@@ -493,4 +527,7 @@ service MACPRuntimeService {
   rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
   // Optional, read-only what-if replay (RFC-MACP-0012 §8.1)
   rpc WhatIfReplay(WhatIfReplayRequest) returns (WhatIfReplayResponse);
+  // Optional runtime-issued decision receipts (RFC-MACP-0013 §13)
+  rpc GetDecisionReceipt(GetDecisionReceiptRequest) returns (GetDecisionReceiptResponse);
+  rpc GetReceiptKeys(GetReceiptKeysRequest) returns (GetReceiptKeysResponse);
 }

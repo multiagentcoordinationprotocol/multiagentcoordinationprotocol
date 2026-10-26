@@ -79,6 +79,15 @@ manage the governance policy lifecycle. See
 optional and read-only: it replays a session under a candidate policy and reports how the outcome
 would differ ([RFC-MACP-0012 §8.1](../rfcs/RFC-MACP-0012-policy.md#81-what-if-replay-optional)).
 
+### Decision Receipt RPCs
+
+Two optional RPCs, advertised by `Capabilities.decision_receipt`: `GetDecisionReceipt` returns a
+`macp-receipt/1` decision receipt for a resolved session as JSON text, and `GetReceiptKeys` returns
+the public keys that verify its signatures as a JWK Set. A runtime that does not advertise them
+answers `UNIMPLEMENTED`. See
+[RFC-MACP-0006 §3.9](../rfcs/RFC-MACP-0006-transport-bindings.md#39-decision-receipt-rpcs) and
+[RFC-MACP-0013 §13](../rfcs/RFC-MACP-0013-commitment-hash.md#13-receipt-issuance-optional).
+
 ### `ListSessions` / `WatchSessions` (Session Observation)
 
 Two RPCs for programmatic session lifecycle observation — `ListSessions` for a paginated

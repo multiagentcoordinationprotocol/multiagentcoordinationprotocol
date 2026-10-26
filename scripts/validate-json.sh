@@ -20,6 +20,7 @@ SESSION_LIFECYCLE_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-session-lifecycle-ev
 RUN_DESCRIPTOR_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-run-descriptor.schema.json"
 AGENT_BOOTSTRAP_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-agent-bootstrap.schema.json"
 DECISION_RECEIPT_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-decision-receipt.schema.json"
+RECEIPT_KEYS_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-receipt-keys.schema.json"
 EXAMPLES_DIR="${PROJECT_ROOT}/examples/json"
 DISCOVERY_DIR="${PROJECT_ROOT}/examples/discovery"
 POLICY_PACKS_DIR="${PROJECT_ROOT}/examples/policies"
@@ -136,6 +137,7 @@ if [ -d "$DISCOVERY_DIR" ]; then
         "run_descriptor:${RUN_DESCRIPTOR_SCHEMA}:run-descriptor"
         "agent_bootstrap:${AGENT_BOOTSTRAP_SCHEMA}:agent-bootstrap"
         "decision_receipt:${DECISION_RECEIPT_SCHEMA}:decision-receipt"
+        "receipt_keys:${RECEIPT_KEYS_SCHEMA}:receipt-keys"
     )
     for pair in "${EXTRA_DISCOVERY_PAIRS[@]}"; do
         prefix="${pair%%:*}"
@@ -557,13 +559,18 @@ done
 #         prefix table over examples/discovery/), so a deleted or corrupt
 #         schema fails there first. Kept as defense in depth for the checkout
 #         that lacks those examples.
-#     So the table is 3 rows with 2 DIFFERENT shadowing states. Do not read the
+#       - macp-receipt-keys.schema.json's guard IS SHADOWED, same as the
+#         agent-bootstrap row: the receipt_keys: prefix table over
+#         examples/discovery/ validates it positively earlier in this script.
+#         Kept as defense in depth for the checkout that lacks that example.
+#     So the table is 4 rows with 2 DIFFERENT shadowing states. Do not read the
 #     rows as sharing a single property -- add the row's status here when adding
 #     a row, or this comment stops describing the table below it.
 INVALID_DESCRIPTOR_PAIRS=(
     "invalid-policy-descriptors:macp-policy-descriptor.schema.json:policy-descriptor"
     "invalid-parity-contract:macp-parity-contract.schema.json:parity-contract"
     "invalid-agent-bootstrap:macp-agent-bootstrap.schema.json:agent-bootstrap"
+    "invalid-receipt-keys:macp-receipt-keys.schema.json:receipt-keys"
 )
 
 for pair in "${INVALID_DESCRIPTOR_PAIRS[@]}"; do
