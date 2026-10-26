@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-semconv.schema.json",
+  "title": "MACP OpenTelemetry Semantic Conventions Registry",
+  "description": "Shape of schemas/otel/macp-semconv.json, the single list of MACP OpenTelemetry names (docs/opentelemetry.md). Informative and experimental. The shape mirrors the OpenTelemetry Weaver registry YAML in JSON: groups of type attribute_group, span or metric, each with id, brief and stability. Attribute groups define attributes by id; span and metric groups reference them, and reused OpenTelemetry attributes (error.type, service.name, service.version) appear as ref entries. span_name is a MACP addition: Weaver does not carry a span-name template.",
+  "type": "object",
+  "required": ["schema", "docs", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "macp-semconv/0.1",
+      "description": "Version marker of this registry. A breaking rename bumps it."
+    },
+    "docs": {
+      "type": "string",
+      "description": "Repository-relative path of the document that explains these names."
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/group" }
+    }
+  },
+  "$defs": {
+    "dotted_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "stability": {
+      "enum": ["experimental", "stable", "deprecated"]
+    },
+    "requirement_level": {
+      "oneOf": [
+        { "enum": ["required", "recommended", "opt_in"] },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["conditionally_required"],
+          "properties": { "conditionally_required": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["recommended"],
+          "properties": { "recommended": { "type": "string", "minLength": 1 } }
+        }
+      ]
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "value", "brief", "stability"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "value": { "type": "string", "minLength": 1 },
+        "brief": { "type": "string", "minLength": 1 },
+        "stability": { "$ref": "#/$defs/stability" }
+      }
+    },
+    "attribute_definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "brief", "requirement_level", "stability"],
+      "properties": {
+        "id": { "$ref": "#/$defs/dotted_id" },
+        "type": { "enum": ["string", "int", "double", "boolean", "string[]", "enum"] },
+        "brief": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" },
+        "examples": { "type": "array", "minItems": 1 },
+        "members": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/member" } },
+        "requirement_level": { "$ref": "#/$defs/requirement_level" },
+        "stability": { "$ref": "#/$defs/stability" }
+      },
+      "if": { "properties": { "type": { "const": "enum" } } },
+      "then": { "required": ["members"] },
+      "else": { "not": { "required": ["members"] } }
+    },
+    "attribute_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "requirement_level"],
+      "properties": {
+        "ref": { "$ref": "#/$defs/dotted_id" },
+        "brief": { "type": "string" },
+        "note": { "type": "string" },
+        "requirement_level": { "$ref": "#/$defs/requirement_level" }
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "brief", "stability", "attributes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/dotted_id" },
+        "type": { "enum": ["attribute_group", "span", "metric"] },
+        "brief": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" },
+        "stability": { "$ref": "#/$defs/stability" },
+        "span_kind": { "enum": ["client", "server", "internal", "producer", "consumer"] },
+        "span_name": {
+          "type": "string",
+          "description": "Span-name template. {macp.mode.id} is replaced by the mode id; when the mode is empty the name is the bare operation."
+        },
+        "metric_name": { "$ref": "#/$defs/dotted_id" },
+        "instrument": { "enum": ["counter", "updowncounter", "histogram", "gauge"] },
+        "unit": { "type": "string", "minLength": 1 },
+        "attributes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "oneOf": [{ "$ref": "#/$defs/attribute_definition" }, { "$ref": "#/$defs/attribute_ref" }] }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "span" } } },
+          "then": {
+            "required": ["span_kind", "span_name"],
+            "not": { "anyOf": [{ "required": ["metric_name"] }, { "required": ["instrument"] }, { "required": ["unit"] }] },
+            "properties": { "attributes": { "items": { "$ref": "#/$defs/attribute_ref" } } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "metric" } } },
+          "then": {
+            "required": ["metric_name", "instrument", "unit"],
+            "not": { "anyOf": [{ "required": ["span_kind"] }, { "required": ["span_name"] }] },
+            "properties": { "attributes": { "items": { "$ref": "#/$defs/attribute_ref" } } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "attribute_group" } } },
+          "then": {
+            "not": { "anyOf": [{ "required": ["span_kind"] }, { "required": ["span_name"] }, { "required": ["metric_name"] }, { "required": ["instrument"] }, { "required": ["unit"] }] }
+          }
+        }
+      ]
+    }
+  }
+}

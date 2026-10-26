@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.8.0-draft
+**Version:** 1.9.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.9.0-draft:** New §2.1 (Trace Context Propagation). Implementations SHOULD propagate W3C Trace Context (`traceparent`, `tracestate`) in transport metadata: gRPC metadata, HTTP headers, message-bus message headers, and the WebSocket handshake for a connection. A runtime MUST NOT read or write trace context in Envelope fields or in `SessionStartPayload.extensions`, and `tracestate` MUST NOT carry MACP data. On a bidirectional `StreamSession`, every Envelope inherits the stream-open context; per-message context is deferred. Names for spans, attributes and metrics are in [docs/opentelemetry.md](../docs/opentelemetry.md) (informative). Additive. **Replay:** no exposure. Trace context never enters an Envelope or accepted history, so replay of the same Envelope sequence is unaffected by whether, or how, it was traced.
+>
 > **Changelog — 1.8.0-draft:** §3's `MACPRuntimeService` listing and the new §3.9 add two optional RPCs for runtime-issued decision receipts, `GetDecisionReceipt` and `GetReceiptKeys` ([RFC-MACP-0013](RFC-MACP-0013-commitment-hash.md) §13). Both are advertised by the new `Capabilities.decision_receipt`. Additive: a runtime that does not advertise them answers `UNIMPLEMENTED` and changes nothing else.
 >
 > **Changelog — 1.7.0-draft:** §3's `MACPRuntimeService` listing and §3.7 add the optional, read-only `WhatIfReplay` RPC ([RFC-MACP-0012](RFC-MACP-0012-policy.md) §8.1).
@@ -56,6 +58,21 @@ Transport bindings MUST preserve:
 - idempotency semantics,
 - session isolation,
 - structured error signaling appropriate to the transport.
+
+### 2.1 Trace Context Propagation
+
+Implementations SHOULD propagate distributed-trace context as [W3C Trace Context](https://www.w3.org/TR/trace-context/) (`traceparent` and `tracestate`) in the transport's own metadata:
+
+- gRPC: request metadata keys `traceparent` and `tracestate`;
+- HTTP: request headers `traceparent` and `tracestate`;
+- message bus: the per-message headers or properties of the bus system;
+- WebSocket: the handshake request's headers, which apply to the whole connection.
+
+A runtime MUST NOT read or write trace context in Envelope fields or in `SessionStartPayload.extensions`. Trace context is transport metadata: it is never part of an Envelope, never enters accepted history, and has no effect on acceptance or on replay (RFC-MACP-0003). `tracestate` MUST NOT carry MACP data, such as session, message or sender identifiers.
+
+Trace context is per request, so on a bidirectional `StreamSession` (§3.2) every Envelope sent on the stream inherits the context of the stream-open request. A client that needs a distinct trace per Envelope uses `Send`. Per-message context on a stream, as an optional field of `SendRequest` or `StreamSessionRequest` outside the Envelope, is deferred and would be additive.
+
+Span, attribute and metric names for MACP are given in [docs/opentelemetry.md](../docs/opentelemetry.md) (informative, experimental).
 
 ## 3. gRPC Binding (Normative)
 
