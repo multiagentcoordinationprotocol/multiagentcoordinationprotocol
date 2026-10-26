@@ -30,9 +30,9 @@
     },
     {
       "transport": "macp.transport.http.v1",
-      "uri": "https://checkout.example.com/.well-known/macp.json",
+      "uri": "https://checkout.example.com/api",
       "content_types": [
-        "application/macp-manifest+json"
+        "application/json"
       ]
     }
   ],

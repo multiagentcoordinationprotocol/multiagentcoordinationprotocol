@@ -23,12 +23,14 @@ macp.transport.grpc.v1
 | macp.replay.v1 | Deterministic replay support | permanent | [RFC-MACP-0003](../rfcs/RFC-MACP-0003-determinism.md) |
 | macp.discovery.v1 | Manifest discovery support | permanent | [RFC-MACP-0005](../rfcs/RFC-MACP-0005-discovery-and-manifests.md) |
 | macp.transport.grpc.v1 | gRPC transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
-| macp.transport.http.v1 | HTTP transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
+| macp.transport.http.v1 | HTTP transport | provisional | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.websocket.v1 | WebSocket transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.messagebus.v1 | Message bus transport | permanent | [RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) |
 | macp.transport.a2a.v1 | A2A extension binding | provisional | [RFC-MACP-0014](../rfcs/RFC-MACP-0014-a2a-binding.md) |
 | macp.policy.v1 | Governance policy registry and evaluation | permanent | [RFC-MACP-0012](../rfcs/RFC-MACP-0012-policy.md) |
 | macp.security.delegated_submission.v1 | Accepts delegated (on-behalf-of) submission of session-scoped envelopes; the runtime documents the delegation mechanisms it accepts | permanent | [RFC-MACP-0004 §3.1](../rfcs/RFC-MACP-0004-security.md) |
+
+`macp.transport.http.v1` was listed here as `permanent` while [`transports.md`](transports.md) listed it as `provisional`. Both now say `provisional`, and it stays so until two independent implementations of RFC-MACP-0006 §4 interoperate. The identifier is never reused for a different binding.
 
 ## Capability Registry vs. Capability Objects
 

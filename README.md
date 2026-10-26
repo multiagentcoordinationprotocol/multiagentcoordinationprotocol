@@ -22,7 +22,7 @@ MACP is maintained by a single maintainer on a best-effort basis. Changes land w
 
 **What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI, crates.io and npmjs, and to GitHub Packages for the npm, Java, Kotlin and C# artifacts. A Go module tag is also pushed, but it is not installable yet (see [Using MACP Proto Packages](#using-macp-proto-packages)). They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
 
-**What is not frozen:** the RFC text. All fourteen RFCs are drafts — three at `**Version:** 1.0.0-draft`, RFC-MACP-0002, RFC-MACP-0003, RFC-MACP-0009 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0010 at `1.2.0-draft`, RFC-MACP-0004 at `1.3.0-draft`, RFC-MACP-0007 at `1.4.0-draft`, RFC-MACP-0013 at `1.4.1-draft`, RFC-MACP-0001 at `1.6.0-draft`, RFC-MACP-0006 at `1.9.0-draft`, and RFC-MACP-0012 at `1.8.1-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
+**What is not frozen:** the RFC text. All fourteen RFCs are drafts — three at `**Version:** 1.0.0-draft`, RFC-MACP-0002, RFC-MACP-0003, RFC-MACP-0009 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0010 at `1.2.0-draft`, RFC-MACP-0004 at `1.3.0-draft`, RFC-MACP-0007 at `1.4.0-draft`, RFC-MACP-0013 at `1.4.1-draft`, RFC-MACP-0001 at `1.6.0-draft`, RFC-MACP-0006 at `1.10.0-draft`, and RFC-MACP-0012 at `1.8.1-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
 
 **There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
 
@@ -125,6 +125,7 @@ MACP/
       macp-parity-contract.schema.json
       macp-decision-receipt.schema.json
       macp-receipt-keys.schema.json     # GetReceiptKeys JWK Set (RFC-MACP-0013 §13)
+      macp-http-error.schema.json       # HTTP binding error body (RFC-MACP-0006 §4.5)
       macp-semconv.schema.json          # shape of otel/macp-semconv.json
       tests/
         invalid/          # negative envelope fixtures (MUST fail validation)
@@ -137,6 +138,7 @@ MACP/
         invalid-parity-contract/ # negative parity-contract fixtures (MUST fail validation)
         invalid-agent-bootstrap/ # negative agent-bootstrap fixtures (MUST fail validation)
         invalid-receipt-keys/  # negative receipt-key-set fixtures (MUST fail validation)
+        invalid-http-errors/   # negative HTTP error-body fixtures (MUST fail validation)
         valid-policy-rules/    # maximal positive rules fixtures (MUST validate)
       policy/
         decision-rules.schema.json
@@ -216,6 +218,11 @@ MACP/
     discovery/
       agent_manifest.json
       mode_descriptor.json
+    http/                 # HTTP binding exchanges (RFC-MACP-0006 §4)
+      send.json
+      stream_session_subscribe.json
+      watch_signals.json
+      errors.json
     policies/             # ready-made policy packs (docs/policy-packs.md)
       human-signoff.json
       two-agent-rule.json

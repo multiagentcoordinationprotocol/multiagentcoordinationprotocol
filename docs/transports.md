@@ -111,10 +111,37 @@ the typical usage pattern.
 ## HTTP
 
 Best for:
-- simple integrations
+- simple integrations (`curl`, any HTTP client)
+- browsers
 - environments where gRPC is restricted
 
-OPTIONAL binding; see [RFC-MACP-0006 §4 (HTTP Binding)](../rfcs/RFC-MACP-0006-transport-bindings.md).
+OPTIONAL, `provisional` binding; [RFC-MACP-0006 §4 (HTTP Binding)](../rfcs/RFC-MACP-0006-transport-bindings.md#4-http-binding)
+is normative. In short:
+
+- **Same RPCs, same names.** Every RPC above is `POST {base}/macp/v1/{Method}`, for example
+  `POST https://runtime.example.com/api/macp/v1/GetSession`. The request and response are the
+  RPC's messages as `application/json` in the canonical JSON mapping (RFC-MACP-0001 §10). Never
+  label a body `application/macp-envelope+json`: a body is a request or response message, not a
+  bare Envelope.
+- **Streams are server-sent events.** The watch RPCs and the passive-subscribe form of
+  `StreamSession` answer `text/event-stream`, one message per `data:` line. Only `StreamSession`
+  subscribe events carry `id:` (the Envelope's ordinal), so a client resumes with
+  `Last-Event-ID`. A fatal end is an `event: error` carrying `{"error": ...}`, for example
+  `STREAM_LAGGED`. There is no bidirectional stream over HTTP: submit Envelopes with `Send`.
+- **`Send` answers 200 for every Envelope decision.** Accepted, duplicate and rejected all come
+  back in the Ack. Other failures are request-level: the registry's HTTP status, an
+  `{"error": <MACPError>}` body ([`macp-http-error.schema.json`](../schemas/json/macp-http-error.schema.json))
+  and a `MACP-Error-Code` header. A bare `404`, `405` or `415` is a transport status with no
+  MACP error code.
+- **`Authorization: Bearer` only**, no cookies, CORS off unless allowlisted; browsers stream
+  with `fetch`, not `EventSource`.
+- **Retries:** reuse the `message_id` when retrying `Send`. A `409` on a retried control-plane
+  mutation means it was possibly applied, so check with `GetSession` or `GetPolicy`.
+- **Discovery:** the manifest's `transport_endpoints` entry has `uri` = the base URL and
+  `content_types: ["application/json"]`; the manifest itself is at `/.well-known/macp.json`.
+
+Worked request/response pairs, including a server-sent-event transcript and error bodies, are in
+[`examples/http/`](../examples/http/).
 
 ## WebSockets
 
