@@ -290,7 +290,7 @@ Implementations SHOULD propagate W3C Trace Context in transport metadata, never 
 ([RFC-MACP-0006 §2.1](../rfcs/RFC-MACP-0006-transport-bindings.md#21-trace-context-propagation)).
 [OpenTelemetry for MACP](opentelemetry.md) gives the span, attribute and metric names and the
 privacy rules. Telemetry is a side channel out of the session: by default it records identifiers
-and types only, never payloads, `reason` or `rationale` text, extension values or error messages. Trace
+and types only, never payloads, `reason`, `rationale` or `intent` text, extension values, error messages or exception messages (see [Privacy](opentelemetry.md#privacy)). Trace
 propagation MUST NOT compromise session isolation.
 
 ### Anomaly Detection

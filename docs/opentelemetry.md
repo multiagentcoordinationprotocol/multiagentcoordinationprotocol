@@ -26,14 +26,14 @@ This document explains them and does not repeat the list. The file mirrors the
 
 The file's top-level `schema` field is the version marker (`macp-semconv/0.1`) and its
 [`macp-semconv.schema.json`](../schemas/json/macp-semconv.schema.json) is checked by `make validate`.
-SDKs vendor the file under `tests/otel/` and assert their spans against it.
+SDKs are expected to vendor the file under `tests/otel/` and assert their spans against it.
 
 Every entry is `experimental`. A rename or removal bumps the marker. Adding an attribute, span or
 metric does not.
 
 ## Attributes
 
-MACP attributes live under `macp.`. They name what is on the wire, with the wire's values:
+MACP attributes live in the `macp` namespace. They name what is on the wire, with the wire's values:
 `macp.message.type` is the Envelope's `message_type` string, `macp.session.state` is the
 `SessionState` enum's wire string (for example `SESSION_STATE_RESOLVED`), and `macp.mode.id` is the
 mode identifier, such as `macp.mode.decision.v1`. `macp.policy.id` is the resolved policy
