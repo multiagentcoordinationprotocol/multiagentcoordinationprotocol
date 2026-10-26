@@ -2,7 +2,7 @@
 """Check that every install line we advertise resolves on its public registry.
 
 Scans the spec README and quickstart, plus the SDK and MCP-server READMEs (fetched from GitHub),
-for `pip install`/`uvx`, `npm install`/`npm i -g`/`npx -y`, `cargo add` and `ghcr.io/...:tag` references, then asks
+for `pip install`/`uvx`, `npm install`/`npm i -g`/`npx -y`, `cargo add`/`cargo install` and `ghcr.io/...:tag` references, then asks
 PyPI, npmjs, crates.io and GHCR whether each one exists. No credentials are used, so a
 line that only resolves with a token fails here, which is the point.
 
@@ -26,7 +26,7 @@ REMOTE = [
 
 PIP = re.compile(r"(?:pip install|uvx) ([A-Za-z][A-Za-z0-9_.\-]*)(?:==([0-9][\w.\-]*))?")
 NPM = re.compile(r"(?:npm (?:install|i)(?: -g)?|npx -y) ((?:@[\w.\-]+/)?[A-Za-z][\w.\-]*)(?:@([0-9][\w.\-]*))?")
-CARGO = re.compile(r"cargo add ([\w\-]+)(?:@([0-9][\w.\-]*))?")
+CARGO = re.compile(r"cargo (?:add|install) ([\w\-]+)(?:@([0-9][\w.\-]*))?")
 GHCR = re.compile(r"ghcr\.io/([\w.\-]+/[\w.\-]+):([\w.\-]+)")
 
 

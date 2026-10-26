@@ -12,13 +12,15 @@ git clone https://github.com/multiagentcoordinationprotocol/macp-runtime && cd m
 
 Then open http://localhost:3000, go to Showcase and launch a run. It reaches Verified about a minute after a cold start, image downloads included. The stack is for evaluation, not production: auth runs on a throwaway development key. See [`deploy/README.md`](https://github.com/multiagentcoordinationprotocol/macp-runtime/blob/main/deploy/README.md) in macp-runtime.
 
+**With the `macp` command line:** `cargo install macp-cli`, or download a binary from the [runtime releases](https://github.com/multiagentcoordinationprotocol/macp-runtime/releases), then run `macp up`. It starts the same stack without a clone; `macp down` stops it. See the [`macp-cli` README](https://github.com/multiagentcoordinationprotocol/macp-runtime/blob/main/crates/macp-cli/README.md).
+
 To run one yourself, you need Docker and **Python 3.11 or later**.
 
 ## 1. Start the runtime
 
 ```bash
 docker run -p 50051:50051 -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 \
-  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0
+  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.10.0
 ```
 
 `MACP_ALLOW_INSECURE=1` allows plaintext gRPC and development identities, and `MACP_MEMORY_ONLY=1` keeps state in memory. Both are for local use only: without authentication configured, the runtime refuses to start unless `MACP_ALLOW_INSECURE=1` is set. For a real deployment, see [Deployment](deployment.md).
@@ -79,6 +81,7 @@ state: SESSION_STATE_RESOLVED mode: macp.mode.decision.v1
 - [Architecture](architecture.md): the two planes, sessions and the envelope.
 - The TypeScript SDK: `npm install macp-sdk-typescript` (see its [README](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript#readme) for the current install steps).
 - [Conformance](conformance.md): what it means for an implementation to conform.
+- Watch a session from the terminal: `macp session tail <session_id>`. Replay it under a different policy to see whether the outcome would change: `macp replay --session <session_id> --policy candidate.json` ([RFC-MACP-0012 §8.1](../rfcs/RFC-MACP-0012-policy.md)).
 
 ## Appendix: talk to the runtime with grpcurl
 
