@@ -22,7 +22,11 @@ vector-schema.json) it runs the reference verifier on `receipt` with
   - vector 001's receipt is byte-for-byte examples/discovery/decision_receipt.json,
     so the signed example in the RFC cannot drift from the vectors;
   - every A.4 outcome appears in at least one vector, so a vector cannot be
-    deleted without anyone noticing that an outcome went untested.
+    deleted without anyone noticing that an outcome went untested;
+  - examples/discovery/receipt_keys.json, the published key set of
+    RFC-MACP-0013 §13, yields exactly {example-1: <the A.5 key>} as trusted
+    keys, and the reference issuance shape (vector 010) verifies as attested
+    against it.
 
 Run: `python3 scripts/check-receipt-vectors.py`
 """
@@ -40,6 +44,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 VECTORS_DIR = ROOT / "schemas" / "conformance" / "receipt"
 EXAMPLE = ROOT / "examples" / "discovery" / "decision_receipt.json"
+RECEIPT_KEYS = ROOT / "examples" / "discovery" / "receipt_keys.json"
+ISSUANCE_SHAPE = "receipt_010_wire_match"
 
 _spec = importlib.util.spec_from_file_location("cmt", ROOT / "scripts" / "check-cmt-hash-vectors.py")
 cmt = importlib.util.module_from_spec(_spec)
@@ -222,6 +228,14 @@ def verify_receipt(receipt: dict, trusted: dict) -> dict:
             "verdict": "attested" if "valid" in outcomes else "integrity_only"}
 
 
+# --- Published key set (RFC-MACP-0013 §13) -------------------------------
+
+def trusted_keys_from_jwks(jwks: dict) -> dict:
+    """The {kid: x} map a verifier trusts from a §13 key set: its Ed25519 keys."""
+    return {k["kid"]: k["x"] for k in jwks.get("keys", [])
+            if k.get("kty") == "OKP" and k.get("crv") == "Ed25519"}
+
+
 # --- Driver --------------------------------------------------------------
 
 def main() -> int:
@@ -229,6 +243,7 @@ def main() -> int:
     example_key = base64.urlsafe_b64encode(
         ed25519_public(hashlib.sha256(b"macp-receipt example key").digest())).rstrip(b"=").decode()
     seen = {"integrity": set(), "attestations": set(), "verdict": set()}
+    issuance_receipt = None
     paths = sorted(p for p in VECTORS_DIR.glob("*.json") if p.name != "vector-schema.json")
     if not paths:
         errors.append(f"no vectors under {VECTORS_DIR.relative_to(ROOT)}")
@@ -247,7 +262,20 @@ def main() -> int:
         seen["verdict"].add(v["expected"]["verdict"])
         if name == "receipt_001_attested" and v["receipt"] != json.loads(EXAMPLE.read_text()):
             errors.append(f"{path.name}: receipt differs from {EXAMPLE.relative_to(ROOT)}")
+        if name == ISSUANCE_SHAPE:
+            issuance_receipt = v["receipt"]
         print(f"{'ok  ' if got == v['expected'] else 'FAIL'} {path.name}: {got['verdict']}")
+
+    published = trusted_keys_from_jwks(json.loads(RECEIPT_KEYS.read_text()))
+    rel = RECEIPT_KEYS.relative_to(ROOT)
+    if published != {"example-1": example_key}:
+        errors.append(f"{rel}: trusted keys are {published}, expected exactly {{'example-1': {example_key!r}}}")
+    elif issuance_receipt is None:
+        errors.append(f"no vector named {ISSUANCE_SHAPE}, the §13 reference issuance shape")
+    elif verify_receipt(issuance_receipt, published)["verdict"] != "attested":
+        errors.append(f"{ISSUANCE_SHAPE} does not verify as attested against {rel}")
+    else:
+        print(f"ok   {rel}: exactly example-1; {ISSUANCE_SHAPE} attested against it")
 
     for field, wanted in (("integrity", INTEGRITY), ("attestations", ATTESTATION), ("verdict", VERDICT)):
         for outcome in sorted(wanted - seen[field]):

@@ -22,7 +22,7 @@ MACP is maintained by a single maintainer on a best-effort basis. Changes land w
 
 **What is versioned and safe to pin:** the canonical Protobuf packages. Every `proto-v*` tag publishes them — to PyPI, crates.io and npmjs, and to GitHub Packages for the npm, Java, Kotlin and C# artifacts. A Go module tag is also pushed, but it is not installable yet (see [Using MACP Proto Packages](#using-macp-proto-packages)). They are governed by the schema-namespace rules in [VERSIONING.md](VERSIONING.md): breaking wire changes require a new `macp.vN` namespace, and unknown fields MUST be ignored for forward compatibility.
 
-**What is not frozen:** the RFC text. All fourteen RFCs are drafts — three at `**Version:** 1.0.0-draft`, RFC-MACP-0002, RFC-MACP-0003, RFC-MACP-0009 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0010 at `1.2.0-draft`, RFC-MACP-0004 and RFC-MACP-0013 at `1.3.0-draft`, RFC-MACP-0001 and RFC-MACP-0007 at `1.4.0-draft`, RFC-MACP-0006 at `1.7.0-draft`, and RFC-MACP-0012 at `1.8.1-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
+**What is not frozen:** the RFC text. All fourteen RFCs are drafts — three at `**Version:** 1.0.0-draft`, RFC-MACP-0002, RFC-MACP-0003, RFC-MACP-0009 and RFC-MACP-0011 at `1.1.0-draft`, RFC-MACP-0010 at `1.2.0-draft`, RFC-MACP-0004 at `1.3.0-draft`, RFC-MACP-0007 and RFC-MACP-0013 at `1.4.0-draft`, RFC-MACP-0001 at `1.5.0-draft`, RFC-MACP-0006 at `1.8.0-draft`, and RFC-MACP-0012 at `1.8.1-draft`. Nothing in this repository has been declared wire-frozen, and normative wording can still change.
 
 **There is no promotion gate.** Every RFC's `**Status:**` line reads `Community Standards Track` — a track, not a lifecycle stage. This repository defines no Draft/Review/Final ladder, no criteria for advancing an RFC, and no mechanism beyond [CONTRIBUTING.md](CONTRIBUTING.md)'s "RFCs are accepted through community consensus". With one committer, consensus is not currently a meaningful gate. Read every RFC here as draft-quality regardless of how settled the prose reads.
 
@@ -123,6 +123,7 @@ MACP/
       macp-policy-descriptor.schema.json
       macp-parity-contract.schema.json
       macp-decision-receipt.schema.json
+      macp-receipt-keys.schema.json     # GetReceiptKeys JWK Set (RFC-MACP-0013 §13)
       tests/
         invalid/          # negative envelope fixtures (MUST fail validation)
         invalid-policy-rules/  # negative Decision-rules fixtures (MUST fail validation)
@@ -133,6 +134,7 @@ MACP/
         invalid-policy-descriptors/ # negative PolicyDescriptor fixtures (MUST fail validation)
         invalid-parity-contract/ # negative parity-contract fixtures (MUST fail validation)
         invalid-agent-bootstrap/ # negative agent-bootstrap fixtures (MUST fail validation)
+        invalid-receipt-keys/  # negative receipt-key-set fixtures (MUST fail validation)
         valid-policy-rules/    # maximal positive rules fixtures (MUST validate)
       policy/
         decision-rules.schema.json
@@ -247,7 +249,7 @@ MACP is intentionally split into a small set of RFCs because that makes the stan
 - **RFC-MACP-0006 Transport Bindings** defines standard transport bindings (gRPC, HTTP, WebSocket, Message Bus).
 - **RFC-MACP-0007 through RFC-MACP-0011** define the main-repository standard modes: Decision, Proposal, Task, Handoff, and Quorum.
 - **RFC-MACP-0012 Policy** defines the governance policy framework for declarative, deterministic, replay-safe session governance.
-- **RFC-MACP-0013 Canonical Commitment Hash** defines the canonical algorithm for computing `CommitmentRef.commitment_hash`.
+- **RFC-MACP-0013 Canonical Commitment Hash** defines the canonical algorithm for computing `CommitmentRef.commitment_hash`, portable decision receipts anchored on it (Appendix A), and optional runtime receipt issuance (§13).
 - **RFC-MACP-0014 A2A Extension Binding** defines how MACP Envelopes travel over A2A 1.0 as a profile extension, mapping sessions to A2A Tasks.
 
 The main RFC repo standardizes only foundational coordination primitives. Domain workflows and fast-moving experiments should live in incubator or vendor repositories, not in this standards repo. Runtimes may still ship additional implementation-defined modes, but those modes should not be presented as part of the five-mode standards-track set unless they are promoted into this repo and registry.
@@ -272,6 +274,8 @@ The base capability model supports:
 - `policyRegistry.registerPolicy` - policy registration
 - `policyRegistry.listChanged` - policy change notifications
 - `policyRegistry.ruleExtensions` - vendor-extension rule keys the runtime implements (RFC-MACP-0012 §4, §9)
+- `decisionReceipt.getDecisionReceipt` - runtime-issued decision receipts and their verification keys (RFC-MACP-0013 §13)
+- `decisionReceipt.signed` - every receipt issued from now on carries an EdDSA signature
 - `experimental` - explicitly non-standard features
 
 ## Embedding MACP as a library

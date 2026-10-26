@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.7.0-draft
+**Version:** 1.8.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.8.0-draft:** §3's `MACPRuntimeService` listing and the new §3.9 add two optional RPCs for runtime-issued decision receipts, `GetDecisionReceipt` and `GetReceiptKeys` ([RFC-MACP-0013](RFC-MACP-0013-commitment-hash.md) §13). Both are advertised by the new `Capabilities.decision_receipt`. Additive: a runtime that does not advertise them answers `UNIMPLEMENTED` and changes nothing else.
+>
 > **Changelog — 1.7.0-draft:** §3's `MACPRuntimeService` listing and §3.7 add the optional, read-only `WhatIfReplay` RPC ([RFC-MACP-0012](RFC-MACP-0012-policy.md) §8.1).
 >
 > **Changelog — 1.6.0-draft:** Three amendments from the seam-embedder-findings proposal (issue #185).
@@ -94,6 +96,9 @@ service MACPRuntimeService {
   rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
   // Optional, read-only what-if replay (RFC-MACP-0012 §8.1)
   rpc WhatIfReplay(WhatIfReplayRequest) returns (WhatIfReplayResponse);
+  // Optional runtime-issued decision receipts (RFC-MACP-0013 §13)
+  rpc GetDecisionReceipt(GetDecisionReceiptRequest) returns (GetDecisionReceiptResponse);
+  rpc GetReceiptKeys(GetReceiptKeysRequest) returns (GetReceiptKeysResponse);
 }
 ```
 
@@ -252,6 +257,17 @@ rpc WatchSessions(WatchSessionsRequest) returns (stream WatchSessionsResponse);
 `WatchSessions` is a server-streaming RPC that emits `SessionLifecycleEvent` notifications. Each event carries an `EventType` (CREATED, RESOLVED, EXPIRED, SUSPENDED, RESUMED, or CANCELLED), the affected `SessionMetadata`, and an `observed_at_unix_ms` timestamp. A runtime MUST advertise `sessions.watch_sessions = true` before `WatchSessions` can be assumed interoperable.
 
 Session lifecycle events are ephemeral — they are not persisted and are not available for replay. Clients that disconnect MAY miss events. Control-planes and UIs SHOULD use `ListSessions` for initial sync and `WatchSessions` for incremental updates.
+
+### 3.9 Decision Receipt RPCs
+
+Two RPCs are optional. A runtime advertises both with `Capabilities.decision_receipt.get_decision_receipt`; a runtime that does not advertise it answers both with `UNIMPLEMENTED`:
+
+```protobuf
+rpc GetDecisionReceipt(GetDecisionReceiptRequest) returns (GetDecisionReceiptResponse);
+rpc GetReceiptKeys(GetReceiptKeysRequest) returns (GetReceiptKeysResponse);
+```
+
+`GetDecisionReceipt` returns a signed or integrity-only `macp-receipt/1` decision receipt for a resolved session, as JSON text in `receipt_json`. Its caller MUST be authorized to observe the session, exactly as for `GetSession` ([RFC-MACP-0004](RFC-MACP-0004-security.md)). A session that is not RESOLVED, or was resolved without a `CommitmentPayload`, is `RECEIPT_UNAVAILABLE`. `GetReceiptKeys` returns the public verification keys as a JWK Set in `jwks_json` and needs only transport authentication, like `GetManifest`. Neither RPC alters any session. See RFC-MACP-0013 Section 13.
 
 ## 4. HTTP Binding
 

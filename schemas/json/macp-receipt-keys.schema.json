@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-receipt-keys.schema.json",
+  "title": "MACP Receipt Verification Keys",
+  "description": "The JWK Set [RFC 7517] a runtime returns from GetReceiptKeys (RFC-MACP-0013 \u00a713): the public keys that verify the jws attestations of the decision receipts it issues. Every key names a kid and a kty; an OKP key is an Ed25519 public key with its x coordinate; no key carries the private member d or the symmetric secret k (every EC, OKP or RSA private key carries d, and every oct key carries k; the other private RSA members are listed in \u00a713 item 8). Other key types are allowed, so a later revision that admits ES256 is additive. kid uniqueness across the set is required by \u00a713 item 8 but is not expressible here. An empty set ({\"keys\": []}) is valid: it is what a runtime with no signing key publishes.",
+  "type": "object",
+  "required": [
+    "keys"
+  ],
+  "properties": {
+    "keys": {
+      "type": "array",
+      "description": "The verification keys. Every key that signed a receipt the runtime still serves stays in this set (\u00a713 item 8).",
+      "items": {
+        "$ref": "#/$defs/jwk"
+      }
+    }
+  },
+  "$defs": {
+    "jwk": {
+      "type": "object",
+      "description": "One public JWK. Members not named here (alg, use, key_ops, ...) are allowed, as RFC 7517 allows them.",
+      "required": [
+        "kid",
+        "kty"
+      ],
+      "properties": {
+        "kid": {
+          "type": "string",
+          "description": "Key identifier, matched against the kid of a jws attestation's protected header. Unique in the set and never reused for a different key."
+        },
+        "kty": {
+          "type": "string",
+          "description": "Key type [RFC 7517 \u00a74.1]. OKP is the Ed25519 type used by EdDSA."
+        },
+        "alg": {
+          "type": "string",
+          "description": "The JWS algorithm this key signs with, e.g. EdDSA. A verifier learns the runtime's algorithms from these entries."
+        },
+        "d": false,
+        "k": false
+      },
+      "if": {
+        "required": [
+          "kty"
+        ],
+        "properties": {
+          "kty": {
+            "const": "OKP"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "crv",
+          "x"
+        ],
+        "properties": {
+          "crv": {
+            "const": "Ed25519"
+          },
+          "x": {
+            "type": "string",
+            "description": "The Ed25519 public key, base64url without padding [RFC 8037]."
+          }
+        }
+      }
+    }
+  }
+}

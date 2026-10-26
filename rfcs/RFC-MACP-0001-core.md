@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.4.0-draft
+**Version:** 1.5.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,13 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.5.0-draft:** §4.2's capability table gains the Decision Receipt row
+> (`decision_receipt`: `get_decision_receipt`, `signed`), matching the new
+> `Capabilities.decision_receipt = 8` in `core.proto` that advertises the optional
+> runtime-issued receipts of RFC-MACP-0013 §13. Additive: a runtime built
+> against an earlier schema leaves the field unset, which correctly reads as "not offered".
+> Replay-neutral: receipts are issued after resolution and never feed session state.
 
 > **Changelog — 1.4.0-draft:** §7.1 reserves the `configuration_version` value
 > `config.default` for a Mode's default configuration profile. The runtime and both SDKs
@@ -161,6 +168,7 @@ Capabilities are exchanged as nested Protobuf messages defined in `core.proto`. 
 | Mode Registry | `mode_registry` | `list_modes`, `list_changed` | Mode discovery and change notifications |
 | Roots | `roots` | `list_roots`, `list_changed` | Root listing and change notifications |
 | Policy Registry | `policy_registry` | `register_policy`, `list_policies`, `list_changed`, `what_if_replay` | Governance policy lifecycle (see RFC-MACP-0012) |
+| Decision Receipt | `decision_receipt` | `get_decision_receipt`, `signed` | Runtime-issued decision receipts and their verification keys (see RFC-MACP-0013 §13) |
 | Experimental | `experimental` | `features` (map) | Implementation-defined experimental features |
 
 These negotiation-time capability objects are distinct from the manifest-level capability URNs defined in `registries/capabilities.md`. Negotiation capabilities describe protocol features exchanged during `Initialize`; manifest capabilities describe agent-level feature support for discovery.

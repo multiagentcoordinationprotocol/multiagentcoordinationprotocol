@@ -265,6 +265,25 @@ Implementations SHOULD log security-relevant events:
 - Duplicate message rejections (potential replay attacks)
 - Rate limit violations
 
+### Decision Receipts
+
+A runtime MAY issue signed decision receipts for resolved sessions and publish the keys that verify
+them ([RFC-MACP-0013 §13](../rfcs/RFC-MACP-0013-commitment-hash.md#13-receipt-issuance-optional)).
+A receipt lets a third party check offline what was decided and who vouched for it. The security
+obligations are:
+
+- `GetDecisionReceipt` is authorized exactly as `GetSession` is: any caller allowed to observe a
+  session can fetch its receipt, and the receipt reveals the full Commitment, including `reason`.
+  A holder of an observer credential can therefore fetch every receipt it can observe.
+- The signing key is the deployment's own (bring your own key). `GetReceiptKeys` publishes only
+  public keys: the key set MUST NOT contain private members, and
+  [`macp-receipt-keys.schema.json`](../schemas/json/macp-receipt-keys.schema.json) rejects `d`.
+- A `kid` is never reused for a different key, and a key that signed a receipt the runtime still
+  serves stays published, so old receipts stay verifiable after rotation.
+- An attested receipt is issued once and served byte-identical thereafter (first writer wins across
+  replicas). Issuance never feeds session state or replay, and a failure to issue never fails the
+  Commitment.
+
 ### Trace Propagation
 
 Implementations SHOULD support distributed tracing:
