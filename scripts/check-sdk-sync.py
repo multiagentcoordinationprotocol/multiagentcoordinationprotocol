@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check that macp-sdk-python and macp-sdk-typescript vendor the same spec files as this repo.
 
-Both SDKs copy the conformance fixtures, the commitment-hash and receipt vectors, the parity contract
-and the OpenTelemetry semantic-conventions registry into their own tests. This compares the git blob SHA of every vendored copy on each SDK's
+Both SDKs copy the conformance fixtures, the commitment-hash and receipt vectors, the parity contract,
+the OpenTelemetry semantic-conventions registry and the receipt key set into their own tests. This compares the git blob SHA of every vendored copy on each SDK's
 `main` with the file in this checkout, so a fixture that reached one SDK but not the other
 (or reached neither) fails here instead of drifting silently.
 
@@ -26,6 +26,7 @@ MAPPINGS = [
     ("schemas/conformance/receipt", "tests/vectors/receipt", lambda p: p.suffix == ".json"),
     ("schemas/parity", "tests/parity", lambda p: p.name == "contract.json"),
     ("schemas/otel", "tests/otel", lambda p: p.name == "macp-semconv.json"),
+    ("examples/discovery", "tests/fixtures", lambda p: p.name == "receipt_keys.json"),
 ]
 
 
