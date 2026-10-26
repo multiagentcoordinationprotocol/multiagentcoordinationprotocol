@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package macp.v1;
 
+import "macp/v1/envelope.proto";
+
 // PolicyDescriptor — the canonical wire format for governance policy definitions.
 // See RFC-MACP-0012 for normative semantics.
 message PolicyDescriptor {
@@ -39,6 +41,9 @@ message PolicyRegistryCapability {
   // Empty means no vendor extensions are implemented. Advisory: admission, not
   // this list, is authoritative.
   repeated string rule_extensions = 4;
+  // The runtime implements the optional, read-only WhatIfReplay RPC
+  // (RFC-MACP-0012 §8.1). A client MUST NOT call it unless this is true.
+  bool what_if_replay = 5;
 }
 
 // ── Registration lifecycle RPCs ─────────────────────────────────────
@@ -84,4 +89,84 @@ message WatchPoliciesRequest {}
 message WatchPoliciesResponse {
   repeated PolicyDescriptor descriptors = 1;
   int64 observed_at_unix_ms = 2;
+}
+
+// ── What-if replay (RFC-MACP-0012 §8.1) ─────────────────────────────
+//
+// Optional and read-only: replays a session's accepted history under a
+// candidate policy and reports how the outcome would differ. It never alters
+// the session, its history, or the policy registry, and its result is never
+// binding.
+
+message WhatIfReplayRequest {
+  string session_id = 1;
+  // The candidate. Admission-validated as RegisterPolicy would (§7), but never
+  // registered. Its `mode` MUST be the session's mode or "*".
+  PolicyDescriptor candidate = 2;
+}
+
+// What one replay did with one history entry.
+message WhatIfEntryOutcome {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    // Accepted; `state` is the session state after it.
+    KIND_APPLIED = 1;
+    // Reached a session that was no longer OPEN in this replay.
+    KIND_NOT_OPEN = 2;
+    // Refused; `error_code` is the MACP error code and, for POLICY_DENIED,
+    // `details` carries the structured reasons of §6.2.
+    KIND_REFUSED = 3;
+    // The candidate refused the SessionStart, so no session exists to apply
+    // this entry to.
+    KIND_NO_SESSION = 4;
+  }
+  Kind kind = 1;
+  SessionState state = 2;
+  string error_code = 3;
+  bytes details = 4;
+}
+
+// One history entry, as each replay handled it. `history_index` is the
+// entry's 0-based position in the session's accepted history; the
+// SessionStart is 0.
+message WhatIfEntry {
+  uint64 history_index = 1;
+  string message_id = 2;
+  string message_type = 3;
+  WhatIfEntryOutcome recorded = 4;
+  WhatIfEntryOutcome candidate = 5;
+}
+
+message WhatIfOutcome {
+  // Final state; SESSION_STATE_UNSPECIFIED when no session exists (the
+  // candidate refused the SessionStart).
+  SessionState state = 1;
+  // The resolving Commitment's payload bytes; empty if unresolved.
+  bytes resolution = 2;
+  // The resolving entry; empty `resolved_by_message_id` if unresolved.
+  uint64 resolved_by_history_index = 3;
+  string resolved_by_message_id = 4;
+  string resolved_by_message_type = 5;
+}
+
+message WhatIfDenial {
+  uint64 history_index = 1;
+  string message_id = 2;
+  // Same encoding as MACPError.details for POLICY_DENIED.
+  bytes details = 3;
+}
+
+message WhatIfReplayResponse {
+  string candidate_policy_id = 1;
+  // The policy the session is bound to (`policy.default` if none was named).
+  string recorded_policy_id = 2;
+  WhatIfOutcome recorded = 3;
+  WhatIfOutcome candidate = 4;
+  // First entry the two replays handled differently. Unset when they agree
+  // on every entry.
+  optional uint64 first_divergence = 5;
+  // Every POLICY_DENIED the candidate produced, in history order.
+  repeated WhatIfDenial denials = 6;
+  // One entry per history entry, in history order.
+  repeated WhatIfEntry entries = 7;
 }

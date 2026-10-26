@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Governance Policy Framework
 
 **Document:** RFC-MACP-0012
-**Version:** 1.7.0-draft
+**Version:** 1.8.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0002, RFC-MACP-0003
 
+> **Changelog — 1.8.0-draft:** New §8.1, **What-if replay**: an optional, read-only `WhatIfReplay` RPC that replays a session's accepted history under a candidate policy and reports how the outcome would differ, so a policy change can be checked against recorded sessions before it is rolled out. It is advertised by the new `PolicyRegistryCapability.what_if_replay` flag (§9). It changes nothing a runtime that does not advertise it must do, and it never alters a session, its history, the registry, or the replay invariant of §8.
+>
 > **Changelog — 1.7.0-draft:** Three amendments from the seam-embedder-findings proposal (issue #185). **(S1) Vendor-extension keys, §4, §8, §9.** Closed rule objects (1.4.0-draft) left a deployment with a restriction MACP does not define nowhere conformant to put it: an undefined key is rejected at admission, and the `^[_$]` annotation namespace is inert by definition. §4 now reserves a top-level `x-<reverse-domain>` namespace (`^x-[a-z0-9]+(\.[a-z0-9-]+)+$`, object values only, illegal at nested levels). An extension MAY only restrict, never cause acceptance of what standard rules or mode validation reject. A runtime MUST reject at admission, with `INVALID_POLICY_DEFINITION`, a descriptor carrying an extension it does not implement, so a restriction its author relied on is never dropped silently. Standard evaluation ignores extension keys, but unlike annotations they **are** part of `rules` equality (§2.2, §8). §4 gives Seam's `x-com.zer07labs.seam` as a non-normative example. `PolicyRegistryCapability` gains `repeated string rule_extensions = 4` (an additive proto change), and all five `*-rules.schema.json` gain the top-level `x-` `patternProperties` arm. **(S2) The descriptor schema is an admission gate, §3, §7, §8.** §7 named only the rule schemas, which the 1.5.0-draft entry below records as a gap. The descriptor schema is now named beside them, and §3 makes an unsupported `schema_version` an admission-time `INVALID_POLICY_DEFINITION`. Deferring that check to evaluation admits a policy under which no commitment can ever be authorized. §8 item 4's no-revalidation rule is widened to cover the descriptor schema too, so that the two gates stay symmetric. §3 also states that an empty proto3 `description` satisfies the presence requirement. **(S13, §6.2 part only) Structured `POLICY_DENIED` detail.** A denial SHOULD carry stable, lowercase `snake_case` reason identifiers, with related participant identifiers kept separate from free text. The identifiers named, and the `code`/`message`/`participants` shape shown, are non-normative examples, not a registry. **Behaviour/compatibility:** the schema changes are additive and no `schema_version` changes. Every descriptor that validated before still validates. The only newly valid shape is a well-formed top-level `x-` key, which 1.4.0-draft rejected. The two new admission rejections apply only to descriptors that were already non-conformant (an unknown top-level key) or could never authorize a commitment (an unsupported `schema_version`). The §6.2 detail is a SHOULD. **Replay:** none of this alters a stored session's replay. Both gates are admission-time only, and §8 item 4 forbids revalidating a stored descriptor. Vendor-extension keys are excluded from standard evaluation, so no standard outcome changes. Counting them in equality can make two descriptors unequal only where at least one carries an `x-` key, and no such descriptor was admissible before this revision. A runtime that admitted one anyway was not enforcing 1.4.0-draft closure.
 >
 > **Changelog — 1.6.1-draft:** §5.2 corrects a false claim in its own worked comparison of the three `policy.std.*` profiles. The removed sentence asserted that an empty decisive tally which nonetheless clears `voting.quorum`'s participation floor (e.g. a lone abstention against `value: 1`) is allowed to support a positive commitment under schema_version 1 but denied under `schema_version ≥ 3` — a claimed **outcome** divergence between the two schema versions. §4.1's own Legacy empty-tally rule (schema_version ≤ 2) governs this case by the bare boolean value of `commitment.require_vote_quorum` alone, never by whether `voting.quorum`'s configured count was actually met by cast ballots (abstentions included); since all three profiles set `require_vote_quorum: true`, the legacy arm denies the empty tally unconditionally, exactly as `schema_version ≥ 3`'s "algorithm fails on an empty tally" rule does. The claimed scenario therefore has no possible instance — both readings deny a positive commitment, differing only in which rule produces the denial, never in whether one is produced — and is independently pinned by the conformance fixture `schemas/conformance/decision_legacy_require_vote_quorum.json`, which already expects `reject`/`POLICY_DENIED` for exactly this shape at `schema_version: 2`. This is a prose-only correction of a worked example: no schema keyword, rule semantic, or conformance fixture changes (issue #181).
@@ -437,6 +439,28 @@ RFC-MACP-0003 (Determinism) requires that replay under identical bound versions 
 
 This ensures that a session replayed years later produces identical governance outcomes regardless of registry state.
 
+### 8.1 What-if Replay (optional)
+
+A runtime MAY implement `WhatIfReplay`, which answers "what would this session have done under a different policy?" It replays the session's accepted history twice, once under the bound policy and once under a caller-supplied candidate, and reports both outcomes and where they diverge. A runtime that implements it MUST advertise `PolicyRegistryCapability.what_if_replay = true` (Section 9). A client MUST NOT call it otherwise; a runtime that does not implement it returns the transport's "unimplemented" status (gRPC `UNIMPLEMENTED`).
+
+```protobuf
+rpc WhatIfReplay(WhatIfReplayRequest) returns (WhatIfReplayResponse);
+```
+
+Requirements:
+
+1. **Read-only and non-binding.** The RPC MUST NOT change the session's state, its accepted history, its deduplication state, or the policy registry, and MUST NOT emit any Envelope. Its result is advisory. It is not a Commitment, and nothing in it binds any participant.
+2. **Authorization.** The caller MUST be authorized to observe the session, exactly as for `GetSession` ([RFC-MACP-0004](RFC-MACP-0004-security.md)). An unknown session is `SESSION_NOT_FOUND` and an unauthorized caller is `FORBIDDEN`.
+3. **Candidate admission.** The candidate MUST pass the same admission validation as `RegisterPolicy` (Section 7), and its `mode` MUST be the session's mode or `*`. A candidate that fails is rejected with `INVALID_POLICY_DEFINITION`. The candidate is never registered, and its `policy_id` need not be unique or registrable.
+4. **Recorded half.** The recorded replay MUST follow Section 8: it uses the stored descriptor and reproduces the session's actual state transitions. A runtime whose recorded replay does not reproduce the stored outcome MUST fail the call with `INTERNAL_ERROR` rather than return a report.
+5. **Candidate half.** The candidate replay substitutes the candidate's `rules`, evaluated under the candidate's `schema_version`, for the bound policy's, and changes nothing else: the session's bound version fields (including `policy_version`) and every other input stay as recorded. An entry the candidate refuses is recorded in the report and skipped, as a live rejection would be ([RFC-MACP-0001](RFC-MACP-0001-core.md) §8.3), so it takes no deduplication slot. An entry that reaches a session the candidate has already ended is `KIND_NOT_OPEN`.
+6. **Fixed history.** The history is fixed. The candidate replay does not simulate participants who would have acted differently, or messages a runtime would itself have emitted only under the candidate. A report describes the recorded messages under different rules, not an alternative session.
+7. **Determinism.** The same accepted history and the same candidate MUST yield the same report.
+
+`WhatIfReplayResponse` (`schemas/proto/macp/v1/policy.proto`) carries the recorded and candidate outcomes (final state, resolving Commitment), `first_divergence` (the first history entry the two replays handled differently, unset if none), every `POLICY_DENIED` the candidate produced with its structured detail (Section 6.2), and one `WhatIfEntry` per history entry. A history index is an entry's 0-based position in the session's accepted history, where the `SessionStart` is 0.
+
+Replay cost grows with history length. Runtimes SHOULD apply the rate limits and admission control of [RFC-MACP-0004](RFC-MACP-0004-security.md) to this RPC.
+
 ## 9. Capability Advertisement
 
 Runtimes that support the policy framework SHOULD advertise the `policy_registry` capability during `Initialize`:
@@ -447,12 +471,15 @@ message PolicyRegistryCapability {
   bool list_policies = 2;
   bool list_changed = 3;
   repeated string rule_extensions = 4;
+  bool what_if_replay = 5;
 }
 ```
 
 This capability is added to the `Capabilities` message. Runtimes that do not support policy registration but do support policy evaluation (e.g., file-loaded policies only) SHOULD set `register_policy = false` and `list_policies = true`.
 
 `rule_extensions` lists, by full key name (e.g. `x-com.example.governance`), the vendor-extension keys of Section 4 that the runtime implements. An empty list means the runtime implements none, and so admits no descriptor carrying a vendor-extension key. The list is advisory: admission is authoritative, and a client MUST NOT treat an advertised extension as a substitute for the runtime's admission result. The field is additive; a runtime built against an earlier schema leaves it empty, which is the correct reading for a runtime that predates vendor extensions.
+
+`what_if_replay` is `true` only when the runtime implements the `WhatIfReplay` RPC of Section 8.1. A runtime built against an earlier schema leaves it `false`, which is the correct reading.
 
 ## 10. Error Codes
 
@@ -472,7 +499,8 @@ Implementations MUST address all of the following:
 - prevent unauthorized modification of the policy registry,
 - ensure that resolved policies cannot be mutated after binding to a session,
 - protect policy descriptors from information disclosure if they contain sensitive governance parameters,
-- preserve the complete policy evaluation trail for audit and replay.
+- preserve the complete policy evaluation trail for audit and replay,
+- authorize `WhatIfReplay` callers as session observers (Section 8.1): a report discloses the session's message identifiers, types, outcomes and resolution.
 
 Policy evaluation MUST NOT introduce side channels: the accept/reject decision for a `Commitment` must depend solely on session state and the bound policy, not on the identity of the commitment sender beyond what the policy's `commitment.authority` rule specifies.
 

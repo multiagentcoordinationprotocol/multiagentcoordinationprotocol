@@ -75,7 +75,9 @@ non-standards-track (extension) coordination modes. See
 Five RPCs — `RegisterPolicy`, `UnregisterPolicy`, `GetPolicy`, `ListPolicies`, `WatchPolicies` —
 manage the governance policy lifecycle. See
 [RFC-MACP-0006 §3.7](../rfcs/RFC-MACP-0006-transport-bindings.md#37-policy-lifecycle-rpcs) and
-[docs/policy.md](policy.md) for the five RPCs and their semantics.
+[docs/policy.md](policy.md) for the five RPCs and their semantics. A sixth, `WhatIfReplay`, is
+optional and read-only: it replays a session under a candidate policy and reports how the outcome
+would differ ([RFC-MACP-0012 §8.1](../rfcs/RFC-MACP-0012-policy.md#81-what-if-replay-optional)).
 
 ### `ListSessions` / `WatchSessions` (Session Observation)
 
