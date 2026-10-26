@@ -491,4 +491,6 @@ service MACPRuntimeService {
   rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
   rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
+  // Optional, read-only what-if replay (RFC-MACP-0012 §8.1)
+  rpc WhatIfReplay(WhatIfReplayRequest) returns (WhatIfReplayResponse);
 }

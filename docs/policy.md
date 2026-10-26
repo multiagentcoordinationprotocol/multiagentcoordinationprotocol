@@ -245,6 +245,7 @@ Policies are managed through five gRPC RPCs on `MACPRuntimeService`:
 | `GetPolicy` | Retrieve a policy descriptor by ID |
 | `ListPolicies` | List registered policies, optionally filtered by mode |
 | `WatchPolicies` | Stream policy registry change notifications |
+| `WhatIfReplay` | Optional, read-only: replay a session under a candidate policy and report how the outcome would differ ([RFC-MACP-0012 §8.1](../rfcs/RFC-MACP-0012-policy.md#81-what-if-replay-optional)); advertised by `PolicyRegistryCapability.what_if_replay` |
 
 Registration constraints, summarized — see
 [RFC-MACP-0012 Section 7](../rfcs/RFC-MACP-0012-policy.md) for the full normative list:

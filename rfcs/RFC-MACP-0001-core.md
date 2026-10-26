@@ -160,7 +160,7 @@ Capabilities are exchanged as nested Protobuf messages defined in `core.proto`. 
 | Manifest | `manifest` | `get_manifest` | Manifest retrieval |
 | Mode Registry | `mode_registry` | `list_modes`, `list_changed` | Mode discovery and change notifications |
 | Roots | `roots` | `list_roots`, `list_changed` | Root listing and change notifications |
-| Policy Registry | `policy_registry` | `register_policy`, `list_policies`, `list_changed` | Governance policy lifecycle (see RFC-MACP-0012) |
+| Policy Registry | `policy_registry` | `register_policy`, `list_policies`, `list_changed`, `what_if_replay` | Governance policy lifecycle (see RFC-MACP-0012) |
 | Experimental | `experimental` | `features` (map) | Implementation-defined experimental features |
 
 These negotiation-time capability objects are distinct from the manifest-level capability URNs defined in `registries/capabilities.md`. Negotiation capabilities describe protocol features exchanged during `Initialize`; manifest capabilities describe agent-level feature support for discovery.

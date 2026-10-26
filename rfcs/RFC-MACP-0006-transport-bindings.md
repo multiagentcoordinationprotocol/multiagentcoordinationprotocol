@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Transport Bindings
 
 **Document:** RFC-MACP-0006
-**Version:** 1.6.0-draft
+**Version:** 1.7.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001
 
+> **Changelog — 1.7.0-draft:** §3's `MACPRuntimeService` listing and §3.7 add the optional, read-only `WhatIfReplay` RPC ([RFC-MACP-0012](RFC-MACP-0012-policy.md) §8.1).
+>
 > **Changelog — 1.6.0-draft:** Three amendments from the seam-embedder-findings proposal (issue #185).
 > (1) S9: §3's `MACPRuntimeService` listing now includes `SuspendSession` and `ResumeSession`, which RFC-MACP-0001 §7.5 depends on. They were in `core.proto` and missing here, so the listing showed 22 of 24 RPCs. The listing now matches `core.proto`'s `rpc` set in order, and `make prose-check` enforces that. Editorial: the proto was always authoritative.
 > (2) S13: §3 adds "The gRPC binding MUST map error codes to gRPC status codes per the error-codes registry", with a new **gRPC Status** column in `registries/error-codes.md` that is aligned with the HTTP column. The HTTP binding (§4) already had this obligation; the gRPC binding had none, so a server could map codes its own way. Per-message rejections still travel in `SendResponse.ack` (§3.1). The proposal also asked for a parity-contract `error_status` table. It is **deferred**: `macp-runtime`'s server currently maps `POLICY_DENIED` to `FAILED_PRECONDITION`, and `SESSION_NOT_FOUND`, `INVALID_ENVELOPE`, `DUPLICATE_MESSAGE`, `UNSUPPORTED_PROTOCOL_VERSION`, `MODE_NOT_SUPPORTED` and `UNKNOWN_POLICY_VERSION` fall through to `FAILED_PRECONDITION`. A parity entry can only pin values that already agree. **Behaviour:** this is a new MUST. That server does not conform for those seven codes until it changes, and clients that branch on its current `FAILED_PRECONDITION` for `POLICY_DENIED` will see `PERMISSION_DENIED` once it does.
@@ -90,6 +92,8 @@ service MACPRuntimeService {
   rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
   rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
+  // Optional, read-only what-if replay (RFC-MACP-0012 §8.1)
+  rpc WhatIfReplay(WhatIfReplayRequest) returns (WhatIfReplayResponse);
 }
 ```
 
@@ -215,6 +219,14 @@ rpc WatchPolicies(WatchPoliciesRequest) returns (stream WatchPoliciesResponse);
 ```
 
 `RegisterPolicy` and `UnregisterPolicy` mutate the policy registry. `GetPolicy` and `ListPolicies` are read-only queries. `WatchPolicies` is a server-streaming RPC for policy registry change notifications.
+
+One further policy RPC is optional and read-only. A runtime advertises it with `PolicyRegistryCapability.what_if_replay`:
+
+```protobuf
+rpc WhatIfReplay(WhatIfReplayRequest) returns (WhatIfReplayResponse);
+```
+
+`WhatIfReplay` replays a session's accepted history under a candidate policy and reports how the outcome would differ. It never alters the session or the registry. See RFC-MACP-0012 Section 8.1.
 
 See RFC-MACP-0012 Section 7 for registration constraints and evaluation semantics.
 
