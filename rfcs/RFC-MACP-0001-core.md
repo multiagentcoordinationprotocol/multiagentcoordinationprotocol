@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.5.0-draft
+**Version:** 1.6.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,28 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.6.0-draft:** §10 now defines the JSON form of every MACP message, not only
+> the Envelope: Core and Mode payloads, `MACPError`, `Ack`, and every RPC request, response
+> and descriptor message. The mapping is the proto3 JSON mapping with a fixed list of
+> deviations (new §10.8): original field names only, so a lowerCamelCase key is an
+> unrecognized field (§10.6); 64-bit integers as JSON numbers, which decoders MUST also accept
+> quoted and encoders MUST quote above 2^53−1 (§10.9); default values emitted (§10.10); and
+> three structural transforms, `Envelope.timestamp`, `Envelope.payload`/`payload_b64` and
+> `PolicyDescriptor.rules` as a JSON object (§10.11). New §10.12 selects the payload message by
+> `(mode, message_type)`, makes `payload_b64` REQUIRED when the receiver may lack the Mode's
+> schema, and rejects a JSON `payload` for a Mode the receiver has no schema for with
+> `INVALID_ENVELOPE`. New §10.13 fixes how a receiver converts a JSON `payload` to Protobuf
+> bytes, because those bytes are what history stores and what RFC-MACP-0013 hashes and
+> receipts are computed over. New §10.14 scopes the rules to wire JSON: the conformance
+> fixture format and the RFC-MACP-0013 hashing projection are separate formats. §10.1–§10.7
+> keep their numbers and rules; §10.3 now points at its exceptions. Every Envelope and payload in
+> `examples/*.json` and `examples/json/` already conforms. Behaviour: an implementation that emitted lowerCamelCase keys,
+> or quoted 64-bit integers at or below 2^53−1, now emits non-canonical JSON, and a receiver that
+> accepted a JSON `payload` for an unknown Mode now rejects it. **Replay:** no exposure for
+> Protobuf-submitted envelopes. A history whose JSON payloads were converted in a different
+> field order was already implementation-specific; §10.13 makes the stored bytes portable
+> from here on, and replay reads stored bytes, never the original JSON.
 
 > **Changelog — 1.5.0-draft:** §4.2's capability table gains the Decision Receipt row
 > (`decision_receipt`: `get_decision_receipt`, `signed`), matching the new
@@ -470,6 +492,8 @@ The media types `application/macp-envelope+proto` and `application/macp-envelope
 
 MACP defines a canonical JSON mapping for interoperability with REST gateways, debugging tools, and environments where Protocol Buffers are not available.
 
+The mapping covers every MACP message: the Envelope, every Core and Mode payload, `MACPError`, `Ack`, and every request, response and descriptor message in the canonical schemas (`schemas/proto/macp/`). §10.1–§10.7 state the Envelope-level rules; §10.8–§10.14 extend them to every message as the proto3 JSON mapping with a fixed list of deviations.
+
 ### 10.1 Field Mapping
 
 | Protobuf field | JSON field | Mapping |
@@ -491,7 +515,7 @@ A JSON-encoded Envelope MUST include exactly one of:
 
 ### 10.3 Bytes Encoding
 
-Protobuf `bytes` fields MUST be represented as base64-encoded strings in JSON.
+Protobuf `bytes` fields MUST be represented as base64-encoded strings in JSON. The only exception is `Envelope.payload`, whose JSON form §10.2 and §10.12 define; this rule applies to every other `bytes` field in every message, including `map<string, bytes>` values such as `SessionStartPayload.extensions`. Encoders MUST use the standard alphabet with padding (RFC 4648 §4); decoders MUST also accept the URL-safe alphabet and unpadded input, as the proto3 JSON mapping does.
 
 ### 10.4 Enum Representation
 
@@ -515,6 +539,73 @@ In the canonical JSON mapping, empty Protobuf string fields MUST be represented 
 Decoders MUST treat a missing string field as equivalent to `""` for backward compatibility.
 
 Encoders SHOULD always include `session_id` and `mode` fields in the JSON object, even when empty.
+
+### 10.8 Base Mapping and Fixed Deviations
+
+The JSON form of any MACP message is the proto3 JSON mapping of that message ([Protocol Buffers, "ProtoJSON Format"](https://protobuf.dev/programming-guides/json/)), with exactly the deviations listed in this subsection and detailed in §10.9–§10.11. Anything this section does not change follows the proto3 JSON mapping: a message is a JSON object, a `repeated` field is a JSON array, a `map` is a JSON object keyed by the map key's string form, a `bool` is `true` or `false`, a `double` or `float` is a JSON number (or the strings `"NaN"`, `"Infinity"`, `"-Infinity"`), a 32-bit integer is a JSON number, and an enum is its value name (§10.4).
+
+The deviations are:
+
+1. **Original field names only.** Encoders MUST use each field's name exactly as written in the `.proto` file (`session_id`, `ttl_ms`, `accepted_at_unix_ms`). The proto3 mapping's lowerCamelCase `json_name` is not a MACP field name: a decoder MUST NOT map `sessionId` to `session_id`, and treats such a key as an unrecognized field, ignored under §10.6. An Envelope sent with `sessionId` therefore has an empty `session_id` and fails the validation of §6 and §7.6 like any other Envelope missing that field. `timestamp` is the one renamed field (§10.1, §10.11).
+2. **64-bit integers as JSON numbers** (§10.9), where proto3 JSON uses quoted strings.
+3. **Default values emitted** (§10.10), where proto3 JSON omits them.
+4. **Three structural transforms** (§10.11): `Envelope.timestamp`, `Envelope.payload`/`payload_b64`, and `PolicyDescriptor.rules`.
+5. **Unrecognized fields ignored** (§10.6), where a strict proto3 JSON parser rejects them.
+
+No other deviation exists. A future one is a change to this RFC.
+
+### 10.9 64-bit Integers
+
+Fields of type `int64` and `uint64` MUST be encoded as JSON numbers, not strings. Decoders MUST also accept the quoted decimal string form (`"900000"`), which is what a stock proto3 JSON encoder emits, and treat it as the same value.
+
+A JSON number is exact only up to 2^53−1 in IEEE 754 double-precision, which is how many JSON implementations hold numbers. An encoder MUST therefore quote any 64-bit value above 2^53−1 (or below −(2^53−1)), and a decoder that cannot represent such a number exactly MUST NOT silently round it.
+
+Every 64-bit field MACP defines today stays below 2^53 in practice, so a conforming encoder emits all of them as plain numbers: the `*_unix_ms` timestamps (`Ack.accepted_at_unix_ms`, `PolicyDescriptor.registered_at_unix_ms`, `SessionMetadata.started_at_unix_ms` and `expires_at_unix_ms`, `TaskRequestPayload.deadline_unix_ms`, and the other `*_at_unix_ms` fields of the canonical schemas), the durations `ttl_ms`, `max_suspend_ms` and `banked_ms`, and the ordinals `after_sequence`, `history_index`, `resolved_by_history_index` and `first_divergence`. A field added later inherits this rule.
+
+### 10.10 Default Values and Presence
+
+Encoders SHOULD emit every field whose value is the proto3 default: `""` for strings, `0` for numbers, `false` for `bool`, the zero-valued name (for example `"SESSION_STATE_UNSPECIFIED"`) for enums, `[]` for `repeated` fields and `{}` for maps. Empty strings MUST be `""`, never `null` and never omitted (§10.7). A field with explicit presence — a message-typed field, a `proto3 optional` field such as `WhatIfReplayResponse.first_divergence`, or a member of a `oneof` — is emitted when it is set, including when it is set to its default value, and omitted when it is unset.
+
+Decoders MUST treat an absent field as its default value (or, for a field with explicit presence, as unset), and MUST treat a JSON `null` the same way, as the proto3 JSON mapping does.
+
+### 10.11 Structural Transforms
+
+Three fields do not map one-to-one, and these are the only ones:
+
+1. **`Envelope.timestamp_unix_ms` → `timestamp`.** The Envelope field is renamed and carried as an RFC 3339 string (§10.1). The transform applies to the Envelope only: `Ack.accepted_at_unix_ms` and every other `*_unix_ms` field keep their names and stay JSON numbers (§10.9). Decoders MUST accept any RFC 3339 offset and fractional seconds, converting to milliseconds since the Unix epoch and truncating digits below the millisecond; encoders SHOULD emit UTC (`Z`).
+2. **`Envelope.payload` → `payload` or `payload_b64`.** The `bytes` field becomes either a JSON object, the JSON form of the payload message, or a base64 string of the payload bytes (§10.2). §10.12 says which message a JSON `payload` is and when `payload_b64` is required.
+3. **`PolicyDescriptor.rules` as a JSON object.** In Protobuf, `rules` is a `string` holding JSON text ([RFC-MACP-0012](RFC-MACP-0012-policy.md)). In the canonical JSON mapping it is that JSON object, inlined, as [`schemas/json/macp-policy-descriptor.schema.json`](../schemas/json/macp-policy-descriptor.schema.json) requires. Encoders MUST emit the object. Decoders MUST also accept the string form (a JSON string whose content is the rules object's JSON text) and treat it as the same rules. A decoder converting to Protobuf serializes the object back to JSON text; RFC-MACP-0012 defines rules by their parsed content, so that text's whitespace and member order carry no meaning.
+
+All other `bytes` fields stay base64 strings (§10.3), including `MACPError.details`, `SignalPayload.data`, every Mode payload's opaque `bytes` field and `SessionStartPayload.extensions` values.
+
+### 10.12 Payload Selection
+
+A JSON `payload` is the JSON form (§10.8) of the payload message selected by the Envelope's `(mode, message_type)`:
+
+- A Core message type (`Signal`, `Progress`, `SessionStart`, `SessionCancel`, `SessionSuspend`, `SessionResume`) selects its Core payload in [`core.proto`](../schemas/proto/macp/v1/core.proto) (`SignalPayload`, `ProgressPayload`, and so on) whatever the `mode`. `Commitment` selects `CommitmentPayload`.
+- Any other `message_type` selects the payload message the Mode named by `mode` declares for it ([RFC-MACP-0002](RFC-MACP-0002-modes.md)). The same `message_type` can denote different messages in different Modes, so a decoder MUST select by the pair, never by `message_type` alone.
+
+`payload_b64` carries the payload bytes as they are, and is always permitted. It is REQUIRED when the sender cannot assume the receiver has the Mode's payload schema, for example an `ext.*` or other extension Mode registered dynamically ([RFC-MACP-0002](RFC-MACP-0002-modes.md)). A receiver given a JSON `payload` for a `(mode, message_type)` it has no payload schema for MUST reject the Envelope with `INVALID_ENVELOPE` ([registries/error-codes.md](../registries/error-codes.md)), because it cannot convert the payload to the bytes it would accept.
+
+### 10.13 Deterministic Conversion
+
+A receiver that accepts an Envelope whose payload arrived as JSON `payload` converts it to Protobuf bytes, and those bytes are the payload of the accepted Envelope. Accepted history stores them (§8.3), replay reads them ([RFC-MACP-0003](RFC-MACP-0003-determinism.md)), the commitment hash is computed over the `CommitmentPayload` they decode to ([RFC-MACP-0013](RFC-MACP-0013-commitment-hash.md)), and a runtime-issued receipt's `commitment_wire_b64` is these bytes verbatim (RFC-MACP-0013 §13, requirement 4). Two conforming receivers MUST therefore produce the same bytes from the same JSON `payload`. The conversion MUST:
+
+1. emit fields in ascending field-number order;
+2. omit every field whose value is the proto3 default, unless the field has explicit presence and is set (§10.10);
+3. omit every unrecognized JSON member (§10.6), so that no unknown field reaches the bytes;
+4. encode `repeated` scalar numeric fields packed, as proto3 does by default;
+5. emit `map` entries in ascending order of their key's UTF-8 bytes, each entry with its key before its value; and
+6. apply the decoding rules of §10.3 and §10.9–§10.11 (base64 alphabets, quoted 64-bit integers, `rules` string form) before encoding, so that equivalent JSON yields identical bytes.
+
+This is the deterministic Protobuf serialization of the decoded message, and is what common Protobuf libraries produce in their deterministic mode. A client that needs control of the exact bytes, for example one that must keep a field this receiver does not know or one that pre-computes a commitment hash over its own encoding, MUST send `payload_b64` instead.
+
+### 10.14 Scope
+
+§10 governs JSON on the wire: an Envelope or any other MACP message carried as JSON by a transport binding ([RFC-MACP-0006](RFC-MACP-0006-transport-bindings.md), [RFC-MACP-0014](RFC-MACP-0014-a2a-binding.md)), or served as a discovery document ([RFC-MACP-0005](RFC-MACP-0005-discovery-and-manifests.md)). It does not govern:
+
+- the conformance fixture format ([`schemas/conformance/schema.json`](../schemas/conformance/schema.json)), a test-harness format with its own conventions (for example, empty `bytes` written as `[]`);
+- the hashing projection of RFC-MACP-0013 §3 or the `macp-receipt/1` receipt body of its Appendix A, JSON documents that RFC defines on its own terms, and which §10.6 does not reach (RFC-MACP-0013 §5).
 
 ---
 

@@ -6,6 +6,18 @@
 
 MACP supports multiple transport layers depending on deployment architecture.
 
+**JSON on the wire.** Any binding that carries MACP messages as JSON (HTTP, WebSockets, A2A, a
+message bus with a JSON codec) uses the canonical JSON mapping of
+[RFC-MACP-0001 §10](../rfcs/RFC-MACP-0001-core.md). It covers every message, not only the
+Envelope: it is proto3 JSON with a fixed list of deviations (§10.8). In short: original
+`snake_case` field names only (a `sessionId` key is ignored as unknown); 64-bit integers as JSON
+numbers (§10.9); defaults emitted (§10.10); and three structural transforms, the Envelope's
+RFC 3339 `timestamp`, its `payload`/`payload_b64`, and `PolicyDescriptor.rules` as a JSON
+object (§10.11). A JSON `payload` is selected by `(mode, message_type)`; send `payload_b64` for a
+Mode the receiver may not know, or whenever you need control of the exact payload bytes, since
+the receiver's deterministic conversion (§10.13) produces the bytes that history, commitment
+hashes and receipts are computed over.
+
 ## gRPC (Recommended)
 
 Best for:
