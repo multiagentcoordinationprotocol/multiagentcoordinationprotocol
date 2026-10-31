@@ -68,6 +68,12 @@ When the mode is empty, as for an ambient Signal, the name is the bare operation
 message type is an attribute and never part of the name, which keeps span-name cardinality bounded
 by the number of modes.
 
+The Envelope's `mode` is chosen by the client, so a runtime fills the name only with a mode it
+supports. When an Envelope names a mode the runtime does not support, which it always rejects
+(`MODE_NOT_SUPPORTED`), the name is `{macp.operation.name} _OTHER`, for example `process _OTHER`.
+`_OTHER` is OpenTelemetry's token for a value outside the known set, and it stays distinct from the
+bare name a Signal gets. The span's `macp.mode.id` attribute still records the received value.
+
 | Operation | Kind | Emitted by | Covers |
 |---|---|---|---|
 | `send` | CLIENT | SDK | sending one Envelope and receiving its Ack |
@@ -108,7 +114,8 @@ The registry defines four instruments: a counter and a duration histogram for En
 (`macp.envelope.processed`, `macp.envelope.process.duration`), and a counter and a duration
 histogram for sessions (`macp.session.transitions`, `macp.session.duration`). Durations are in
 seconds. Their attributes are low-cardinality only: mode, message type, outcome, operation and
-state. **Identifiers are never metric attributes** (no session, message or sender id).
+state. A mode or message type the runtime does not support is recorded as `_OTHER` in a metric
+attribute, for the same reason as in span names. **Identifiers are never metric attributes** (no session, message or sender id).
 
 A runtime that already exports metrics under other names (for example Prometheus names labelled by
 mode) keeps them as a compatibility rendering for one minor release after it adopts these names.
