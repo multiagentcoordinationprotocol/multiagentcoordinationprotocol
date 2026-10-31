@@ -99,6 +99,10 @@ Proto changes no longer block unrelated PRs in downstream repos.
 - **[RFC-MACP-0013 Canonical Commitment Hash](rfcs/RFC-MACP-0013-commitment-hash.md)** — canonical algorithm for computing `CommitmentRef.commitment_hash`
 - **[RFC-MACP-0014 A2A Extension Binding](rfcs/RFC-MACP-0014-a2a-binding.md)** — MACP Envelopes carried over A2A 1.0 as a profile extension
 
+## For MACP Org Members
+
+Agents working in this repo can query the MACP knowledge base through the `macp-kb` MCP server. Setup instructions are in the private `macp-docs` repo (README, "MCP server"). Answers cite the source repo and commit, so check freshness with `kb_status` before relying on one. Outside contributors can ignore this section; the server is limited to org members.
+
 ## Community
 
 All contributors must follow the Code of Conduct.
