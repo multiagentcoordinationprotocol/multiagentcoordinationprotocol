@@ -167,41 +167,10 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-  # ── Go module ───────────────────────────────────────────────────────
-  publish-go:
-    name: Publish Go Module
-    runs-on: ubuntu-latest
-    needs: [extract-version]
-    if: inputs.npmjs_only != true
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
-      - uses: actions/setup-go@v7
-        with:
-          go-version: '1.23'
-
-      - name: Generate Go code
-        run: buf generate --template buf/buf.gen.go.yaml
-
-      - name: Update go.mod and verify
-        run: |
-          cd packages/proto-go
-          go mod tidy
-          go build ./...
-
-      - name: Tag Go module
-        if: needs.extract-version.outputs.dry_run != 'true'
-        run: |
-          VERSION="${{ needs.extract-version.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packages/proto-go/
-          git commit -m "chore: update Go proto package to v${VERSION}" || true
-          git tag "packages/proto-go/v${VERSION}"
-          git push origin "packages/proto-go/v${VERSION}"
+  # ── Go ───────────────────────────────────────────────────────────────
+  # No Go job. Go users install the packages the Buf Schema Registry generates
+  # from every push to main (ci.yml's buf-push step): see packages/proto-go/README.md
+  # and issue #206. ci.yml still generates and builds Go as a compile check.
 
   # ── Java (Maven / GitHub Packages) ──────────────────────────────────
   publish-java:

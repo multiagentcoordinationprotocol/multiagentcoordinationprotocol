@@ -63,9 +63,10 @@ Registry entries are not all equal. Each registry entry has one of these statuse
 
 The canonical protos under `schemas/proto/` are published as packages in
 every supported language: crates.io `macp-proto`, PyPI `macp-proto`, npm
-`@multiagentcoordinationprotocol/proto`, the `macp-proto-go` Go module,
-Maven `io.macp:macp-proto` and `io.macp:macp-proto-kotlin`, and NuGet
-`Macp.Proto`. Rules:
+`@multiagentcoordinationprotocol/proto`, Maven `io.macp:macp-proto` and
+`io.macp:macp-proto-kotlin`, and NuGet `Macp.Proto`. Go is the exception: Go
+users install the packages the Buf Schema Registry generates from `main`, which
+are not versioned with these releases (`packages/proto-go/README.md`). Rules:
 
 - **One shared version across all languages per release**, cut by tagging
   `proto-vX.Y.Z` (or `workflow_dispatch` with an explicit version). Do NOT
