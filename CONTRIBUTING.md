@@ -67,7 +67,7 @@ Proto definitions are published as versioned packages for downstream consumers:
 | `@multiagentcoordinationprotocol/proto` | TypeScript / Node.js | npmjs and GitHub Packages |
 | `macp-proto` | Python | PyPI |
 | `macp-proto` | Rust | crates.io |
-| `macp-proto-go` | Go | git tag (not installable yet: the `go.mod` module path does not match the tag's location) |
+| `buf.build/gen/go/multiagentcoordinationprotocol/macp/...` | Go | Buf Schema Registry generated packages, built from every push to `main`; not part of the release workflow |
 | `io.macp:macp-proto` | Java | Maven (GitHub Packages) |
 | `io.macp:macp-proto-kotlin` | Kotlin | Maven (GitHub Packages) |
 | `Macp.Proto` | C# | NuGet (GitHub Packages) |
