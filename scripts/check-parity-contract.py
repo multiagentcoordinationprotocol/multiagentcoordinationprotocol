@@ -477,7 +477,7 @@ def check_retry_schedule(sections: dict) -> list[str]:
     # manifest's own `pattern` rather than re-reading the vector schema.
     #
     # Membership only -- deliberately NOT "the right subset". A retryable set
-    # containing all 20 permanent codes, or none of the ones actually worth
+    # containing every permanent code, or none of the ones actually worth
     # retrying, passes. What this catches is a code that is not a canonical error
     # code at all: a typo (`RATELIMITED`), a renamed code, or an invented one.
     # Judging WHICH codes deserve a retry is an SDK policy call with no in-repo

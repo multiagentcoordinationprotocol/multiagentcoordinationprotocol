@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Canonical Commitment Hash
 
 **Document:** RFC-MACP-0013
-**Version:** 1.4.2-draft
+**Version:** 1.4.3-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0003
 
+> **Changelog — 1.4.3-draft:** `RECEIPT_UNAVAILABLE` (§13 requirement 3) is promoted from `provisional` to `permanent` in `registries/error-codes.md`, now that macp-runtime 0.11.0, macp-sdk-python and macp-sdk-typescript all ship it. Its 409 / `FAILED_PRECONDITION` mapping and meaning are unchanged; it is now a compatibility promise and is pinned in `schemas/parity/contract.json`. No wire change.
+>
 > **Changelog — 1.4.2-draft:** Editorial. §13 requirement 8 no longer says a runtime without a signing key publishes `{"keys":[]}` unconditionally. That sentence contradicted the same requirement's rule that every key which signed a receipt the runtime still serves stays in the key set. An unsigned runtime publishes its retired keys, and an empty set only when it has none.
 >
 > **Changelog — 1.4.1-draft:** Editorial. Section 5's first reconciliation item described RFC-MACP-0001 §10 as an Envelope-level mapping (§10.1–§10.7) that says nothing about a `CommitmentPayload`'s fields. RFC-MACP-0001 1.6.0-draft extends §10 to every message, so the item now says that, and cites RFC-MACP-0001 §10.14, which excludes this projection from §10's scope. The conclusion is unchanged: the projection is defined only by this RFC, and RFC-MACP-0001 §10.6 does not reach it. **Replay:** no exposure.
