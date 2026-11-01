@@ -297,7 +297,7 @@ If any check fails, the runtime MUST reject the Envelope and MUST NOT create sid
 The runtime MUST prevent session ambiguity:
 
 - If the same `message_id` is received again for a previously accepted SessionStart, it MUST be treated as an idempotent duplicate and MUST NOT create a second session.
-- If the same `session_id` is reused with a different `message_id`, the runtime MUST reject it.
+- If the same `session_id` is reused with a `message_id` that is not in that session's accepted history, the runtime MUST reject it with `SESSION_ALREADY_EXISTS`.
 
 See [RFC-MACP-0001 §7.1 (Session Creation), §8.2 (Idempotency)](../rfcs/RFC-MACP-0001-core.md).
 
