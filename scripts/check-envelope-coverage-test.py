@@ -34,9 +34,10 @@ file whose purpose is to stop coverage claims from drifting, is a liability,
 so re-derive these three numbers by running this file rather than trusting
 any number printed in a docstring, including this one. What IS stable prose:
 every site gets at least one mutation except the one named below, and exactly
-one site -- shape_errors' type/$ref comparison -- gets two, since one mutation
-proves the top-level comparison and the other proves it also works through
-the recursive "items" leg. The one checker site with no mutation at all is
+one site -- shape_errors' type/$ref comparison -- gets three: one proves the
+top-level comparison, one proves it also works through the recursive "items"
+leg, and one proves a float field is held to $defs.JsonDouble rather than to a
+bare number (issue #246). The one checker site with no mutation at all is
 documented, not hidden: `parse_proto`'s `except OSError` branch fires only
 for a proto file that EXISTS but cannot be READ, which needs a permission
 bit (`chmod`) this harness deliberately does not set -- following
@@ -373,6 +374,49 @@ def mutate_ttl_ms_type_wrong(tree: Path) -> str:
     return "SessionStartPayload.ttl_ms type"
 
 
+def mutate_confidence_bare_number(tree: Path) -> str:
+    """SignalPayload.confidence narrowed back from a $ref to $defs.JsonDouble
+    to a bare `"type": "number"` -- the schema shape issue #246 removed, which
+    rejects the "NaN", "Infinity", "-Infinity" and "-0" strings RFC-MACP-0001
+    Section 10.8 and RFC-MACP-0014 Section 5.3 allow. Check 5's type/$ref
+    comparison must see that a double maps to the JsonDouble $ref."""
+    data = read_schema(tree)
+    prop = data["$defs"]["SignalPayload"]["properties"]["confidence"]
+    if prop != {"$ref": "#/$defs/JsonDouble"}:
+        raise SystemExit("FAIL: confidence is not a bare JsonDouble $ref -- mutation is stale")
+    data["$defs"]["SignalPayload"]["properties"]["confidence"] = {"type": "number"}
+    write_schema(tree, data)
+    return "SignalPayload.confidence bare number"
+
+
+def mutate_json_double_drops_negative_zero(tree: Path) -> str:
+    """$defs.JsonDouble's string arm loses "-0" -- every float field still
+    $refs JsonDouble, so check 5 stays green, and only check 6b notices that
+    the canonical negative-zero form of RFC-MACP-0014 Section 5.3 (and the
+    a2a_107 vector carrying it) would fail validation again."""
+    data = read_schema(tree)
+    arms = data["$defs"]["JsonDouble"]["anyOf"]
+    enum_arm = next((a for a in arms if "enum" in a), None)
+    if enum_arm is None or "-0" not in enum_arm["enum"]:
+        raise SystemExit("FAIL: JsonDouble has no enum arm with \"-0\" -- mutation is stale")
+    enum_arm["enum"] = [v for v in enum_arm["enum"] if v != "-0"]
+    write_schema(tree, data)
+    return "$defs.JsonDouble without -0"
+
+
+def mutate_json_double_defs_entry_deleted(tree: Path) -> str:
+    """$defs.JsonDouble deleted while the three float fields still $ref it --
+    like Base64Bytes, it is never visited by check 3's BFS, so check 6's
+    JSON_ONLY_DEFS-still-exists loop is its defence (credited there; check
+    6b skips a missing entry on purpose)."""
+    data = read_schema(tree)
+    if "JsonDouble" not in data["$defs"]:
+        raise SystemExit("FAIL: $defs.JsonDouble not found -- mutation is stale")
+    del data["$defs"]["JsonDouble"]
+    write_schema(tree, data)
+    return "$defs.JsonDouble"
+
+
 def mutate_roots_items_ref_wrong(tree: Path) -> str:
     """$defs.SessionStartPayload.properties.roots.items.$ref repointed at
     CommitmentRef instead of Root -- check 5's repeated-message branch,
@@ -670,6 +714,15 @@ MUTATIONS: tuple[tuple[str, object, object], ...] = (
     ("ttl_ms's JSON type no longer matches its proto scalar type",
      mutate_ttl_ms_type_wrong,
      "expected type 'integer', found 'string'"),
+    ("SignalPayload.confidence is a bare number instead of the JsonDouble $ref",
+     mutate_confidence_bare_number,
+     "expected $ref '#/$defs/JsonDouble', found None"),
+    ("$defs.JsonDouble's string arm drops \"-0\"",
+     mutate_json_double_drops_negative_zero,
+     "$defs.JsonDouble in"),
+    ("$defs.JsonDouble is deleted while still $ref'd",
+     mutate_json_double_defs_entry_deleted,
+     "$defs.JsonDouble is listed in JSON_ONLY_DEFS"),
     ("roots.items.$ref points at the wrong $defs entry",
      mutate_roots_items_ref_wrong,
      "expected $ref '#/$defs/Root', found '#/$defs/CommitmentRef'"),
@@ -800,10 +853,10 @@ def mutate_source_unparseable(src: str) -> str:
 SOURCE_MUTATIONS = (
     ("a fail()/errors.append(...) site was added with no mutation covering it",
      mutate_source_site_added,
-     "but EXPECTED_FAIL_SITES pins 32"),
+     "but EXPECTED_FAIL_SITES pins 33"),
     ("a fail()/errors.append(...) site was removed",
      mutate_source_site_removed,
-     "but EXPECTED_FAIL_SITES pins 32"),
+     "but EXPECTED_FAIL_SITES pins 33"),
     ("the copied checker source is unparseable, so the count cannot be measured",
      mutate_source_unparseable,
      "could not be read or parsed at"),
