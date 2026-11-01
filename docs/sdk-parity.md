@@ -104,14 +104,10 @@ The optional features themselves:
 - **Base session/projection classes** — shared inheritance (vs standalone classes)
 - **Agent framework** — Participant abstraction, dispatcher, strategies, bootstrap
 - **Logging** — structured logging helpers
-- **A2A binding codec** — RFC-MACP-0014 (1.1.2-draft) Envelope Part, Ack, observation Artifact,
-  task-state and error mapping. Both SDKs ship one, unreleased on main: `macp_sdk.a2a`
-  (`macp-sdk-python` #213, #215) and `src/a2a.ts`, exported from the barrel and the `./a2a`
-  subpath (`macp-sdk-typescript` #231, #233). Each runs all 106 vectors in
-  `schemas/conformance/a2a/` and has interop tests against the official A2A SDKs at 1.3 (dev-only
-  dependencies)
-- **multi_round session helper** — `MultiRoundSession` and `MultiRoundProjection` for the
-  `ext.multi_round.v1` extension mode (`macp-sdk-python` #214, `macp-sdk-typescript` #232)
+- **A2A binding codec** — RFC-MACP-0014 (1.1.2-draft); both SDKs have one on main (unreleased),
+  each running all 106 vectors in `schemas/conformance/a2a/` — see
+  [IMPLEMENTATIONS.md](../IMPLEMENTATIONS.md#bindings)
+- **multi_round session helper** — `MultiRoundSession` and `MultiRoundProjection` for `ext.multi_round.v1`
 
 ## Naming
 
