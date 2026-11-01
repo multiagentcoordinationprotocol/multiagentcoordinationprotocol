@@ -15,9 +15,11 @@
 > rejected with `SESSION_ALREADY_EXISTS` "regardless of `message_id`". That sentence contradicted
 > the duplicate rule in the paragraph above it and RFC-MACP-0014 §6.1, and it did not describe the
 > reference runtime, which answers a retried `SessionStart` with the same `message_id` with a
-> duplicate Ack and rejects only a `SessionStart` with a different `message_id` (issue #242). §8.2
+> duplicate Ack and rejects only a `SessionStart` whose `message_id` is not in the session's
+> accepted history (issue #242). §8.2
 > now applies the duplicate check first: a `SessionStart` whose `message_id` is already in the
-> session's accepted history is a duplicate, reported under §7.6 item 6, and every other
+> session's accepted history is a duplicate, reported under §7.6 item 6 (as `DUPLICATE_MESSAGE` or
+> as an idempotent success, never as `SESSION_ALREADY_EXISTS`), and every other
 > `SessionStart` for that `session_id` is rejected with `SESSION_ALREADY_EXISTS`. Behaviour: an
 > implementation that followed the old sentence rejected a retry that it now reports as a
 > duplicate, so a client retrying a `SessionStart` whose Ack was lost now gets the same answer on
@@ -434,7 +436,7 @@ Runtimes MUST enforce idempotent handling of duplicates using `message_id`.
 
 If an Envelope with a previously accepted `message_id` is received within the same session, the runtime MUST treat it as a duplicate and MUST NOT create side effects.
 
-If a `SessionStart` is received for a `session_id` that already has an accepted `SessionStart`, the runtime MUST first apply the duplicate rule above. A `SessionStart` whose `message_id` is already in that session's accepted history, such as a retry of the accepted `SessionStart` whose Ack was lost, is a duplicate: it MUST NOT create a second session and MUST be reported as a duplicate (§7.6 item 6), not rejected. Duplicate detection compares `message_id` only, so a retry is a duplicate even if its payload differs. Every other `SessionStart` for that `session_id` MUST be rejected with error code `SESSION_ALREADY_EXISTS`. This is a session-existence check, and it applies only after the duplicate check has not matched.
+If a `SessionStart` is received for a `session_id` that already has an accepted `SessionStart`, the runtime MUST apply the duplicate rule above before the session-existence check. A `SessionStart` whose `message_id` is already in that session's accepted history, such as a retry of the accepted `SessionStart` whose Ack was lost, is a duplicate: it MUST NOT create a second session, and it MUST be reported as a duplicate (§7.6 item 6), not rejected with `SESSION_ALREADY_EXISTS`. Duplicate detection compares `message_id` only, so a retry that passes the validation preceding deduplication (§8.3) is a duplicate even if its payload differs. Every other `SessionStart` for that `session_id` MUST be rejected with error code `SESSION_ALREADY_EXISTS`. This is a session-existence check.
 
 ### 8.3 Accepted-History Discipline
 
