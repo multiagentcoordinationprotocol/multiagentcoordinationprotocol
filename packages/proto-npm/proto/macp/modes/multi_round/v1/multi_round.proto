@@ -21,7 +21,8 @@ package macp.modes.multi_round.v1;
 //
 // Contribute. Only a declared participant may send Contribute; any other
 // sender -- the initiator included, unless it is also listed in
-// `participants` -- is rejected with FORBIDDEN. A zero-byte Contribute is
+// `participants` -- is rejected with FORBIDDEN. A zero-byte Contribute, or
+// one whose bytes decode neither as the legacy JSON form nor as protobuf, is
 // rejected with INVALID_ENVELOPE (see "Empty payload" below). The runtime
 // keeps each participant's latest contribution. A Contribute whose value
 // differs from the sender's previous one -- and a sender's first Contribute
@@ -34,17 +35,23 @@ package macp.modes.multi_round.v1;
 // converged once every declared participant has contributed and all of
 // their latest values are equal. Convergence is evaluated after every
 // accepted Contribute and is sticky: once converged, every further
-// Contribute is rejected with INVALID_ENVELOPE, even one that repeats the
-// converged value.
+// Contribute from a declared participant is rejected with INVALID_ENVELOPE,
+// even one that repeats the converged value.
 //
 // No auto-resolve. Convergence does not resolve the session; it stays OPEN
 // until a Commitment is accepted (or it expires or is cancelled). Only the
 // session initiator may send Commitment; a Commitment from any other sender,
 // participants included, is rejected with FORBIDDEN. Sender authorization is
-// checked first, so this holds before convergence too. An initiator
+// checked before the mode's convergence check, so this holds before
+// convergence too. An initiator
 // Commitment sent before convergence is rejected with INVALID_ENVELOPE. By
 // convention the initiator commits with `action` `multi_round.converged`
-// and `outcome_positive` true; the runtime does not check the action's value.
+// and `outcome_positive` true. The runtime requires no particular action;
+// `multi_round.converged` matches no outcome suffix (below), so
+// `outcome_positive` is unconstrained for it. The session's bound governance
+// policy is not evaluated for this mode: commit authority is initiator-only
+// whatever the policy's `commitment.authority`, and no commitment policy
+// gate runs; `policy_version` takes part only in the echo check below.
 //
 // Commitment payload. A macp.v1.CommitmentPayload whose `mode_version` and
 // `configuration_version` equal the session's, and whose `commitment_id`,
@@ -56,23 +63,25 @@ package macp.modes.multi_round.v1;
 // violation is rejected with INVALID_ENVELOPE. An accepted Commitment moves
 // the session to RESOLVED.
 //
-// Unknown message types. Any message type other than Contribute or
-// Commitment, sent by an authorized participant on an open session, is
-// rejected with INVALID_ENVELOPE.
+// Unknown message types. Any other message type that reaches the mode is
+// rejected with INVALID_ENVELOPE. Core types the kernel routes elsewhere
+// (SessionStart, Signal, Progress) follow their Core handling.
 //
-// Legacy-JSON decoding and `semantics_rev`. The Contribute decode order
-// below (JSON, then protobuf, with the round-trip tie-break) is selected by
-// the session's recorded `semantics_rev`: macp-runtime applies the
-// tie-break at `semantics_rev` 3 and above, and sessions recorded at
-// revisions 0-2 keep the unconditional JSON-first reading on replay.
+// Legacy-JSON decoding and `semantics_rev`. JSON is tried first at every
+// revision; whether the round-trip tie-break of the decode order below
+// applies is selected by the session's recorded `semantics_rev`:
+// macp-runtime applies it at `semantics_rev` 3 and above, and sessions
+// recorded at revisions 0-2 keep the unconditional JSON-first reading on
+// replay.
 
 // Contribution submitted by a participant during a round of the
 // ext.multi_round.v1 iterative-convergence mode.
 //
-// A participant MAY contribute more than once; a contribution whose value
-// differs from the sender's previous contribution advances the round.
-// Convergence semantics (e.g. all_equal) are evaluated by the runtime's
-// mode implementation over the latest contribution per participant.
+// A participant MAY contribute more than once until the session converges;
+// a contribution whose value differs from the sender's previous contribution
+// advances the round. Convergence semantics (all_equal; see session
+// semantics above) are evaluated by the runtime's mode implementation over
+// the latest contribution per participant.
 //
 // `value` is an opaque string by design: contributions are compared for
 // equality only, never interpreted. Structured or binary contributions can
