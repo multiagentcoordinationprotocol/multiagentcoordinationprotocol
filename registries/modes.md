@@ -45,3 +45,11 @@ Experimental or vendor-specific modes SHOULD use reverse-domain naming:
 `com.example.mode.custom.v1`
 
 Runtimes MAY implement additional non-standard modes, but those modes MUST be documented as non-standard and MUST NOT be presented as part of the standards-track set unless they are listed in this registry and backed by a main-repo RFC. `ListModes` SHOULD return only standards-track modes listed above; extension modes are discoverable through implementation-defined surfaces.
+
+### Known runtime-shipped extensions
+
+Listed for interoperability only. These modes are non-standard and not part of the standards-track set.
+
+| Mode | `mode_version` | Description | Participant model | Determinism | Status | Reference |
+|------|----------------|-------------|-------------------|-------------|--------|-----------|
+| `ext.multi_round.v1` | `1.0.0` | Iterative convergence: declared participants `Contribute` until every latest value is equal (`all_equal`, sticky); the initiator then commits (initiator-only; the bound policy is not evaluated). No auto-resolve. | peer | semantic-deterministic | extension (built into macp-runtime) | [`multi_round.proto`](../schemas/proto/macp/modes/multi_round/v1/multi_round.proto) (normative comment), [`examples/multi-round-session.json`](../examples/multi-round-session.json) |

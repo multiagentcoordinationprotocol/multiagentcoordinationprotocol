@@ -2,13 +2,86 @@ syntax = "proto3";
 
 package macp.modes.multi_round.v1;
 
+// ext.multi_round.v1 -- session semantics (normative; this mode has no RFC,
+// so this comment is its home). It describes what macp-runtime's built-in
+// implementation enforces today. The mode is a runtime-shipped extension,
+// not a standards-track Mode (registries/modes.md, "Extension and
+// experimental modes").
+//
+// Identity. Mode `ext.multi_round.v1`, `mode_version` `1.0.0`. Message types:
+// SessionStart, Contribute, Commitment; Commitment is the only terminal type.
+// Participant model `peer`, determinism class `semantic-deterministic`.
+//
+// SessionStart. The full canonical SessionStart contract applies
+// (RFC-MACP-0001 §7.1), as for the standards-track Modes: non-empty
+// `mode_version` and `configuration_version`, a valid `ttl_ms`, and a
+// non-empty `participants` list with no blank or duplicate entry. An empty
+// `participants` list is rejected with INVALID_ENVELOPE. A `mode_version`
+// other than `1.0.0` is rejected with INVALID_ENVELOPE.
+//
+// Contribute. Only a declared participant may send Contribute; any other
+// sender -- the initiator included, unless it is also listed in
+// `participants` -- is rejected with FORBIDDEN. A zero-byte Contribute, or
+// one whose bytes decode neither as the legacy JSON form nor as protobuf, is
+// rejected with INVALID_ENVELOPE (see "Empty payload" below). The runtime
+// keeps each participant's latest contribution. A Contribute whose value
+// differs from the sender's previous one -- and a sender's first Contribute
+// -- advances the session's round counter by one. Re-sending an unchanged
+// value is accepted and does not advance the round. The round counter is
+// therefore a count of value changes across all participants, not a
+// synchronized step.
+//
+// Convergence. The convergence rule is `all_equal`: the session has
+// converged once every declared participant has contributed and all of
+// their latest values are equal. Convergence is evaluated after every
+// accepted Contribute and is sticky: once converged, every further
+// Contribute from a declared participant is rejected with INVALID_ENVELOPE,
+// even one that repeats the converged value.
+//
+// No auto-resolve. Convergence does not resolve the session; it stays OPEN
+// until a Commitment is accepted (or it expires or is cancelled). Only the
+// session initiator may send Commitment; a Commitment from any other sender,
+// participants included, is rejected with FORBIDDEN. Sender authorization is
+// checked before the mode's convergence check, so this holds before
+// convergence too. An initiator
+// Commitment sent before convergence is rejected with INVALID_ENVELOPE. By
+// convention the initiator commits with `action` `multi_round.converged`
+// and `outcome_positive` true. The runtime requires no particular action;
+// `multi_round.converged` matches no outcome suffix (below), so
+// `outcome_positive` is unconstrained for it. The session's bound governance
+// policy is not evaluated for this mode: commit authority is initiator-only
+// whatever the policy's `commitment.authority`, and no commitment policy
+// gate runs; `policy_version` takes part only in the echo check below.
+//
+// Commitment payload. A macp.v1.CommitmentPayload whose `mode_version` and
+// `configuration_version` equal the session's, and whose `commitment_id`,
+// `action`, `authority_scope` and `reason` are non-empty after trimming
+// whitespace. A non-empty `policy_version` must equal the session's bound
+// policy; an empty one defers to it. The RFC-MACP-0001 §7.3 checks also
+// apply: a `supersedes` reference must be well-formed, and `outcome_positive`
+// must agree with an action ending in a positive or negative suffix. Any
+// violation is rejected with INVALID_ENVELOPE. An accepted Commitment moves
+// the session to RESOLVED.
+//
+// Unknown message types. Any other message type that reaches the mode is
+// rejected with INVALID_ENVELOPE. Core types the kernel routes elsewhere
+// (SessionStart, Signal, Progress) follow their Core handling.
+//
+// Legacy-JSON decoding and `semantics_rev`. JSON is tried first at every
+// revision; whether the round-trip tie-break of the decode order below
+// applies is selected by the session's recorded `semantics_rev`:
+// macp-runtime applies it at `semantics_rev` 3 and above, and sessions
+// recorded at revisions 0-2 keep the unconditional JSON-first reading on
+// replay.
+
 // Contribution submitted by a participant during a round of the
 // ext.multi_round.v1 iterative-convergence mode.
 //
-// A participant MAY contribute more than once; a contribution whose value
-// differs from the sender's previous contribution advances the round.
-// Convergence semantics (e.g. all_equal) are evaluated by the runtime's
-// mode implementation over the latest contribution per participant.
+// A participant MAY contribute more than once until the session converges;
+// a contribution whose value differs from the sender's previous contribution
+// advances the round. Convergence semantics (all_equal; see session
+// semantics above) are evaluated by the runtime's mode implementation over
+// the latest contribution per participant.
 //
 // `value` is an opaque string by design: contributions are compared for
 // equality only, never interpreted. Structured or binary contributions can
