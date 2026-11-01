@@ -11,7 +11,7 @@ check-receipt-vectors.py: no protobuf, no jsonschema. For every vector file
      §6, §8, §9.1, §11, §12) over the RFC-MACP-0001 §10 canonical JSON
      mapping, and compares it with `expected` (parsed JSON, with a bool never
      equal to a number) or with `expected_error` (`layer` and `code`);
-  3. asserts every op of the SDK brief's S6.2 table and every reject code
+  3. asserts every op of the SDKs' A2A codec (S6.2) and every reject code
      appears in at least one vector, so a vector cannot be deleted unnoticed.
 
 Then it runs ajv (already a CI dependency of `make json-validate`) to check:
@@ -80,6 +80,16 @@ CORE_TYPES = {"Signal", "Progress", "SessionStart", "SessionCancel", "SessionSus
 # payloads may travel as a JSON `payload` (RFC-MACP-0014 §5.3).
 STANDARD_MODES = {"macp.mode.decision.v1", "macp.mode.proposal.v1", "macp.mode.task.v1",
                   "macp.mode.handoff.v1", "macp.mode.quorum.v1"}
+# The mode-defined message types of each standard mode: its <Type>Payload messages
+# in schemas/proto/macp/modes/<mode>/v1/<mode>.proto.
+STANDARD_MODE_TYPES = {
+    "macp.mode.decision.v1": {"Proposal", "Evaluation", "Objection", "Vote"},
+    "macp.mode.proposal.v1": {"Proposal", "CounterProposal", "Accept", "Reject", "Withdraw"},
+    "macp.mode.task.v1": {"TaskRequest", "TaskAccept", "TaskReject", "TaskUpdate", "TaskComplete", "TaskFail"},
+    "macp.mode.handoff.v1": {"HandoffOffer", "HandoffContext", "HandoffAccept", "HandoffDecline"},
+    "macp.mode.quorum.v1": {"ApprovalRequest", "Approve", "Reject", "Abstain"},
+}
+assert set(STANDARD_MODE_TYPES) == STANDARD_MODES
 # RFC-MACP-0014 §8.
 STATE_MAP = {
     "SESSION_STATE_OPEN": ("TASK_STATE_WORKING", "OPEN"),
@@ -96,7 +106,7 @@ INT64 = (-(2**63), 2**63 - 1)
 MIN_MS = calendar.timegm((1, 1, 1, 0, 0, 0, 0, 0, 0)) * 1000
 MAX_MS = calendar.timegm((9999, 12, 31, 23, 59, 59, 0, 0, 0)) * 1000 + 999
 
-# Every op of the S6.2 table in plans/cross-repo/sdks-wave6.md, in snake_case.
+# Every function of the SDKs' A2A codec (Wave 6 work item S6.2), in snake_case.
 OPS = ["envelope_to_a2a_part", "envelope_from_a2a_part", "envelope_to_a2a_message",
        "envelope_from_a2a_message", "ack_to_a2a_message", "ack_from_a2a_message",
        "envelope_to_a2a_artifact", "envelope_from_a2a_artifact", "session_state_to_a2a",
@@ -260,7 +270,8 @@ STRINGS = ("macp_version", "mode", "message_type", "message_id", "session_id", "
 
 
 def mode_defined_payload_has_schema(mode: str, message_type: str) -> bool:
-    return message_type in CORE_TYPES or mode in STANDARD_MODES
+    """RFC-MACP-0001 §10.12: selected by the (mode, message_type) pair."""
+    return message_type in CORE_TYPES or message_type in STANDARD_MODE_TYPES.get(mode, ())
 
 
 def envelope_from_json(obj) -> dict:
@@ -479,7 +490,12 @@ def op_envelope_from_a2a_message(inp, params):
         raise Reject("codec", "NOT_A_MACP_MESSAGE", "not a Message")
     env = envelope_from_part(single_envelope_part(msg.get("parts")), params)
     task_id = msg.get("taskId") or ""
-    if task_id != expected_task_id(env):
+    # §6.1 "Later envelopes": a session-scoped Envelope after SessionStart must name
+    # its own session. A non-empty taskId on a SessionStart or Signal is reported by
+    # the server from its Task state (§11.3: TaskNotFound, SESSION_ALREADY_EXISTS),
+    # which a codec cannot decide, so the mapper leaves it unchecked and no vector
+    # pins it.
+    if expected_task_id(env) and task_id != expected_task_id(env):
         raise bad_envelope("Message.taskId does not match the Envelope (§6.1)")
     return envelope_to_json(env)
 
@@ -534,6 +550,9 @@ def ack_from_json(obj) -> dict:
         details = err.get("details")
         out["details"] = b"" if details is None else b64_decode(details, bad_ack)
         ack["error"] = out
+    # RFC-MACP-0014 §5.2: `error` is present if and only if `ok` is false.
+    if ("error" in ack) == ack["ok"]:
+        raise bad_ack("error must be present exactly when ok is false (§5.2)")
     return ack
 
 

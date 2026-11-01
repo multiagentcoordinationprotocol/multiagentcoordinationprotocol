@@ -1,8 +1,9 @@
 # A2A binding codec vectors (RFC-MACP-0014)
 
 Reference vectors for a codec of the [A2A extension binding](../../../rfcs/RFC-MACP-0014-a2a-binding.md)
-(1.1.x). Both SDKs vendor this directory under `tests/vectors/a2a/` (see
-`scripts/check-sdk-sync.py`) and run every vector against their own codec.
+(1.1.x). The SDKs vendor this directory under `tests/vectors/a2a/` (held
+identical by `scripts/check-sdk-sync.py`) and run every vector against their
+own A2A codec.
 
 Each file is one vector, named after its `id` (`a2a_NNN_<slug>`):
 
@@ -19,25 +20,27 @@ the vectors are deterministic.
 
 ## Ops
 
-Every `op` is a function of the SDK brief's S6.2 codec table, spelled in
-snake_case (`envelopeToA2APart` in TypeScript is `envelope_to_a2a_part`).
+Every `op` is one function of the SDKs' A2A codec (Wave 6 work item S6.2),
+spelled in snake_case (`envelopeToA2APart` in TypeScript is
+`envelope_to_a2a_part`). The codec's constants (the extension URI, the two
+Envelope media types) are pinned implicitly by the vectors that use them.
 
 | `op` | `input` | `params` | Result | Vectors |
 |---|---|---|---|---|
 | `envelope_to_a2a_part` | `envelope` | `encoding` | an Envelope Part (§5.1) | 10 |
-| `envelope_from_a2a_part` | `part` | `max_payload_bytes` | an Envelope | 23 |
+| `envelope_from_a2a_part` | `part` | `max_payload_bytes` | an Envelope | 24 |
 | `envelope_to_a2a_message` | `envelope` | `encoding`, `message_id`, `context_id` | a ROLE_USER Message (§5.1, §6) | 4 |
 | `envelope_from_a2a_message` | `message` | `max_payload_bytes` | an Envelope | 9 |
 | `ack_to_a2a_message` | `ack` | `message_id` (required), `task_id`, `context_id` | an Ack Message (§5.2) | 7 |
-| `ack_from_a2a_message` | `message` | | an Ack | 12 |
+| `ack_from_a2a_message` | `message` | | an Ack | 14 |
 | `envelope_to_a2a_artifact` | `envelope`, `sequence` | | an Observation Artifact (§9.1) | 3 |
-| `envelope_from_a2a_artifact` | `artifact` | | `{envelope, sequence}` | 5 |
+| `envelope_from_a2a_artifact` | `artifact` | `max_payload_bytes` | `{envelope, sequence}` | 5 |
 | `session_state_to_a2a` | `session_state` | | `{task_state, metadata}` (§8) | 6 |
 | `session_state_from_a2a` | `task_or_event` | | a `SESSION_STATE_*` name (§8) | 12 |
 | `macp_agent_extension` | | `macp_versions`, `modes`, `required`, `manifest_url` | an AgentExtension (§3) | 2 |
 | `error_info_from_a2a` | `error_or_details` | | `{reason, domain, metadata, duplicate}` or `null` (§11, §12) | 5 |
 
-98 vectors in all: 66 positive, 32 reject.
+101 vectors in all: 66 positive, 35 reject.
 
 ## Conventions
 
@@ -96,21 +99,33 @@ varint that overflows 64 bits (046); int64 quoted, unquoted at and above
 2^53-1, with an exponent, with a zero fraction, with a sign or fraction in
 quotes, and non-finite (051-053, 056-062); an unknown enum name and an
 integer enum value (063, 064); an integral float where an integer is expected
-(069).
+(069); `error` present exactly when `ok` is false (099, 100); payload
+selection by the `(mode, message_type)` pair (031, 101).
 
 ## S6.1 edge rules not covered, and why
 
 - **Negative zero** (`"-0"` for a `double` or `float`, RFC-MACP-0014 §5.3 as of
-  1.1.1-draft). Neither the Envelope nor the Ack has a floating-point field;
-  the nearest is `SignalPayload.confidence`, inside a JSON `payload`, and
-  reaching it needs the payload's Protobuf conversion, which the reference
-  mapper does not perform. Also, `schemas/json/macp-envelope.schema.json`
-  types `confidence` as a number, so an Envelope carrying the canonical
-  `"-0"` would fail that schema; that mismatch is a follow-up for the
-  envelope schema, not for this pack.
+  1.1.1-draft). Neither the Envelope nor the Ack has a floating-point field.
+  The nearest are inside Core payloads (`SignalPayload.confidence`,
+  `ProgressPayload.progress` and `total`), and a pass-through vector there
+  would be computable, but `schemas/json/macp-envelope.schema.json` types
+  those fields `number`, so an Envelope carrying the canonical `"-0"` fails
+  the schema the checker validates every Envelope against (as `"NaN"` and
+  `"Infinity"`, which RFC-MACP-0001 §10.8 allows, already do). The vector
+  waits for that schema to be widened (issue #246).
 - **Map key order** in emitted JSON. No Envelope, Ack or A2A-side object this
   pack produces has a Protobuf map at the level the mapper handles, and
   `expected` is compared as parsed JSON, so key order is not observable.
 - **Rules inside payloads** (enum and int64 handling within a `payload`
-  object). The mapper does not convert payloads, so these belong to the
-  SDKs' own canonical-JSON tests.
+  object, a lone surrogate in a map key). The mapper does not convert
+  payloads, so these belong to the SDKs' own canonical-JSON tests.
+- **Leap seconds.** RFC 3339 allows a seconds value of 60, which a Protobuf
+  Timestamp cannot hold; the reference mapper refuses it, but no vector pins
+  either behaviour.
+
+## Deliberately not pinned
+
+- A non-empty `taskId` on a `SessionStart` or Signal Message. The server
+  answers it from its Task state (§6.1, §6.2, §11.3: `TaskNotFoundError`,
+  `SESSION_ALREADY_EXISTS`), which a codec cannot decide, so the reference
+  mapper does not check it.
