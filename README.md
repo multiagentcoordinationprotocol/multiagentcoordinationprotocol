@@ -318,6 +318,8 @@ pip install macp-sdk-python      # Python 3.11+
 npm install macp-sdk-typescript  # Node 20+
 ```
 
+To carry MACP over A2A ([RFC-MACP-0014](rfcs/RFC-MACP-0014-a2a-binding.md)), both SDKs have an A2A codec, unreleased on main: see the [Python](https://github.com/multiagentcoordinationprotocol/macp-sdk-python/blob/main/docs/guides/a2a-binding.md) and [TypeScript](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript/blob/main/docs/guides/a2a-binding.md) A2A guides.
+
 To let an MCP client (Claude Desktop, Claude Code, Cursor) start or join a session, run one of the two MACP MCP servers. Both expose the same tools; [macp-mcp](https://github.com/multiagentcoordinationprotocol/macp-mcp) and [macp-mcp-typescript](https://github.com/multiagentcoordinationprotocol/macp-mcp-typescript) version independently:
 
 ```bash
