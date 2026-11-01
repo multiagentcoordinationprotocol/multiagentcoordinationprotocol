@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — A2A Extension Binding
 
 **Document:** RFC-MACP-0014
-**Version:** 1.1.1-draft
+**Version:** 1.1.2-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0006
 
+> **Changelog — 1.1.2-draft:** §5.1 defines how `Part.mediaType` is compared with the two Envelope media types, which earlier drafts left open (issue #247). Type and subtype are compared ASCII case-insensitively, as RFC 9110 §8.3.1 does, so a case variant is an Envelope Part. An Envelope Part whose `mediaType` carries any parameters, such as `; charset=utf-8`, MUST be rejected with `ContentTypeNotSupportedError`; it is never skipped as a Part that is not MACP, and it counts toward the one-Envelope-per-Message rule. A sender MUST write the exact lowercase type with no parameters. Before this, a receiver that compared exactly skipped such a Part, so a Message with one exact Envelope Part and one parameter-bearing or case-variant Part passed as a single Envelope while a receiver that compared under RFC 9110 saw two. Unicode case folding is excluded. The parameter check comes after the §4 activation check and before decoding. §4 points to the comparison and §11.3 gains the matching row. The A2A vector pack adds vectors 102-106. The binding stays `provisional`.
+>
 > **Changelog — 1.1.1-draft:** §5.3 adds a rule for negative zero: a `double` or `float` of -0.0 is written as the JSON string `"-0"`, and a receiver accepts both that string and the number. Many JSON serializers drop the sign of a numeric `-0`, and both SDKs' canonical JSON codecs already write the string. The A2A vector pack added alongside this version (`schemas/conformance/a2a/`, Appendix A) does not exercise the rule: neither the Envelope nor the Ack has a floating-point field, and the floating-point fields inside Core payloads (`SignalPayload.confidence`, `ProgressPayload.progress` and `total`) are typed `number` in `macp-envelope.schema.json`, which therefore rejects `"-0"` (as it already rejects the `"NaN"` and `"Infinity"` strings RFC-MACP-0001 §10.8 allows) until that schema is widened (issue #246). The binding stays `provisional`.
 >
 > **Changelog — 1.1.0-draft:** Closes wire gaps that let two conforming implementations emit different A2A JSON for the same Envelope. The binding stays `provisional` and keeps the `/v1` URI. §3 allows `ext.*` mode identifiers in `params.modes`. §4 requires the `A2A-Version: 1.0` header. §5.2 defines the Ack Message's `messageId`, `contextId` and `taskId`, requires every Ack field without explicit presence to be emitted, and fixes the fields of an Ack the server issues itself. New §5.3 profiles the canonical JSON mapping for this binding: payload selection by `(mode, message_type)`, a narrowing of RFC-MACP-0001 §10.12 that requires `payload_b64` for mode-defined payloads of `ext.*` and reverse-domain modes, the receiver's acceptance rules, a fixed `timestamp` format, and the base64 form of `payload_b64` and `raw`. New §5.4 bounds decoded payload size, with an excess reported in band as `PAYLOAD_TOO_LARGE`; §7, §11.1, §11.2 and §11.3 are updated to match. §8 states that the two session-state spellings are intentional. The example transcript already conforms and is unchanged.
@@ -84,7 +86,7 @@ A client MUST activate the extension on every request that carries a MACP Envelo
 
 A client MUST send `A2A-Version: 1.0` (or the equivalent service parameter) on every request that the first paragraph of this section covers. A2A requires clients to send the header and interprets an empty value as version 0.3, which this binding does not support. A server that does not support the requested A2A version returns A2A's `VersionNotSupportedError` (§11.3).
 
-A server that activates the extension SHOULD echo `EXT` in the `A2A-Extensions` response header, as A2A recommends. A server that receives a Message carrying a `Part` whose `mediaType` is a MACP Envelope media type (§5) without the extension being activated MUST NOT accept the Envelope. It MUST reject the request with `ExtensionSupportRequiredError` (§11).
+A server that activates the extension SHOULD echo `EXT` in the `A2A-Extensions` response header, as A2A recommends. A server that receives a Message carrying a `Part` whose `mediaType` is a MACP Envelope media type under the comparison of §5.1, parameters or not, without the extension being activated MUST NOT accept the Envelope. It MUST reject the request with `ExtensionSupportRequiredError` (§11).
 
 ---
 
@@ -100,6 +102,8 @@ A Message that carries MACP MUST carry exactly one Envelope, in exactly one `Par
 | Protobuf (OPTIONAL) | `raw`: the protobuf-encoded `macp.v1.Envelope` (base64 in A2A JSON) | `application/macp-envelope+proto` |
 
 Both media types are registered in [`registries/media-types.md`](../registries/media-types.md) (RFC-MACP-0001 §10.5). A server MUST accept the JSON encoding and MAY accept the protobuf encoding. A server that receives an encoding it does not accept MUST reject the request with `ContentTypeNotSupportedError` (§11).
+
+**Media type comparison.** A receiver compares `Part.mediaType` with the two Envelope media types as RFC 9110 §8.3.1 compares media types: the type and the subtype are compared ASCII case-insensitively, and spaces and horizontal tabs before the type, after the subtype and before a `;` are ignored. Unicode case folding MUST NOT be used: a `mediaType` whose type or subtype contains a non-ASCII character is never an Envelope Part. A Part whose type and subtype equal those of an Envelope media type under this comparison is an Envelope Part, whatever its case. An Envelope Part whose `mediaType` carries any media type parameters, that is, anything from a `;` after the subtype on (for example `application/macp-envelope+json; charset=utf-8`), MUST be rejected with `ContentTypeNotSupportedError` (§11). It MUST NOT be skipped as a Part that is not MACP, and it counts toward the one-Envelope-per-Message rule below; a Message that carries two or more Envelope Parts is rejected as two or more Envelope Parts, whatever their parameters. The parameter check precedes decoding: a parameter-bearing Envelope Part is rejected with `ContentTypeNotSupportedError` whether or not its content decodes, never with the in-band `INVALID_ENVELOPE` of §11.2. It follows the activation check of §4: without the extension activated, the error is `ExtensionSupportRequiredError`. A sender MUST write `Part.mediaType` exactly as `application/macp-envelope+json` or `application/macp-envelope+proto`: lowercase, with no parameters.
 
 A Message that carries an Envelope Part MAY carry other Parts. Those other Parts are not MACP. They MUST NOT be submitted to the runtime, MUST NOT affect session state, and MUST NOT be interpreted as part of the Envelope. A Message that carries two or more Envelope Parts MUST be rejected as a whole (§11), so that a single A2A request never yields more than one acceptance decision.
 
@@ -296,6 +300,7 @@ Once an Envelope reaches the runtime, every MACP rejection is reported in the Ac
 |---|---|---|
 | Message carries an Envelope Part without the extension activated (§4) | `ExtensionSupportRequiredError` | `INVALID_REQUEST` |
 | Envelope Part uses an encoding the server does not accept (§5.1) | `ContentTypeNotSupportedError` | `INVALID_REQUEST` |
+| Envelope Part's `mediaType` carries media type parameters (§5.1) | `ContentTypeNotSupportedError` | `INVALID_REQUEST` |
 | Message carries two or more Envelope Parts (§5.1) | JSON-RPC Invalid params (`-32602`) | `INVALID_REQUEST` |
 | `Message.taskId` names a Task that does not exist, or one the caller may not observe | `TaskNotFoundError` | `SESSION_NOT_FOUND` |
 | `Message.taskId` names a Task in a terminal state (A2A requires this error) | `UnsupportedOperationError` | `SESSION_NOT_OPEN` |
