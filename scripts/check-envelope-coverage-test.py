@@ -34,10 +34,12 @@ file whose purpose is to stop coverage claims from drifting, is a liability,
 so re-derive these three numbers by running this file rather than trusting
 any number printed in a docstring, including this one. What IS stable prose:
 every site gets at least one mutation except the one named below, and exactly
-one site -- shape_errors' type/$ref comparison -- gets three: one proves the
-top-level comparison, one proves it also works through the recursive "items"
-leg, and one proves a float field is held to $defs.JsonDouble rather than to a
-bare number (issue #246). The one checker site with no mutation at all is
+two sites get more than one. shape_errors' type/$ref comparison gets three:
+one proves the top-level comparison, one proves it also works through the
+recursive "items" leg, and one proves a float field is held to
+$defs.JsonDouble rather than to a bare number (issue #246). Check 6's
+JSON_ONLY_DEFS-still-exists loop gets two, one per allowlisted name
+(Base64Bytes, JsonDouble). The one checker site with no mutation at all is
 documented, not hidden: `parse_proto`'s `except OSError` branch fires only
 for a proto file that EXISTS but cannot be READ, which needs a permission
 bit (`chmod`) this harness deliberately does not set -- following
@@ -389,6 +391,21 @@ def mutate_confidence_bare_number(tree: Path) -> str:
     return "SignalPayload.confidence bare number"
 
 
+def mutate_progress_type_beside_ref(tree: Path) -> str:
+    """ProgressPayload.progress keeps its $ref to $defs.JsonDouble but gains
+    a sibling `"type": "number"` -- under draft 2020-12 that applies
+    alongside the $ref and rejects every string form again, while the $ref
+    comparison alone stays green. An easy slip, because progress already
+    carries a sibling `minimum`. shape_errors' sibling-type guard."""
+    data = read_schema(tree)
+    prop = data["$defs"]["ProgressPayload"]["properties"]["progress"]
+    if prop.get("$ref") != "#/$defs/JsonDouble" or "type" in prop:
+        raise SystemExit("FAIL: progress is not a type-free JsonDouble $ref -- mutation is stale")
+    prop["type"] = "number"
+    write_schema(tree, data)
+    return "ProgressPayload.progress type beside $ref"
+
+
 def mutate_json_double_drops_negative_zero(tree: Path) -> str:
     """$defs.JsonDouble's string arm loses "-0" -- every float field still
     $refs JsonDouble, so check 5 stays green, and only check 6b notices that
@@ -717,6 +734,9 @@ MUTATIONS: tuple[tuple[str, object, object], ...] = (
     ("SignalPayload.confidence is a bare number instead of the JsonDouble $ref",
      mutate_confidence_bare_number,
      "expected $ref '#/$defs/JsonDouble', found None"),
+    ("ProgressPayload.progress gains a sibling \"type\" beside its JsonDouble $ref",
+     mutate_progress_type_beside_ref,
+     "has \"type\" 'number' beside its $ref '#/$defs/JsonDouble'"),
     ("$defs.JsonDouble's string arm drops \"-0\"",
      mutate_json_double_drops_negative_zero,
      "$defs.JsonDouble in"),
@@ -853,10 +873,10 @@ def mutate_source_unparseable(src: str) -> str:
 SOURCE_MUTATIONS = (
     ("a fail()/errors.append(...) site was added with no mutation covering it",
      mutate_source_site_added,
-     "but EXPECTED_FAIL_SITES pins 33"),
+     "but EXPECTED_FAIL_SITES pins 34"),
     ("a fail()/errors.append(...) site was removed",
      mutate_source_site_removed,
-     "but EXPECTED_FAIL_SITES pins 33"),
+     "but EXPECTED_FAIL_SITES pins 34"),
     ("the copied checker source is unparseable, so the count cannot be measured",
      mutate_source_unparseable,
      "could not be read or parsed at"),

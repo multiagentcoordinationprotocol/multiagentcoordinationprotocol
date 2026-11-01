@@ -134,7 +134,7 @@ JSON_DOUBLE_STRINGS = frozenset({"NaN", "Infinity", "-Infinity", "-0"})
 # source, MODULE-WIDE -- re-derive by measurement (see
 # check_own_assertion_count's docstring and scripts/check-envelope-coverage-
 # test.py), never hand-compute or copy a number from a plan.
-EXPECTED_FAIL_SITES = 33
+EXPECTED_FAIL_SITES = 34
 
 # EMPTY ON PURPOSE, and the emptiness is the point. A (message, field) pair
 # here declares a proto field deliberately absent from the canonical JSON
@@ -152,8 +152,8 @@ SCALAR_TYPES = frozenset({
 
 # Narrower than SCALAR_TYPES on purpose. "bytes", "double" and "float" are
 # deliberately absent -- they map to a $ref (Base64Bytes, JsonDouble), not a
-# bare "type" value, so base_shape handles them as their own cases. Only the scalar proto types that actually appear on a
-# reached field today are listed; an unlisted scalar (or an enum) must hit the
+# bare "type" value, so base_shape handles them as their own cases. Only the
+# scalar proto types that actually appear on a reached field today are listed; an unlisted scalar (or an enum) must hit the
 # "unknown proto type" branch and fail loudly rather than silently guess a
 # JSON type for a case nobody has reasoned about yet.
 SCALAR_JSON_TYPE = {
@@ -587,7 +587,13 @@ def shape_errors(expected: dict, actual: dict, context: str) -> list[str]:
     on exactly type/items/additionalProperties/$ref -- the only keys
     expected_shape ever produces. Every other JSON-Schema authoring keyword
     on `actual` (required, minimum, minLength, pattern, description, format)
-    has no proto counterpart and is deliberately not inspected."""
+    has no proto counterpart and is deliberately not inspected.
+
+    One exception to "only the keys `expected` names": where `expected` is a
+    $ref, a sibling "type" on `actual` is an error. Under draft 2020-12 it
+    applies alongside the $ref, so `{"$ref": "#/$defs/JsonDouble", "type":
+    "number"}` silently rejects every string form JsonDouble admits (issue
+    #246) while the $ref comparison alone stays green."""
     errors: list[str] = []
     for key in ("type", "$ref"):
         if key in expected and expected[key] != actual.get(key):
@@ -595,6 +601,12 @@ def shape_errors(expected: dict, actual: dict, context: str) -> list[str]:
                 "%s: expected %s %r, found %r"
                 % (context, key, expected[key], actual.get(key))
             )
+    if "$ref" in expected and "type" in actual:
+        errors.append(
+            "%s: has \"type\" %r beside its $ref %r -- under draft 2020-12 a "
+            "sibling type narrows the referenced shape; drop it"
+            % (context, actual["type"], expected["$ref"])
+        )
     if "items" in expected:
         actual_items = actual.get("items")
         if not isinstance(actual_items, dict):
@@ -673,10 +685,11 @@ def check_reverse_and_orphans(
     Then, every $defs entry overall must be either reached or explicitly
     named in JSON_ONLY_DEFS -- and, the other direction, every name in
     JSON_ONLY_DEFS must still exist. That second half is this check's job,
-    not Check 5's: Base64Bytes is never queued by Check 3's BFS (it is a
-    scalar-mapped $ref, not a message type), so it is the one $defs entry
-    with no reachability-based defence anywhere else in this script against
-    being deleted while still $ref'd -- reported once per allowlisted name,
+    not Check 5's: Base64Bytes and JsonDouble are never queued by Check 3's
+    BFS (each is a scalar-mapped $ref, not a message type), so they are the
+    two $defs entries with no reachability-based defence anywhere else in
+    this script against being deleted while still $ref'd -- reported once
+    per allowlisted name,
     not once per field that happens to $ref it."""
     errors: list[str] = []
     defs = schema.get("$defs", {})

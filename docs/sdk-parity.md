@@ -105,7 +105,7 @@ The optional features themselves:
 - **Agent framework** — Participant abstraction, dispatcher, strategies, bootstrap
 - **Logging** — structured logging helpers
 - **A2A binding codec** — RFC-MACP-0014 (1.1.2-draft); both SDKs have one on main (unreleased),
-  each running all 106 vectors in `schemas/conformance/a2a/` — see
+  each running every vector in `schemas/conformance/a2a/` — see
   [IMPLEMENTATIONS.md](../IMPLEMENTATIONS.md#bindings)
 - **multi_round session helper** — `MultiRoundSession` and `MultiRoundProjection` for `ext.multi_round.v1`
 
