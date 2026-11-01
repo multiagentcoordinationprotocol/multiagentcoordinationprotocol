@@ -1,6 +1,6 @@
 .PHONY: prose-check prose-check-selftest parity-contract-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
 	conformance-lint cmt-hash-vectors receipt-vectors a2a-vectors parity-contract check-indexes clean install-tools \
-	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync gen-tool-schemas envelope-coverage envelope-coverage-selftest conformance-bundle
+	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync gen-tool-schemas envelope-coverage envelope-coverage-selftest proto-rpc-bump-selftest conformance-bundle
 
 PROTO_SRC := schemas/proto
 PROTO_FILES := macp/v1/envelope.proto macp/v1/core.proto macp/v1/policy.proto \
@@ -28,6 +28,7 @@ help:
 	@echo "  make proto-compile         Compile Protocol Buffer schemas, and check schemas/json/tools/ is regenerated"
 	@echo "  make envelope-coverage     Check envelope schema covers core.proto's Core payloads (issue #173)"
 	@echo "  make envelope-coverage-selftest  Prove the envelope-coverage assertions reject what they promise"
+	@echo "  make proto-rpc-bump-selftest  Prove the release guard rejects a service RPC change in a patch bump (issue #250)"
 	@echo ""
 	@echo "Code Generation (per-language into packages/):"
 	@echo "  make gen-go                Generate Go into packages/proto-go/"
@@ -52,7 +53,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors receipt-vectors a2a-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync envelope-coverage envelope-coverage-selftest
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors receipt-vectors a2a-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync envelope-coverage envelope-coverage-selftest proto-rpc-bump-selftest
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -151,6 +152,13 @@ envelope-coverage:
 envelope-coverage-selftest:
 	@echo "Checking the envelope-coverage assertions actually bite..."
 	@python3 scripts/check-envelope-coverage-test.py
+
+# Regression proof (issue #250) for the release guard scripts/check-proto-rpc-bump.py, which
+# publish-proto-packages.yml runs on every proto-v* tag. Synthetic protos and a throwaway git
+# repo only -- offline, never reads this repo's tags.
+proto-rpc-bump-selftest:
+	@echo "Checking the proto RPC version-bump guard actually bites..."
+	@python3 scripts/check-proto-rpc-bump-test.py
 
 # Compile protobuf to validate syntax
 proto-compile:
