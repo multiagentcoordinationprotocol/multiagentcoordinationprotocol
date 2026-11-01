@@ -75,7 +75,7 @@ Proto definitions are published as versioned packages for downstream consumers:
 ### Releasing a new proto version
 
 1. Merge proto schema changes to `main` (the BSR push happens automatically).
-2. Tag the commit: `git tag proto-v0.X.0 && git push origin proto-v0.X.0`
+2. Choose the version by the rules in [VERSIONING.md §8](VERSIONING.md#8-published-proto-packages). A release that adds, removes or changes a service RPC bumps the minor version (`0.1.x` → `0.2.0`), and the publish workflow refuses a patch release that does. Then tag the commit: `git tag proto-vX.Y.Z && git push origin proto-vX.Y.Z`
 3. The `publish-proto-packages.yml` workflow publishes every package in the table above. To backfill npmjs for a version that is already tagged, run it with `workflow_dispatch`, `npmjs_only: true` and `dry_run: false`.
 4. Downstream projects upgrade by bumping the dependency version in their manifest.
 

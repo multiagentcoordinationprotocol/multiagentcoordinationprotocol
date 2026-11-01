@@ -31,3 +31,6 @@ using Macp.Modes.Quorum.V1;
 ## Versioning
 
 This package version tracks the proto schema version from the spec repo.
+A release that adds, removes or changes a service RPC bumps the minor version (0.1.x to 0.2.0),
+so a caret requirement on 0.1.x never picks up a new RPC. See
+[VERSIONING.md §8](../../VERSIONING.md#8-published-proto-packages).

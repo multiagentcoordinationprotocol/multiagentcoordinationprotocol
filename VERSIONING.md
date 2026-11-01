@@ -73,9 +73,48 @@ are not versioned with these releases (`packages/proto-go/README.md`). Rules:
   use bare `vX.Y.Z` tags for proto releases — the tag trigger matches
   `proto-v*` only, and bare `v*` tags are reserved for spec-level releases.
   (The stray `v0.1.4` tag is the mistake this rule exists to prevent.)
-- Field additions are proto3-backward-compatible and bump the PATCH/MINOR
-  version; anything wire-breaking is not permitted post-freeze without a
-  new package major.
+- **Choosing the number.** Compare `schemas/proto` with the previous
+  `proto-v*` tag:
+  - **A service RPC added, removed or changed bumps the MINOR version**
+    (`0.1.x` → `0.2.0`). This applies to
+    every service (`macp.v1` core, policy, or a mode) and to every language
+    package, since they all share the one version and tag. A changed RPC means
+    a different request type, response type, or `stream` keyword.
+  - **Message, field and enum-value additions may stay PATCH releases.**
+    They are proto3-backward-compatible.
+  - **Removals and other breaking changes** follow the existing rules: nothing
+    wire-breaking is permitted post-freeze without a new package major, and
+    the PR needs the `proto-breaking` label and migration notes
+    (`CONTRIBUTING.md`, "Substantive Changes").
+
+  Why RPCs are special: consumers depend on these packages with caret
+  requirements, such as `macp-proto = "0.1.13"` in Cargo or `^0.1.0` in npm.
+  Before 1.0, a caret accepts any later patch but never a new minor. Rust
+  consumers generate service traits in `build.rs` from whichever `macp-proto`
+  Cargo resolves. An RPC added in a patch release is therefore picked up by
+  every already-published consumer, which has no handler for it and stops
+  compiling. That happened with `WhatIfReplay`, added in 0.1.12 as a patch:
+  published `macp-runtime` 0.9.0 no longer builds without `--locked` (E0046,
+  issue #250, macp-runtime#253). A minor bump is never selected by an
+  existing `0.1.x` requirement, so published consumers keep building until
+  they choose to upgrade. This protection depends on pre-1.0 caret
+  semantics: from 1.0 on, a caret accepts new minors, so the rule MUST be
+  revisited (an RPC change would need a major bump) before cutting 1.0.
+
+  **Enforced at release.** Before anything publishes (dry runs included),
+  `publish-proto-packages.yml` runs `scripts/check-proto-rpc-bump.py`. It
+  compares the `service`/`rpc` signatures in every `.proto` file under
+  `schemas/proto` between the release and the highest `proto-v*` tag below
+  it, and fails if any signature differs while the minor (or major) version
+  did not go up. The guard enforces only that minimum: it accepts an RPC
+  removal on a minor bump, and the breaking-change rules above still apply.
+  To check a planned version before tagging, run `git fetch --tags`, then
+  `python3 scripts/check-proto-rpc-bump.py --new-version X.Y.Z` on the commit
+  you plan to tag (with no local `proto-v*` tags it has nothing to compare
+  and passes). `make proto-rpc-bump-selftest` proves the guard rejects what
+  it should. The guard also blocks a full re-run of the workflow for 0.1.12
+  and 0.1.13, which were released before it existed and added RPCs as
+  patches; `npmjs_only` backfills skip it.
 - **Generator versions MUST be pinned.** Every remote plugin in
   `buf/buf.gen.*.yaml` carries an explicit revision, and the Python generator
   (`grpcio-tools`) is pinned in both `publish-proto-packages.yml` and `ci.yml`.

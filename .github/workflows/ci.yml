@@ -107,6 +107,11 @@ jobs:
           echo "Checking the envelope-coverage assertions reject what they promise..."
           python3 scripts/check-envelope-coverage-test.py
 
+      - name: Prove the proto RPC version-bump guard bites (issue #250)
+        run: |
+          echo "Checking check-proto-rpc-bump.py rejects a service RPC change in a patch bump..."
+          python3 scripts/check-proto-rpc-bump-test.py
+
       - name: Build the release conformance bundle (E4)
         run: python3 scripts/build-conformance-bundle.py --version ci --out dist
 

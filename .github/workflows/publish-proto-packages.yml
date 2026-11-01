@@ -47,6 +47,29 @@ jobs:
           echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION (dry_run: $DRY_RUN)"
 
+      # Every publish job needs this job, so nothing publishes (dry runs included) until the
+      # guard passes. Policy: VERSIONING.md §8 (issue #250) -- a
+      # release that adds, removes or changes a service RPC must bump the minor version.
+      # Skipped for npmjs_only, which re-publishes an existing, already-numbered version.
+      - uses: actions/checkout@v7
+        if: inputs.npmjs_only != true
+        with:
+          fetch-depth: 0 # the guard reads every proto-v* tag
+
+      - name: Check service RPC changes bump the minor version
+        if: inputs.npmjs_only != true
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # The release ref: the tag when it exists (tag push, or dispatch of a tagged version),
+          # otherwise the dispatched commit.
+          if git rev-parse -q --verify "refs/tags/proto-v$VERSION" >/dev/null; then
+            NEW_REF="proto-v$VERSION"
+          else
+            NEW_REF="HEAD"
+          fi
+          python3 scripts/check-proto-rpc-bump.py --new-version "$VERSION" --new-ref "$NEW_REF"
+
   # ── npm (@multiagentcoordinationprotocol/proto) ──────────────────────
   publish-npm:
     name: Publish npm Package (@multiagentcoordinationprotocol/proto)
