@@ -207,6 +207,7 @@ MACP/
     task-mode-session.json
     handoff-mode-session.json
     quorum-mode-session.json
+    multi-round-session.json
     policy-decision-session.json
     policy-registration-exchange.json
     a2a-binding-session.json

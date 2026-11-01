@@ -1,0 +1,83 @@
+{
+  "description": "Illustrative Multi-Round Mode transcript (ext.multi_round.v1, a runtime-shipped extension, not standards-track): alice contributes option_a (round 1), bob contributes option_b (round 2), bob changes to option_a (round 3). Every declared participant's latest value is now equal, so the session converges (all_equal) but stays OPEN until the initiator commits. Contribute payloads are shown as the canonical JSON mapping of macp.modes.multi_round.v1.ContributePayload; senders encode them as canonical protobuf on the wire.",
+  "protocol_version": "1.0",
+  "mode": "ext.multi_round.v1",
+  "session_id": "01JCMRND9Y5P9V4H0A8E0F4Q01",
+  "messages": [
+    {
+      "macp_version": "1.0",
+      "mode": "ext.multi_round.v1",
+      "message_type": "SessionStart",
+      "message_id": "01JCMRNDST4RT0000000000001",
+      "session_id": "01JCMRND9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://coordinator",
+      "timestamp": "2026-03-14T10:00:00Z",
+      "payload": {
+        "intent": "Converge on one rollout option",
+        "participants": [
+          "agent://alice",
+          "agent://bob"
+        ],
+        "mode_version": "1.0.0",
+        "configuration_version": "rollout-multi-round-2026.03",
+        "policy_version": "policy.default",
+        "ttl_ms": 300000
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "ext.multi_round.v1",
+      "message_type": "Contribute",
+      "message_id": "01JCMRND000000000000000002",
+      "session_id": "01JCMRND9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://alice",
+      "timestamp": "2026-03-14T10:00:05Z",
+      "payload": {
+        "value": "option_a"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "ext.multi_round.v1",
+      "message_type": "Contribute",
+      "message_id": "01JCMRND000000000000000003",
+      "session_id": "01JCMRND9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://bob",
+      "timestamp": "2026-03-14T10:00:10Z",
+      "payload": {
+        "value": "option_b"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "ext.multi_round.v1",
+      "message_type": "Contribute",
+      "message_id": "01JCMRND000000000000000004",
+      "session_id": "01JCMRND9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://bob",
+      "timestamp": "2026-03-14T10:00:20Z",
+      "payload": {
+        "value": "option_a"
+      }
+    },
+    {
+      "macp_version": "1.0",
+      "mode": "ext.multi_round.v1",
+      "message_type": "Commitment",
+      "message_id": "01JCMRND000000000000000005",
+      "session_id": "01JCMRND9Y5P9V4H0A8E0F4Q01",
+      "sender": "agent://coordinator",
+      "timestamp": "2026-03-14T10:00:30Z",
+      "payload": {
+        "commitment_id": "cmt-01JCMRND000000000000000005",
+        "outcome_positive": true,
+        "action": "multi_round.converged",
+        "authority_scope": "rollout",
+        "reason": "All declared participants converged on option_a after 3 rounds",
+        "mode_version": "1.0.0",
+        "policy_version": "policy.default",
+        "configuration_version": "rollout-multi-round-2026.03"
+      }
+    }
+  ]
+}
