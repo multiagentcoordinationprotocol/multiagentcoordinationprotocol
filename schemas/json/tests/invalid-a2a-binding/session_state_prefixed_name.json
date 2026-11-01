@@ -1,0 +1,5 @@
+{
+  "_def": "SessionStateMetadata",
+  "_invalid_because": "EXT/sessionState is the bare MACP state name (RFC-MACP-0014 §8); SESSION_STATE_RESOLVED is the Ack's spelling and is never written here.",
+  "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/sessionState": "SESSION_STATE_RESOLVED"
+}

@@ -1,0 +1,41 @@
+{
+  "_def": "AckMessage",
+  "_invalid_because": "The Ack Message carries exactly one Part (RFC-MACP-0014 §5.2); this one repeats a valid Ack Part.",
+  "messageId": "ack-01JD2A2A0V0TE0000000000003",
+  "taskId": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+  "contextId": "ctx-txn-48000",
+  "role": "ROLE_AGENT",
+  "extensions": [
+    "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1"
+  ],
+  "parts": [
+    {
+      "mediaType": "application/json",
+      "data": {
+        "ok": true,
+        "duplicate": false,
+        "message_id": "01JD2A2A0V0TE0000000000003",
+        "session_id": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+        "accepted_at_unix_ms": 1792918802000,
+        "session_state": "SESSION_STATE_OPEN"
+      },
+      "metadata": {
+        "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/kind": "ack"
+      }
+    },
+    {
+      "mediaType": "application/json",
+      "data": {
+        "ok": true,
+        "duplicate": false,
+        "message_id": "01JD2A2A0V0TE0000000000003",
+        "session_id": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+        "accepted_at_unix_ms": 1792918802000,
+        "session_state": "SESSION_STATE_OPEN"
+      },
+      "metadata": {
+        "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/kind": "ack"
+      }
+    }
+  ]
+}

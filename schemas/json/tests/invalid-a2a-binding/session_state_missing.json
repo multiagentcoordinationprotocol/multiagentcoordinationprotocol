@@ -1,0 +1,4 @@
+{
+  "_def": "SessionStateMetadata",
+  "_invalid_because": "Task.metadata and TaskStatusUpdateEvent.metadata MUST carry EXT/sessionState (RFC-MACP-0014 §8); a client never falls back to TaskState."
+}

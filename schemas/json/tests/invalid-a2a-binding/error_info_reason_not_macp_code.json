@@ -1,0 +1,12 @@
+{
+  "_def": "ErrorInfo",
+  "_invalid_because": "reason is a MACP error code from registries/error-codes.md (RFC-MACP-0014 §11.1), in UPPER_SNAKE_CASE; an A2A error type name is not one.",
+  "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+  "reason": "TaskNotFoundError",
+  "domain": "multiagentcoordinationprotocol.io",
+  "metadata": {
+    "session_id": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+    "message_id": "01JD2A2A0V0TE0000000000004",
+    "duplicate": "true"
+  }
+}

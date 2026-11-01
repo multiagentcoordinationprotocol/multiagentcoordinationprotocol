@@ -1,0 +1,6 @@
+{
+  "_def": "EnvelopePart",
+  "_invalid_because": "A raw (Protobuf) Part labelled application/macp-envelope+json matches neither arm: the Protobuf arm requires mediaType application/macp-envelope+proto (RFC-MACP-0014 §5.1).",
+  "mediaType": "application/macp-envelope+json",
+  "raw": "CgMxLjASFW1hY3AubW9kZS5kZWNpc2lvbi52MQ=="
+}

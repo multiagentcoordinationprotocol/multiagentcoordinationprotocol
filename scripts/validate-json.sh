@@ -394,14 +394,17 @@ except ValueError as exc:
 
 # See the shell comment above this file's own write-out for why `if` is
 # dropped and oneOf/anyOf branches are collapsed to their wrapper's schemaPath.
-BRANCH = re.compile(r"^(.*/(?:oneOf|anyOf))/\d+(?:/.*)?$")
+# `contains` is collapsed the same way: ajv reports one error per array item the
+# `contains` subschema failed on, plus the `contains` itself, and all of them are
+# the one violated constraint "no item matches".
+BRANCH = re.compile(r"^(.*/(?:oneOf|anyOf))/\d+(?:/.*)?$|^(.*(?<!/properties)/contains)/.+$")
 reasons = {}
 for e in errors:
     if e.get("keyword") == "if":
         continue
     schema_path = e.get("schemaPath", "")
     m = BRANCH.match(schema_path)
-    group = m.group(1) if m else schema_path
+    group = (m.group(1) or m.group(2)) if m else schema_path
     reasons.setdefault(group, e)
 
 if len(reasons) != 1:
@@ -416,9 +419,11 @@ if len(reasons) != 1:
 sys.exit(0)
 PYCHECK
 
+# Arguments after the first two are passed to ajv unchanged (the A2A block uses
+# this for `-r macp-envelope.schema.json`, which its EnvelopePart $def references).
 assert_fixture_isolated() {
     if ! ajv validate -s "$1" -d "$2" --spec=draft2020 --strict=false \
-        --all-errors --errors=json 2>&1 | python3 "${ASSERT_FIXTURE_ISOLATED_PY}" "$2"
+        --all-errors --errors=json "${@:3}" 2>&1 | python3 "${ASSERT_FIXTURE_ISOLATED_PY}" "$2"
     then
         return 1
     fi
@@ -1114,6 +1119,118 @@ while IFS="$(printf '\t')" read -r kind path label; do
     fi
 done < "${HTTP_TMP}/manifest.txt"
 echo ""
+
+# --- A2A binding shapes (RFC-MACP-0014) ---
+#
+# macp-a2a-binding.schema.json is a bag of $defs with an accept-anything root, so
+# it is checked differently from every other schema here. ajv-cli validates
+# against a whole file, not a $def, so scripts/extract-a2a-objects.py first
+# writes one copy of the schema per $def with its root $ref'd to that $def, and
+# every check below names the copy for the object's role. Each copy also needs
+# `-r macp-envelope.schema.json`, which the EnvelopePart data arm references.
+#
+# Positive side: each A2A object in examples/a2a-binding-session.json, located
+# by position (see the extractor's docstring) and validated against its $def.
+# The counts are pinned for the same reason EXPECTED_RULES_INSTANCES is: an
+# extractor that silently stops finding objects lowers the count while every
+# remaining object still passes. Bump a count when the transcript gains one.
+#
+# Negative side: schemas/json/tests/invalid-a2a-binding/, one constraint per
+# fixture. The fixture's top-level `_def` names the $def it is checked against
+# (an unknown or missing `_def` fails the run); `_invalid_because` sits beside
+# it. Every $def is open at the top level, so neither annotation is a second
+# rejection reason. No fixture breaks the Envelope inside a data Part: that is
+# macp-envelope.schema.json's job and tests/invalid/'s corpus, and ajv reports
+# errors inside the cross-file $ref with schemaPaths rooted in the envelope
+# schema, which the isolation guard cannot collapse into the EnvelopePart oneOf.
+# The two mediaType-mismatch fixtures fail BOTH arms of that discriminated oneOf,
+# so each also flips if the other arm's `required` member is removed. That is
+# inherent to a discriminated oneOf; no one keyword flips two fixtures.
+A2A_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-a2a-binding.schema.json"
+A2A_TRANSCRIPT="${PROJECT_ROOT}/examples/a2a-binding-session.json"
+A2A_INVALID_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-a2a-binding"
+A2A_EXTRACTOR="${PROJECT_ROOT}/scripts/extract-a2a-objects.py"
+EXPECTED_A2A_OBJECTS="AckMessage=5 AgentExtension=1 EnvelopePart=14 ErrorInfo=2 ObservationArtifact=7 SessionStateMetadata=2"
+A2A_TMP="${TMP_ENV_DIR}/a2a"
+mkdir -p "${A2A_TMP}/wrap" "${A2A_TMP}/objects"
+
+echo "-- A2A binding shapes (${A2A_SCHEMA}) --"
+echo ""
+for f in "${A2A_SCHEMA}" "${A2A_TRANSCRIPT}" "${A2A_EXTRACTOR}"; do
+    if [ ! -f "${f}" ]; then
+        echo "[X] Not found: ${f}"
+        exit 1
+    fi
+done
+if [ ! -d "${A2A_INVALID_DIR}" ]; then
+    echo "[X] A2A negative-fixture directory not found: ${A2A_INVALID_DIR}"
+    exit 1
+fi
+if ! python3 "${A2A_EXTRACTOR}" wrap "${A2A_SCHEMA}" "${A2A_TMP}/wrap" > "${A2A_TMP}/defs.txt"; then
+    echo "[X] Could not write per-\$def schema copies"
+    exit 1
+fi
+if ! python3 "${A2A_EXTRACTOR}" extract "${A2A_TRANSCRIPT}" "${A2A_TMP}/objects" > "${A2A_TMP}/objects.tsv"; then
+    echo "[X] Could not extract A2A objects from $(basename "${A2A_TRANSCRIPT}")"
+    exit 1
+fi
+
+A2A_COUNTS="$(cut -f1 "${A2A_TMP}/objects.tsv" | sort | uniq -c | awk '{printf "%s%s=%s", sep, $2, $1; sep=" "}')"
+if [ "${A2A_COUNTS}" != "${EXPECTED_A2A_OBJECTS}" ]; then
+    echo "[X] $(basename "${A2A_TRANSCRIPT}") yielded ${A2A_COUNTS:-nothing}"
+    echo "    expected                ${EXPECTED_A2A_OBJECTS}"
+    echo "    Bump EXPECTED_A2A_OBJECTS if the transcript changed on purpose."
+    exit 1
+fi
+
+a2a_idx=0
+while IFS="$(printf '\t')" read -r def where; do
+    obj="$(printf '%s/objects/%s__%03d.json' "${A2A_TMP}" "${def}" "${a2a_idx}")"
+    a2a_idx=$((a2a_idx + 1))
+    TOTAL=$((TOTAL + 1))
+    if ajv validate -s "${A2A_TMP}/wrap/a2a-${def}.schema.json" -r "${ENVELOPE_SCHEMA}" -d "${obj}" \
+        --spec=draft2020 --strict=false >/dev/null 2>&1; then
+        VALIDATED=$((VALIDATED + 1))
+        echo "  [OK] ${def}: ${where}"
+    else
+        echo "  [X] ${def} at ${where} in $(basename "${A2A_TRANSCRIPT}") failed validation:"
+        ajv validate -s "${A2A_TMP}/wrap/a2a-${def}.schema.json" -r "${ENVELOPE_SCHEMA}" -d "${obj}" \
+            --spec=draft2020 --strict=false || true
+        exit 1
+    fi
+done < "${A2A_TMP}/objects.tsv"
+echo ""
+
+echo "-- Negative A2A binding tests (${A2A_INVALID_DIR}/*.json) --"
+echo "Each fixture MUST FAIL validation against the \$def its _def names."
+echo ""
+a2a_count=0
+for f in "${A2A_INVALID_DIR}"/*.json; do
+    [ -f "$f" ] || continue
+    a2a_count=$((a2a_count + 1))
+    TOTAL=$((TOTAL + 1))
+    def="$(python3 -c "import json, sys; d = json.load(open(sys.argv[1])); print(d.get('_def', '') if isinstance(d, dict) else '')" "$f")"
+    echo "Checking (expect rejection): $(basename "$f") -> ${def:-?}"
+    if [ -z "${def}" ] || ! grep -qx "${def}" "${A2A_TMP}/defs.txt"; then
+        echo "  [X] _def is missing or names no \$def of $(basename "${A2A_SCHEMA}")"
+        exit 1
+    fi
+    wrap_schema="${A2A_TMP}/wrap/a2a-${def}.schema.json"
+    if ajv validate -s "${wrap_schema}" -r "${ENVELOPE_SCHEMA}" -d "${f}" --spec=draft2020 --strict=false >/dev/null 2>&1; then
+        echo "  [X] Fixture unexpectedly PASSED -- ${def} no longer rejects this case"
+        exit 1
+    fi
+    VALIDATED=$((VALIDATED + 1))
+    echo "  [OK] Correctly rejected"
+    if ! assert_fixture_isolated "${wrap_schema}" "${f}" -r "${ENVELOPE_SCHEMA}"; then
+        exit 1
+    fi
+    echo ""
+done
+if [ "${a2a_count}" -eq 0 ]; then
+    echo "[X] ${A2A_INVALID_DIR} contains no fixtures -- an empty directory is not coverage."
+    exit 1
+fi
 
 if [ $TOTAL -eq 0 ]; then
     echo "Warning: No JSON example files found"

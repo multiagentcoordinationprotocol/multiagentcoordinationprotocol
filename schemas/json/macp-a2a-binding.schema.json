@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://macp.dev/schemas/macp-a2a-binding.schema.json",
+  "title": "MACP A2A Binding Shapes",
+  "description": "The A2A-side objects of the A2A extension binding (RFC-MACP-0014, 1.1.0-draft), one $def each. The root accepts anything: validate an object against the $def that names its role, for example https://macp.dev/schemas/macp-a2a-binding.schema.json#/$defs/AckMessage. Only the members RFC-MACP-0014 defines are pinned. A2A's own fields and constraints are not restated, so every object stays open (additionalProperties: true), and A2A's official JSON Schema is deliberately not vendored. EXT below is the extension URI https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1 (§2); each metadata key is EXT followed by '/' and the key name. Rules that span more than one object are not schema-expressible and are not checked here: Message.taskId equal to Envelope.session_id (§6.1), artifactId equal to 'macp:' + the carried Envelope's message_id and name equal to its message_type (§9.1), the TaskState that goes with each session state (§8), and the uniqueness of an Ack Message's messageId (§5.2). The sender-side canonical forms of §5.3 (standard padded base64, the fixed timestamp format, payload_b64 for mode-defined ext.* payloads) are not pinned either, because a receiver MUST accept the wider forms. Requires macp-envelope.schema.json, which the data arm of EnvelopePart references by $id.",
+  "$defs": {
+    "EnvelopePart": {
+      "description": "A2A Part carrying exactly one MACP Envelope (RFC-MACP-0014 §5.1). The two arms are discriminated by mediaType: the JSON arm carries the canonical JSON mapping of the Envelope (RFC-MACP-0001 §10) in data, and the Protobuf arm carries the encoded macp.v1.Envelope as base64 in raw. A data arm labelled with the proto media type, or the reverse, matches neither arm. A2A's own Part rules (one content member) are A2A's and are not restated.",
+      "type": "object",
+      "additionalProperties": true,
+      "oneOf": [
+        {
+          "title": "JSON encoding (REQUIRED for servers to accept)",
+          "required": ["data", "mediaType"],
+          "properties": {
+            "mediaType": { "const": "application/macp-envelope+json" },
+            "data": { "$ref": "https://macp.dev/schemas/macp-envelope.schema.json" }
+          }
+        },
+        {
+          "title": "Protobuf encoding (OPTIONAL)",
+          "required": ["raw", "mediaType"],
+          "properties": {
+            "mediaType": { "const": "application/macp-envelope+proto" },
+            "raw": {
+              "type": "string",
+              "contentEncoding": "base64",
+              "pattern": "^(?:(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?|(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==)?|[A-Za-z0-9_-]{3}=?)?)$",
+              "description": "Protobuf-encoded macp.v1.Envelope as base64. Senders write the standard alphabet with padding (RFC 4648 §4); receivers MUST also accept the URL-safe alphabet and unpadded input (RFC-MACP-0014 §5.3), so this pattern admits either alphabet (not a mix), padded or unpadded, at a length some decoder accepts."
+            }
+          }
+        }
+      ]
+    },
+    "AckMessage": {
+      "description": "The A2A Message returned for a SendMessage request that carries an Envelope (RFC-MACP-0014 §5.2): role ROLE_AGENT, EXT listed in extensions, and exactly one Part holding the macp.v1.Ack. messageId is server-chosen and MUST be unique per response Message; uniqueness is not schema-expressible. contextId and taskId follow §5.2 and §6 and are relational, so they are not pinned.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["messageId", "role", "extensions", "parts"],
+      "properties": {
+        "messageId": { "type": "string", "minLength": 1 },
+        "role": { "const": "ROLE_AGENT" },
+        "extensions": {
+          "type": "array",
+          "contains": { "const": "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1" }
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/AckPart" }
+        }
+      }
+    },
+    "AckPart": {
+      "description": "The single Part of an AckMessage (RFC-MACP-0014 §5.2): data is the Ack, mediaType is application/json, and metadata carries EXT/kind = \"ack\". The Ack Part is not an Envelope and MUST NOT be encoded as one.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["data", "mediaType", "metadata"],
+      "properties": {
+        "data": { "$ref": "#/$defs/Ack" },
+        "mediaType": { "const": "application/json" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/kind"],
+          "properties": {
+            "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/kind": { "const": "ack" }
+          }
+        }
+      }
+    },
+    "Ack": {
+      "description": "macp.v1.Ack in the canonical JSON mapping (RFC-MACP-0001 §10), as carried in an Ack Part. RFC-MACP-0014 §5.2 makes RFC-MACP-0001 §10.10's SHOULD a MUST here: every field without explicit presence is emitted even at its default, so all six are required. error has explicit presence and is present if and only if ok is false. session_state uses the SESSION_STATE_* enum value name, never the bare name EXT/sessionState uses (§8). The Ack is checked as the server MUST emit it (§5.2), not with a decoder's leniency: a decoder would also read an absent field as its default and an integer session_state. accepted_at_unix_ms accepts the quoted decimal too, because §10.9 requires an encoder to quote a value above 2^53-1. In an Ack the server issues itself (§11.1), message_id and session_id may be \"\", accepted_at_unix_ms is 0 and session_state is SESSION_STATE_UNSPECIFIED, so none of those is constrained further.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["ok", "duplicate", "message_id", "session_id", "accepted_at_unix_ms", "session_state"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "duplicate": { "type": "boolean" },
+        "message_id": { "type": "string" },
+        "session_id": { "type": "string" },
+        "accepted_at_unix_ms": {
+          "type": ["integer", "string"],
+          "pattern": "^-?[0-9]+$",
+          "description": "int64. A JSON number; decoders also accept the quoted decimal form, and encoders quote values above 2^53-1 (RFC-MACP-0001 §10.9)."
+        },
+        "session_state": {
+          "enum": [
+            "SESSION_STATE_UNSPECIFIED",
+            "SESSION_STATE_OPEN",
+            "SESSION_STATE_RESOLVED",
+            "SESSION_STATE_EXPIRED",
+            "SESSION_STATE_SUSPENDED",
+            "SESSION_STATE_CANCELLED"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$",
+              "description": "Error code from registries/error-codes.md."
+            },
+            "message": { "type": "string" },
+            "session_id": { "type": "string" },
+            "message_id": { "type": "string" },
+            "details": { "type": "string", "contentEncoding": "base64" }
+          }
+        }
+      },
+      "if": {
+        "required": ["ok"],
+        "properties": { "ok": { "const": false } }
+      },
+      "then": { "required": ["error"] },
+      "else": { "not": { "required": ["error"] } }
+    },
+    "ObservationArtifact": {
+      "description": "An A2A Artifact exposing one accepted session-scoped Envelope (RFC-MACP-0014 §9.1): artifactId is \"macp:\" followed by Envelope.message_id, name is Envelope.message_type, parts is the one Envelope Part, metadata carries EXT/sequence, the 1-based ordinal of RFC-MACP-0006 §3.2, and extensions lists EXT. EXT/sequence is a JSON number with an integral value; 2.0 is the integer 2.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["artifactId", "name", "parts", "metadata", "extensions"],
+      "properties": {
+        "artifactId": { "type": "string", "pattern": "^macp:.+$" },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "not": { "enum": ["Signal", "SessionCancel", "SessionSuspend", "SessionResume"] },
+          "description": "Envelope.message_type. Signals are never session-scoped, and the runtime annotations SessionCancel, SessionSuspend and SessionResume consume no ordinal, so none of them is ever exposed as an Artifact (§9.1)."
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/EnvelopePart" }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/sequence"],
+          "properties": {
+            "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/sequence": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "contains": { "const": "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1" }
+        }
+      }
+    },
+    "AgentExtension": {
+      "description": "The AgentExtension entry in AgentCard.capabilities.extensions that declares this binding (RFC-MACP-0014 §3). description and required are A2A fields whose values are deployment choices, so they are not pinned.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["uri", "params"],
+      "properties": {
+        "uri": { "const": "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1" },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["macpVersions", "modes", "transport"],
+          "properties": {
+            "macpVersions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?([-+][0-9A-Za-z.-]+)?$"
+              },
+              "description": "MACP protocol versions accepted in Envelope.macp_version; the same pattern as macp-envelope.schema.json's macp_version. minItems is this schema's addition: a server that accepts no version cannot serve the binding."
+            },
+            "modes": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Mode identifiers accepted in SessionStart: a registries/modes.md identifier, an ext.* identifier, or a reverse-domain extension mode identifier. Registry membership is not schema-expressible. minItems is this schema's addition: a server that serves no mode cannot serve the binding."
+            },
+            "transport": { "const": "macp.transport.a2a.v1" },
+            "manifestUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "OPTIONAL. URL of the runtime's MACP manifest (RFC-MACP-0005 §7.1)."
+            }
+          }
+        }
+      }
+    },
+    "SessionStateMetadata": {
+      "description": "The metadata map of a session's Task, or of a TaskStatusUpdateEvent this binding produces (RFC-MACP-0014 §8). Both MUST carry EXT/sessionState, whose value is the bare MACP state name. The SESSION_STATE_* spelling belongs to the Ack only, and an implementation MUST NOT write either spelling in the other's place. A client reads the session state from this key, never from TaskState.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/sessionState"],
+      "properties": {
+        "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/sessionState": {
+          "enum": ["OPEN", "SUSPENDED", "RESOLVED", "EXPIRED", "CANCELLED"]
+        }
+      }
+    },
+    "ErrorInfo": {
+      "description": "The google.rpc.ErrorInfo that every A2A error this binding produces MUST carry in its details (RFC-MACP-0014 §11.1), for example as an element of a JSON-RPC error.data array. A client selects it by @type and domain, since A2A's own ErrorInfo MAY also be present. reason is a MACP error code from registries/error-codes.md. metadata SHOULD carry session_id and message_id when known. metadata.duplicate, when present, is the string \"true\": the error reports a retry of an Envelope already in the terminated session's accepted history (§12), which a client treats as a duplicate Ack. This schema pins \"true\", the only value §12 defines, so any other value fails here; ErrorInfo metadata is a string map, and the boolean true in particular is not the marker. A tolerant decoder reads any other value as not a duplicate.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["@type", "reason", "domain"],
+      "properties": {
+        "@type": { "const": "type.googleapis.com/google.rpc.ErrorInfo" },
+        "reason": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$",
+          "description": "MACP error code from registries/error-codes.md (the same pattern as macp-http-error.schema.json's code)."
+        },
+        "domain": { "const": "multiagentcoordinationprotocol.io" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "session_id": { "type": "string" },
+            "message_id": { "type": "string" },
+            "duplicate": { "const": "true" }
+          }
+        }
+      }
+    }
+  }
+}

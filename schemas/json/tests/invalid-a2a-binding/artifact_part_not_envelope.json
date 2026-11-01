@@ -1,0 +1,18 @@
+{
+  "_def": "ObservationArtifact",
+  "_invalid_because": "The Artifact's one Part carries the Envelope (RFC-MACP-0014 §9.1); a text/plain Part is not an Envelope Part.",
+  "artifactId": "macp:01JD2A2A0V0TE0000000000003",
+  "name": "Vote",
+  "parts": [
+    {
+      "mediaType": "text/plain",
+      "text": "not an envelope"
+    }
+  ],
+  "metadata": {
+    "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/sequence": 3
+  },
+  "extensions": [
+    "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1"
+  ]
+}
