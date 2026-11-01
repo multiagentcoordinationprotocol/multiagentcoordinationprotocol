@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — A2A Extension Binding
 
 **Document:** RFC-MACP-0014
-**Version:** 1.1.2-draft
+**Version:** 1.1.3-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0006
 
+> **Changelog — 1.1.3-draft:** The negative-zero rule of §5.3 (1.1.1-draft) now lives in RFC-MACP-0001 §10.8 (1.6.2-draft) as a fixed deviation of the canonical JSON mapping, so it holds on every JSON transport, not only A2A (issue #252). §5.3 points there instead of restating the rule as an A2A-only requirement, and drops the note that justified `"-0"` as a form RFC-MACP-0001 §10.8 did not list. No requirement changes for an A2A sender or receiver: a sender still writes `"-0"`, and a receiver still accepts both the string and the number. Vector 107 is unchanged. The binding stays `provisional`.
+>
 > **Changelog — 1.1.2-draft:** §5.1 defines how `Part.mediaType` is compared with the two Envelope media types, which earlier drafts left open (issue #247). Type and subtype are compared ASCII case-insensitively, as RFC 9110 §8.3.1 does, so a case variant is an Envelope Part. An Envelope Part whose `mediaType` carries any parameters, such as `; charset=utf-8`, MUST be rejected with `ContentTypeNotSupportedError`; it is never skipped as a Part that is not MACP, and it counts toward the one-Envelope-per-Message rule. A sender MUST write the exact lowercase type with no parameters. Before this, a receiver that compared exactly skipped such a Part, so a Message with one exact Envelope Part and one parameter-bearing or case-variant Part passed as a single Envelope while a receiver that compared under RFC 9110 saw two. Unicode case folding is excluded. The parameter check comes after the §4 activation check and before decoding. §4 points to the comparison and §11.3 gains the matching row. The A2A vector pack adds vectors 102-106. The binding stays `provisional`.
 >
 > **Changelog — 1.1.1-draft:** §5.3 adds a rule for negative zero: a `double` or `float` of -0.0 is written as the JSON string `"-0"`, and a receiver accepts both that string and the number. Many JSON serializers drop the sign of a numeric `-0`, and both SDKs' canonical JSON codecs already write the string. The A2A vector pack added alongside this version (`schemas/conformance/a2a/`, Appendix A) does not exercise the rule: neither the Envelope nor the Ack has a floating-point field, and the floating-point fields inside Core payloads (`SignalPayload.confidence`, `ProgressPayload.progress` and `total`) are typed `number` in `macp-envelope.schema.json`, which therefore rejects `"-0"` (as it already rejects the `"NaN"` and `"Infinity"` strings RFC-MACP-0001 §10.8 allows) until that schema is widened (issue #246). The binding stays `provisional`.
@@ -137,7 +139,7 @@ A server MAY support `SendStreamingMessage` for Envelope submission. If it does,
 
 ### 5.3 JSON profile
 
-A `data` Part with media type `application/macp-envelope+json` carries the canonical JSON mapping of the Envelope (RFC-MACP-0001 §10). This subsection narrows choices that §10 leaves open, so that two conforming senders make the same encoding choices for the same Envelope. It adds no deviation from RFC-MACP-0001 §10.8: every Part it permits is also valid under §10. The one form it requires that RFC-MACP-0001 §10.8 does not list among an encoder's outputs, the `"-0"` string below, is a quoted number, which the proto3 JSON mapping adopted there accepts for any floating-point field.
+A `data` Part with media type `application/macp-envelope+json` carries the canonical JSON mapping of the Envelope (RFC-MACP-0001 §10). This subsection narrows choices that §10 leaves open, so that two conforming senders make the same encoding choices for the same Envelope. It adds no deviation from RFC-MACP-0001 §10.8: every Part it permits is also valid under §10.
 
 **Payload form.** The payload message is selected by the Envelope's `(mode, message_type)`, exactly as RFC-MACP-0001 §10.12 defines. A Core message type selects its Core payload, and `Commitment` selects `CommitmentPayload`, in any mode, including the empty `mode` of a Signal. Any other message type selects the payload message its Mode declares.
 
@@ -148,7 +150,7 @@ A `data` Part with media type `application/macp-envelope+json` carries the canon
 
 **Timestamp.** A sender MUST write `timestamp` (RFC-MACP-0001 §10.11) in UTC with the `Z` suffix, as `YYYY-MM-DDTHH:MM:SSZ` when the millisecond part of `timestamp_unix_ms` is zero, and otherwise as `YYYY-MM-DDTHH:MM:SS.sssZ` with exactly three fraction digits. For example, `1792918800000` is `"2026-10-25T09:00:00Z"` and `1792918800120` is `"2026-10-25T09:00:00.120Z"`. A receiver MUST accept any RFC 3339 timestamp, as RFC-MACP-0001 §10.11 requires.
 
-**Negative zero.** A sender MUST write a `double` or `float` field whose value is -0.0 as the JSON string `"-0"`, a form the proto3 JSON mapping accepts for floating-point fields and one that survives JSON serializers which drop the sign of a numeric `-0`, and a receiver MUST accept both `"-0"` and the number `-0`.
+**Negative zero.** A `double` or `float` field whose value is -0.0 is written as the JSON string `"-0"`, and a receiver accepts both that string and a bare `-0` or `-0.0` number, as RFC-MACP-0001 §10.8 (deviation 6) requires of every JSON transport. On this binding that includes a floating-point field inside a JSON `payload`, which passes through the Part unchanged.
 
 **Base64.** A sender MUST write `payload_b64`, and a `raw` Part's bytes in A2A JSON, as base64 with the standard alphabet and padding (RFC 4648 §4). A receiver MUST also accept the URL-safe alphabet and unpadded input for both. RFC-MACP-0001 §10.3 states this rule for every other `bytes` field and leaves `Envelope.payload` to §10.2; this binding applies it to `payload_b64` as well.
 

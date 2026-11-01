@@ -61,7 +61,7 @@ Checks:
      deletion-while-$ref'd).
   6b. `$defs.JsonDouble` itself is exactly a JSON number or one of the four
      strings "NaN", "Infinity", "-Infinity", "-0" (RFC-MACP-0001 §10.8,
-     RFC-MACP-0014 §5.3). Check 5 proves each float field $refs it; this
+     deviation 6 for "-0"). Check 5 proves each float field $refs it; this
      proves the $ref'd shape was not narrowed back to a bare number.
   7. `Envelope`'s own fields: its 8 proto fields are all held to the
      schema's top-level `properties`, six by identity and two (`timestamp_
@@ -124,10 +124,10 @@ JSON_ONLY_DEFS = {
 }
 
 # The JSON form of a proto double/float: a JSON number, or one of these
-# strings. RFC-MACP-0001 Section 10.8 lists the three non-finite strings; the
-# "-0" string is the negative-zero form RFC-MACP-0014 Section 5.3 requires a
-# sender to write. check_json_double_shape holds $defs.JsonDouble to exactly
-# this (issue #246).
+# strings. RFC-MACP-0001 Section 10.8 lists the three non-finite strings and,
+# as its deviation 6, the "-0" string every canonical encoder writes for
+# negative zero (moved there from RFC-MACP-0014 Section 5.3, issue #252).
+# check_json_double_shape holds $defs.JsonDouble to exactly this (issue #246).
 JSON_DOUBLE_STRINGS = frozenset({"NaN", "Infinity", "-Infinity", "-0"})
 
 # Pins the number of fail()/errors.append(...) call sites in this file's own
@@ -737,7 +737,7 @@ def check_json_double_shape(schema: dict) -> list[str]:
     {enum: JSON_DOUBLE_STRINGS}]` and nothing else that constrains. Check 5
     only proves each double/float field $refs JsonDouble; without this,
     narrowing JsonDouble back to a bare number (or dropping "-0") would pass
-    while every RFC-MACP-0001 Section 10.8 / RFC-MACP-0014 Section 5.3
+    while every RFC-MACP-0001 Section 10.8
     string form fails validation again (issue #246). A missing entry is
     Check 6's to report, so it is skipped here."""
     entry = schema.get("$defs", {}).get("JsonDouble")
@@ -761,7 +761,7 @@ def check_json_double_shape(schema: dict) -> list[str]:
     if not ok:
         errors.append(
             "$defs.JsonDouble in %s must be exactly anyOf [{\"type\": \"number\"}, "
-            "{\"enum\": %s}] (RFC-MACP-0001 Section 10.8, RFC-MACP-0014 Section 5.3), "
+            "{\"enum\": %s}] (RFC-MACP-0001 Section 10.8), "
             "found %s" % (rel(ENVELOPE_SCHEMA), sorted(JSON_DOUBLE_STRINGS), json.dumps(entry))
         )
     return errors

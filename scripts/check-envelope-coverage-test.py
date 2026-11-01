@@ -380,7 +380,7 @@ def mutate_confidence_bare_number(tree: Path) -> str:
     """SignalPayload.confidence narrowed back from a $ref to $defs.JsonDouble
     to a bare `"type": "number"` -- the schema shape issue #246 removed, which
     rejects the "NaN", "Infinity", "-Infinity" and "-0" strings RFC-MACP-0001
-    Section 10.8 and RFC-MACP-0014 Section 5.3 allow. Check 5's type/$ref
+    Section 10.8 allows. Check 5's type/$ref
     comparison must see that a double maps to the JsonDouble $ref."""
     data = read_schema(tree)
     prop = data["$defs"]["SignalPayload"]["properties"]["confidence"]
@@ -409,8 +409,8 @@ def mutate_progress_type_beside_ref(tree: Path) -> str:
 def mutate_json_double_drops_negative_zero(tree: Path) -> str:
     """$defs.JsonDouble's string arm loses "-0" -- every float field still
     $refs JsonDouble, so check 5 stays green, and only check 6b notices that
-    the canonical negative-zero form of RFC-MACP-0014 Section 5.3 (and the
-    a2a_107 vector carrying it) would fail validation again."""
+    the canonical negative-zero form of RFC-MACP-0001 Section 10.8
+    (deviation 6) (and the a2a_107 vector carrying it) would fail validation again."""
     data = read_schema(tree)
     arms = data["$defs"]["JsonDouble"]["anyOf"]
     enum_arm = next((a for a in arms if "enum" in a), None)
