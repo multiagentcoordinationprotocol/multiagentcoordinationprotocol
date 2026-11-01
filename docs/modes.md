@@ -118,5 +118,6 @@ Example transcripts live under `examples/`:
 - `task-mode-session.json`
 - `handoff-mode-session.json`
 - `quorum-mode-session.json`
+- `multi-round-session.json` (`ext.multi_round.v1`, a runtime-shipped extension; its semantics are the normative comment in `schemas/proto/macp/modes/multi_round/v1/multi_round.proto`)
 
 Machine-checked per-mode conformance fixtures (happy paths and reject paths, including `ext.multi_round.v1`) live under [`schemas/conformance/`](https://github.com/multiagentcoordinationprotocol/multiagentcoordinationprotocol/blob/main/schemas/conformance/README.md).
