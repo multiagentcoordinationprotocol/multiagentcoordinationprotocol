@@ -317,7 +317,9 @@ Each SDK must include a conformance test runner that:
 3. Verifies transcript length, commitment presence, commitment field values, and — where a fixture
    declares `expected_mode_state` — the projected `phase` and `votes`
    (`schemas/conformance/README.md` pins both, and each SDK's harness asserts both)
-4. Skips `multi_round` fixtures (extension mode, no required projection)
+4. Replays `multi_round` fixtures through a test-local transcript-only projection
+   (`MultiRoundReplayProjection` in both SDKs): `ext.multi_round.v1` is an extension mode with no
+   required projection, so the runner checks transcript length and the commitment, not mode state
 5. Skips `reject_paths` fixtures (test runtime rejection, not projection replay)
 
 The fixture format is documented in `schemas/conformance/README.md`.
