@@ -283,6 +283,22 @@
       "description": "Protobuf bytes mapped to base64 string in JSON.",
       "contentEncoding": "base64"
     },
+    "JsonDouble": {
+      "description": "Protobuf double or float in JSON (RFC-MACP-0001 Section 10.8): a JSON number, or one of the strings \"NaN\", \"Infinity\" and \"-Infinity\", or \"-0\" for negative zero, which RFC-MACP-0014 Section 5.3 requires a sender to write and RFC-MACP-0001 Section 10.8's proto3 JSON mapping accepts as a quoted number. A numeric bound such as minimum on the referencing property constrains only the number arm.",
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "NaN",
+            "Infinity",
+            "-Infinity",
+            "-0"
+          ]
+        }
+      ]
+    },
     "Root": {
       "type": "object",
       "required": [
@@ -313,7 +329,7 @@
           "$ref": "#/$defs/Base64Bytes"
         },
         "confidence": {
-          "type": "number"
+          "$ref": "#/$defs/JsonDouble"
         },
         "correlation_session_id": {
           "type": "string"
@@ -487,12 +503,12 @@
           "description": "Token linking this progress update to a prior request."
         },
         "progress": {
-          "type": "number",
+          "$ref": "#/$defs/JsonDouble",
           "minimum": 0,
           "description": "Current progress value."
         },
         "total": {
-          "type": "number",
+          "$ref": "#/$defs/JsonDouble",
           "minimum": 0,
           "description": "Total work units (progress is relative to this value)."
         },

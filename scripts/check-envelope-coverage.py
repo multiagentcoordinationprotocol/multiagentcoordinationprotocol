@@ -46,8 +46,9 @@ Checks:
   5. Type shapes: every field reached by Check 3 maps to the JSON shape its
      proto declaration implies -- `repeated T` to a `"type": "array"` with
      matching `items`, `map<K,V>` to a `"type": "object"` with matching
-     `additionalProperties`, `bytes` to `$defs.Base64Bytes`, a message type
-     to a `$ref` naming it, a scalar to SCALAR_JSON_TYPE's JSON type. Checks
+     `additionalProperties`, `bytes` to `$defs.Base64Bytes`, `double` and
+     `float` to `$defs.JsonDouble`, a message type to a `$ref` naming it,
+     any other scalar to SCALAR_JSON_TYPE's JSON type. Checks
      only `type`/`items`/`additionalProperties`/`$ref`; JSON-Schema-only
      authoring keywords (`required`, `minimum`, `pattern`, `description`,
      ...) have no proto counterpart and are not inspected.
@@ -55,8 +56,13 @@ Checks:
      `$defs` entry has a proto field behind it (no allowlist in this
      direction, by choice), every `$defs` entry overall is either reached
      or named in JSON_ONLY_DEFS, and every name in JSON_ONLY_DEFS still
-     exists as a `$defs` entry (Base64Bytes is never visited by Check 3's
-     BFS, so this is its only defence against deletion-while-$ref'd).
+     exists as a `$defs` entry (Base64Bytes and JsonDouble are never
+     visited by Check 3's BFS, so this is their only defence against
+     deletion-while-$ref'd).
+  6b. `$defs.JsonDouble` itself is exactly a JSON number or one of the four
+     strings "NaN", "Infinity", "-Infinity", "-0" (RFC-MACP-0001 §10.8,
+     RFC-MACP-0014 §5.3). Check 5 proves each float field $refs it; this
+     proves the $ref'd shape was not narrowed back to a bare number.
   7. `Envelope`'s own fields: its 8 proto fields are all held to the
      schema's top-level `properties`, six by identity and two (`timestamp_
      unix_ms`, `payload`) through ENVELOPE_FIELD_MAP's normative
@@ -107,19 +113,28 @@ PROTO_FILES = (CORE_PROTO, ENVELOPE_PROTO, POLICY_PROTO)
 # guarded surface one message smaller. This pin is what fails then.
 EXPECTED_CORE_PAYLOAD_COUNT = 7
 
-# The ONLY allowlist, and it has exactly one member. A $defs entry with no
-# proto message behind it. Base64Bytes is the JSON encoding of proto `bytes`
-# (RFC-MACP-0001 Section 10.3), not a message, so it is legitimately orphaned.
-# Adding a member here requires a reason in this dict, not a bare name.
+# The ONLY allowlist: $defs entries with no proto message behind them.
+# Base64Bytes is the JSON encoding of proto `bytes` (RFC-MACP-0001 Section
+# 10.3) and JsonDouble that of proto `double`/`float` (Section 10.8); neither
+# is a message, so both are legitimately orphaned. Adding a member here
+# requires a reason in this dict, not a bare name.
 JSON_ONLY_DEFS = {
     "Base64Bytes": "JSON encoding of proto `bytes` (RFC-MACP-0001 Section 10.3); not a message",
+    "JsonDouble": "JSON encoding of proto `double`/`float` (RFC-MACP-0001 Section 10.8); not a message",
 }
+
+# The JSON form of a proto double/float: a JSON number, or one of these
+# strings. RFC-MACP-0001 Section 10.8 lists the three non-finite strings; the
+# "-0" string is the negative-zero form RFC-MACP-0014 Section 5.3 requires a
+# sender to write. check_json_double_shape holds $defs.JsonDouble to exactly
+# this (issue #246).
+JSON_DOUBLE_STRINGS = frozenset({"NaN", "Infinity", "-Infinity", "-0"})
 
 # Pins the number of fail()/errors.append(...) call sites in this file's own
 # source, MODULE-WIDE -- re-derive by measurement (see
 # check_own_assertion_count's docstring and scripts/check-envelope-coverage-
 # test.py), never hand-compute or copy a number from a plan.
-EXPECTED_FAIL_SITES = 32
+EXPECTED_FAIL_SITES = 34
 
 # EMPTY ON PURPOSE, and the emptiness is the point. A (message, field) pair
 # here declares a proto field deliberately absent from the canonical JSON
@@ -135,10 +150,10 @@ SCALAR_TYPES = frozenset({
     "fixed32", "fixed64", "sfixed32", "sfixed64", "bool", "string", "bytes",
 })
 
-# Narrower than SCALAR_TYPES on purpose, and "bytes" is deliberately absent --
-# it maps to a $ref (Base64Bytes), not a bare "type" value, so Check 5 handles
-# it as its own case. Only the scalar proto types that actually appear on a
-# reached field today are listed; an unlisted scalar (or an enum) must hit the
+# Narrower than SCALAR_TYPES on purpose. "bytes", "double" and "float" are
+# deliberately absent -- they map to a $ref (Base64Bytes, JsonDouble), not a
+# bare "type" value, so base_shape handles them as their own cases. Only the
+# scalar proto types that actually appear on a reached field today are listed; an unlisted scalar (or an enum) must hit the
 # "unknown proto type" branch and fail loudly rather than silently guess a
 # JSON type for a case nobody has reasoned about yet.
 SCALAR_JSON_TYPE = {
@@ -148,8 +163,6 @@ SCALAR_JSON_TYPE = {
     "int64": "integer",
     "uint32": "integer",
     "uint64": "integer",
-    "double": "number",
-    "float": "number",
 }
 
 MAP_TYPE_RE = re.compile(r"^map<\s*([\w.]+)\s*,\s*([\w.]+)\s*>$")
@@ -541,6 +554,8 @@ def base_shape(type_name: str) -> dict | None:
     error, never as "no constraint"."""
     if type_name == "bytes":
         return {"$ref": "#/$defs/Base64Bytes"}
+    if type_name in ("double", "float"):
+        return {"$ref": "#/$defs/JsonDouble"}
     if type_name in SCALAR_JSON_TYPE:
         return {"type": SCALAR_JSON_TYPE[type_name]}
     if type_name in SCALAR_TYPES:
@@ -572,7 +587,13 @@ def shape_errors(expected: dict, actual: dict, context: str) -> list[str]:
     on exactly type/items/additionalProperties/$ref -- the only keys
     expected_shape ever produces. Every other JSON-Schema authoring keyword
     on `actual` (required, minimum, minLength, pattern, description, format)
-    has no proto counterpart and is deliberately not inspected."""
+    has no proto counterpart and is deliberately not inspected.
+
+    One exception to "only the keys `expected` names": where `expected` is a
+    $ref, a sibling "type" on `actual` is an error. Under draft 2020-12 it
+    applies alongside the $ref, so `{"$ref": "#/$defs/JsonDouble", "type":
+    "number"}` silently rejects every string form JsonDouble admits (issue
+    #246) while the $ref comparison alone stays green."""
     errors: list[str] = []
     for key in ("type", "$ref"):
         if key in expected and expected[key] != actual.get(key):
@@ -580,6 +601,12 @@ def shape_errors(expected: dict, actual: dict, context: str) -> list[str]:
                 "%s: expected %s %r, found %r"
                 % (context, key, expected[key], actual.get(key))
             )
+    if "$ref" in expected and "type" in actual:
+        errors.append(
+            "%s: has \"type\" %r beside its $ref %r -- under draft 2020-12 a "
+            "sibling type narrows the referenced shape; drop it"
+            % (context, actual["type"], expected["$ref"])
+        )
     if "items" in expected:
         actual_items = actual.get("items")
         if not isinstance(actual_items, dict):
@@ -658,10 +685,11 @@ def check_reverse_and_orphans(
     Then, every $defs entry overall must be either reached or explicitly
     named in JSON_ONLY_DEFS -- and, the other direction, every name in
     JSON_ONLY_DEFS must still exist. That second half is this check's job,
-    not Check 5's: Base64Bytes is never queued by Check 3's BFS (it is a
-    scalar-mapped $ref, not a message type), so it is the one $defs entry
-    with no reachability-based defence anywhere else in this script against
-    being deleted while still $ref'd -- reported once per allowlisted name,
+    not Check 5's: Base64Bytes and JsonDouble are never queued by Check 3's
+    BFS (each is a scalar-mapped $ref, not a message type), so they are the
+    two $defs entries with no reachability-based defence anywhere else in
+    this script against being deleted while still $ref'd -- reported once
+    per allowlisted name,
     not once per field that happens to $ref it."""
     errors: list[str] = []
     defs = schema.get("$defs", {})
@@ -701,6 +729,41 @@ def check_reverse_and_orphans(
                 "JSON_ONLY_DEFS)" % (name, JSON_ONLY_DEFS[name], rel(ENVELOPE_SCHEMA))
             )
 
+    return errors
+
+
+def check_json_double_shape(schema: dict) -> list[str]:
+    """Check 6b: $defs.JsonDouble is exactly `anyOf: [{type: number},
+    {enum: JSON_DOUBLE_STRINGS}]` and nothing else that constrains. Check 5
+    only proves each double/float field $refs JsonDouble; without this,
+    narrowing JsonDouble back to a bare number (or dropping "-0") would pass
+    while every RFC-MACP-0001 Section 10.8 / RFC-MACP-0014 Section 5.3
+    string form fails validation again (issue #246). A missing entry is
+    Check 6's to report, so it is skipped here."""
+    entry = schema.get("$defs", {}).get("JsonDouble")
+    if entry is None:
+        return []
+    arms = entry.get("anyOf") if isinstance(entry, dict) else None
+    ok = (
+        isinstance(arms, list)
+        and len(arms) == 2
+        and {"type": "number"} in arms
+        and any(
+            isinstance(a, dict) and set(a) == {"enum"}
+            and isinstance(a["enum"], list)
+            and len(a["enum"]) == len(JSON_DOUBLE_STRINGS)
+            and set(a["enum"]) == JSON_DOUBLE_STRINGS
+            for a in arms
+        )
+        and set(entry) <= {"anyOf", "description"}
+    )
+    errors: list[str] = []
+    if not ok:
+        errors.append(
+            "$defs.JsonDouble in %s must be exactly anyOf [{\"type\": \"number\"}, "
+            "{\"enum\": %s}] (RFC-MACP-0001 Section 10.8, RFC-MACP-0014 Section 5.3), "
+            "found %s" % (rel(ENVELOPE_SCHEMA), sorted(JSON_DOUBLE_STRINGS), json.dumps(entry))
+        )
     return errors
 
 
@@ -972,6 +1035,7 @@ def main() -> int:
 
     ERRORS.extend(check_type_shapes(all_messages, field_reached, schema))
     ERRORS.extend(check_reverse_and_orphans(all_messages, field_reached, schema))
+    ERRORS.extend(check_json_double_shape(schema))
     ERRORS.extend(check_envelope_fields(envelope_messages, schema))
 
     if ERRORS:

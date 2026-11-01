@@ -27,7 +27,7 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 
 | `op` | `input` | `params` | Result | Vectors |
 |---|---|---|---|---|
-| `envelope_to_a2a_part` | `envelope` | `encoding` | an Envelope Part (§5.1) | 10 |
+| `envelope_to_a2a_part` | `envelope` | `encoding` | an Envelope Part (§5.1) | 11 |
 | `envelope_from_a2a_part` | `part` | `max_payload_bytes` | an Envelope | 26 |
 | `envelope_to_a2a_message` | `envelope` | `encoding`, `message_id`, `context_id` | a ROLE_USER Message (§5.1, §6) | 4 |
 | `envelope_from_a2a_message` | `message` | `max_payload_bytes` | an Envelope | 12 |
@@ -40,7 +40,7 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 | `macp_agent_extension` | | `macp_versions`, `modes`, `required`, `manifest_url` | an AgentExtension (§3) | 2 |
 | `error_info_from_a2a` | `error_or_details` | | `{reason, domain, metadata, duplicate}` or `null` (§11, §12) | 5 |
 
-106 vectors in all: 68 positive, 38 reject.
+107 vectors in all: 69 positive, 38 reject.
 
 ## Conventions
 
@@ -103,19 +103,15 @@ integer enum value (063, 064); an integral float where an integer is expected
 selection by the `(mode, message_type)` pair (031, 101); the §5.1 media type
 comparison (1.1.2-draft): a parameter-bearing Envelope Part is rejected, never
 skipped, and counts toward the one-Envelope-per-Message check, and a case
-variant is an Envelope Part, but a non-ASCII lookalike is not (102-106).
+variant is an Envelope Part, but a non-ASCII lookalike is not (102-106);
+negative zero (§5.3, 1.1.1-draft) written as the string `"-0"` in a Core
+payload's floating-point field, which passes through the Part unchanged
+(107). `macp-envelope.schema.json` types the Core payloads' `double` fields as
+`$defs.JsonDouble` (a number or `"NaN"`, `"Infinity"`, `"-Infinity"`, `"-0"`),
+so the checker validates that Envelope like any other.
 
 ## S6.1 edge rules not covered, and why
 
-- **Negative zero** (`"-0"` for a `double` or `float`, RFC-MACP-0014 §5.3 as of
-  1.1.1-draft). Neither the Envelope nor the Ack has a floating-point field.
-  The nearest are inside Core payloads (`SignalPayload.confidence`,
-  `ProgressPayload.progress` and `total`), and a pass-through vector there
-  would be computable, but `schemas/json/macp-envelope.schema.json` types
-  those fields `number`, so an Envelope carrying the canonical `"-0"` fails
-  the schema the checker validates every Envelope against (as `"NaN"` and
-  `"Infinity"`, which RFC-MACP-0001 §10.8 allows, already do). The vector
-  waits for that schema to be widened (issue #246).
 - **Map key order** in emitted JSON. No Envelope, Ack or A2A-side object this
   pack produces has a Protobuf map at the level the mapper handles, and
   `expected` is compared as parsed JSON, so key order is not observable.
