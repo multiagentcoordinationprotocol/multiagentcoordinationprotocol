@@ -1,5 +1,5 @@
 .PHONY: prose-check prose-check-selftest parity-contract-selftest help validate validate-all proto-lint proto-compile proto-gen-all json-validate json-schema-validate \
-	conformance-lint cmt-hash-vectors receipt-vectors parity-contract check-indexes clean install-tools \
+	conformance-lint cmt-hash-vectors receipt-vectors a2a-vectors parity-contract check-indexes clean install-tools \
 	gen-go gen-python gen-java gen-kotlin gen-csharp gen-js sync-protos check-proto-sync gen-tool-schemas envelope-coverage envelope-coverage-selftest conformance-bundle
 
 PROTO_SRC := schemas/proto
@@ -19,6 +19,7 @@ help:
 	@echo "  make conformance-lint      Lint conformance fixtures (internal consistency)"
 	@echo "  make cmt-hash-vectors      Check canonical commitment-hash vectors (RFC-MACP-0013)"
 	@echo "  make receipt-vectors       Check decision-receipt vectors (RFC-MACP-0013 Appendix A)"
+	@echo "  make a2a-vectors           Check A2A binding codec vectors (RFC-MACP-0014)"
 	@echo "  make parity-contract       Check the cross-implementation parity-contract manifest (issue #134)"
 	@echo "  make parity-contract-selftest  Prove the parity-contract vector assertions reject what they promise"
 	@echo "  make check-indexes         Check RFC/registry/fixture indexes match files on disk"
@@ -51,7 +52,7 @@ help:
 	@echo ""
 
 # Validate everything
-validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors receipt-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync envelope-coverage envelope-coverage-selftest
+validate: json-schema-validate json-validate conformance-lint cmt-hash-vectors receipt-vectors a2a-vectors parity-contract parity-contract-selftest check-indexes prose-check prose-check-selftest proto-lint proto-compile check-proto-sync envelope-coverage envelope-coverage-selftest
 	@echo "✓ All validations passed"
 
 validate-all: validate proto-gen-all
@@ -82,6 +83,13 @@ cmt-hash-vectors:
 receipt-vectors:
 	@echo "Checking decision-receipt vectors..."
 	@python3 scripts/check-receipt-vectors.py
+
+# Check the A2A binding codec vectors (RFC-MACP-0014) against a stdlib reference
+# mapper; ajv checks them against vector-schema.json and the produced A2A
+# objects against macp-a2a-binding.schema.json
+a2a-vectors:
+	@echo "Checking A2A binding vectors..."
+	@python3 scripts/check-a2a-vectors.py
 
 # Check the cross-implementation parity-contract manifest against its in-repo
 # sources (issue #134) — stdlib only, no third-party imports

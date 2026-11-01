@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — A2A Extension Binding
 
 **Document:** RFC-MACP-0014
-**Version:** 1.1.0-draft
+**Version:** 1.1.1-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0006
 
+> **Changelog — 1.1.1-draft:** §5.3 adds a rule for negative zero: a `double` or `float` of -0.0 is written as the JSON string `"-0"`, and a receiver accepts both that string and the number. Many JSON serializers drop the sign of a numeric `-0`, and both SDKs' canonical JSON codecs already write the string. The A2A vector pack added alongside this version (`schemas/conformance/a2a/`, Appendix A) does not exercise the rule: neither the Envelope nor the Ack has a floating-point field, and the floating-point fields inside Core payloads (`SignalPayload.confidence`, `ProgressPayload.progress` and `total`) are typed `number` in `macp-envelope.schema.json`, which therefore rejects `"-0"` (as it already rejects the `"NaN"` and `"Infinity"` strings RFC-MACP-0001 §10.8 allows) until that schema is widened (issue #246). The binding stays `provisional`.
+>
 > **Changelog — 1.1.0-draft:** Closes wire gaps that let two conforming implementations emit different A2A JSON for the same Envelope. The binding stays `provisional` and keeps the `/v1` URI. §3 allows `ext.*` mode identifiers in `params.modes`. §4 requires the `A2A-Version: 1.0` header. §5.2 defines the Ack Message's `messageId`, `contextId` and `taskId`, requires every Ack field without explicit presence to be emitted, and fixes the fields of an Ack the server issues itself. New §5.3 profiles the canonical JSON mapping for this binding: payload selection by `(mode, message_type)`, a narrowing of RFC-MACP-0001 §10.12 that requires `payload_b64` for mode-defined payloads of `ext.*` and reverse-domain modes, the receiver's acceptance rules, a fixed `timestamp` format, and the base64 form of `payload_b64` and `raw`. New §5.4 bounds decoded payload size, with an excess reported in band as `PAYLOAD_TOO_LARGE`; §7, §11.1, §11.2 and §11.3 are updated to match. §8 states that the two session-state spellings are intentional. The example transcript already conforms and is unchanged.
 >
 > **Changelog — 1.0.0-draft:** Initial draft. Defines how MACP Envelopes travel over the [Agent2Agent (A2A) protocol](https://a2a-protocol.org/latest/specification/) 1.0 as an A2A *profile extension*, and registers the binding as `macp.transport.a2a.v1` with status `provisional` in [`registries/transports.md`](../registries/transports.md). The binding adds no A2A fields, enum values or methods. All MACP semantics travel in `Part` content and in `metadata` keys namespaced by the extension URI.
@@ -131,7 +133,7 @@ A server MAY support `SendStreamingMessage` for Envelope submission. If it does,
 
 ### 5.3 JSON profile
 
-A `data` Part with media type `application/macp-envelope+json` carries the canonical JSON mapping of the Envelope (RFC-MACP-0001 §10). This subsection narrows choices that §10 leaves open, so that two conforming senders make the same encoding choices for the same Envelope. It adds no deviation from RFC-MACP-0001 §10.8: every Part it permits is also valid under §10.
+A `data` Part with media type `application/macp-envelope+json` carries the canonical JSON mapping of the Envelope (RFC-MACP-0001 §10). This subsection narrows choices that §10 leaves open, so that two conforming senders make the same encoding choices for the same Envelope. It adds no deviation from RFC-MACP-0001 §10.8: every Part it permits is also valid under §10. The one form it requires that RFC-MACP-0001 §10.8 does not list among an encoder's outputs, the `"-0"` string below, is a quoted number, which the proto3 JSON mapping adopted there accepts for any floating-point field.
 
 **Payload form.** The payload message is selected by the Envelope's `(mode, message_type)`, exactly as RFC-MACP-0001 §10.12 defines. A Core message type selects its Core payload, and `Commitment` selects `CommitmentPayload`, in any mode, including the empty `mode` of a Signal. Any other message type selects the payload message its Mode declares.
 
@@ -141,6 +143,8 @@ A `data` Part with media type `application/macp-envelope+json` carries the canon
 - A sender that needs the receiver to hold exact payload bytes MUST use `payload_b64`, because converting JSON `payload` to bytes is not guaranteed to be identical across Protobuf libraries (RFC-MACP-0001 §10.13).
 
 **Timestamp.** A sender MUST write `timestamp` (RFC-MACP-0001 §10.11) in UTC with the `Z` suffix, as `YYYY-MM-DDTHH:MM:SSZ` when the millisecond part of `timestamp_unix_ms` is zero, and otherwise as `YYYY-MM-DDTHH:MM:SS.sssZ` with exactly three fraction digits. For example, `1792918800000` is `"2026-10-25T09:00:00Z"` and `1792918800120` is `"2026-10-25T09:00:00.120Z"`. A receiver MUST accept any RFC 3339 timestamp, as RFC-MACP-0001 §10.11 requires.
+
+**Negative zero.** A sender MUST write a `double` or `float` field whose value is -0.0 as the JSON string `"-0"`, a form the proto3 JSON mapping accepts for floating-point fields and one that survives JSON serializers which drop the sign of a numeric `-0`, and a receiver MUST accept both `"-0"` and the number `-0`.
 
 **Base64.** A sender MUST write `payload_b64`, and a `raw` Part's bytes in A2A JSON, as base64 with the standard alphabet and padding (RFC 4648 §4). A receiver MUST also accept the URL-safe alphabet and unpadded input for both. RFC-MACP-0001 §10.3 states this rule for every other `bytes` field and leaves `Envelope.payload` to §10.2; this binding applies it to `payload_b64` as well.
 
@@ -355,6 +359,8 @@ This document registers `macp.transport.a2a.v1` in [`registries/transports.md`](
 ## Appendix A. Example (Informative)
 
 [`examples/a2a-binding-session.json`](../examples/a2a-binding-session.json) is a complete exchange: an AgentCard declaring the extension, a `SessionStart` carried in a JSON-RPC `SendMessage` request with its Ack, a Proposal and a Vote, the Commitment, the resulting `TASK_STATE_COMPLETED` Task with its Artifacts, and two error responses (a terminal Task, and a missing extension activation). `make json-validate` validates every Envelope embedded in an A2A Part of that file against `macp-envelope.schema.json`.
+
+[`schemas/conformance/a2a/`](../schemas/conformance/a2a/README.md) holds reference vectors for a codec of this binding: Envelope to Part, Message and Artifact and back, the Ack Message, the session-state mapping, the AgentExtension entry and ErrorInfo selection, including the reject cases of §5.1, §5.3, §5.4, §6.1 and §11. `make a2a-vectors` recomputes every vector with a reference mapper of this document.
 
 A Message carrying a `Vote` looks like this on the JSON-RPC binding:
 
