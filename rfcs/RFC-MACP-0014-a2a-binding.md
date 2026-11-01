@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — A2A Extension Binding
 
 **Document:** RFC-MACP-0014
-**Version:** 1.0.0-draft
+**Version:** 1.1.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0006
 
+> **Changelog — 1.1.0-draft:** Closes wire gaps that let two conforming implementations emit different A2A JSON for the same Envelope. The binding stays `provisional` and keeps the `/v1` URI. §3 allows `ext.*` mode identifiers in `params.modes`. §4 requires the `A2A-Version: 1.0` header. §5.2 defines the Ack Message's `messageId`, `contextId` and `taskId`, requires every Ack field without explicit presence to be emitted, and fixes the fields of an Ack the server issues itself. New §5.3 profiles the canonical JSON mapping for this binding: payload selection by `(mode, message_type)`, a narrowing of RFC-MACP-0001 §10.12 that requires `payload_b64` for mode-defined payloads of `ext.*` and reverse-domain modes, the receiver's acceptance rules, a fixed `timestamp` format, and the base64 form of `payload_b64` and `raw`. New §5.4 bounds decoded payload size, with an excess reported in band as `PAYLOAD_TOO_LARGE`; §7, §11.1, §11.2 and §11.3 are updated to match. §8 states that the two session-state spellings are intentional. The example transcript already conforms and is unchanged.
+>
 > **Changelog — 1.0.0-draft:** Initial draft. Defines how MACP Envelopes travel over the [Agent2Agent (A2A) protocol](https://a2a-protocol.org/latest/specification/) 1.0 as an A2A *profile extension*, and registers the binding as `macp.transport.a2a.v1` with status `provisional` in [`registries/transports.md`](../registries/transports.md). The binding adds no A2A fields, enum values or methods. All MACP semantics travel in `Part` content and in `metadata` keys namespaced by the extension URI.
 > **Replay:** no exposure. A transport binding does not change which envelopes a runtime accepts or in what order (RFC-MACP-0003 §1). This RFC requires that the A2A Task view never be used as a replay source (§12).
 
@@ -63,7 +65,7 @@ An A2A MACP server MUST declare the extension as one `AgentExtension` entry in `
 `params` MUST contain:
 
 - `macpVersions` — an array of the MACP protocol versions the server accepts in `Envelope.macp_version`, for example `["1.0"]`.
-- `modes` — an array of the mode identifiers the server accepts in `SessionStart`, for example `["macp.mode.decision.v1", "macp.mode.quorum.v1"]`. Each entry MUST be a mode identifier from [`registries/modes.md`](../registries/modes.md) or a reverse-domain extension mode identifier (RFC-MACP-0002).
+- `modes` — an array of the mode identifiers the server accepts in `SessionStart`, for example `["macp.mode.decision.v1", "macp.mode.quorum.v1"]`. Each entry MUST be a mode identifier from [`registries/modes.md`](../registries/modes.md), an `ext.*` identifier of an extension mode, runtime-shipped or registered dynamically (for example `"ext.multi_round.v1"`), or a reverse-domain extension mode identifier (RFC-MACP-0002 §3, `registries/modes.md` "Extension and experimental modes").
 - `transport` — the string `"macp.transport.a2a.v1"`.
 
 `params` MAY contain `manifestUrl`, the URL of the runtime's MACP manifest (RFC-MACP-0005 §7.1). A client that needs mode descriptors, policy descriptors or the runtime's other transport endpoints SHOULD read them from the manifest. The AgentCard is not a replacement for the manifest. A MACP manifest that lists an A2A endpoint uses `transport: "macp.transport.a2a.v1"` and the AgentCard URL as its `uri` (RFC-MACP-0005 §6).
@@ -77,6 +79,8 @@ A server SHOULD sign its AgentCard (`AgentCard.signatures`) when `params.modes` 
 ## 4. Activation
 
 A client MUST activate the extension on every request that carries a MACP Envelope, observes a MACP session or cancels one. It does so by listing `EXT` in the `A2A-Extensions` request header (or the equivalent service parameter on bindings without headers), and it MUST also list `EXT` in `Message.extensions` of every Message that carries an Envelope.
+
+A client MUST send `A2A-Version: 1.0` (or the equivalent service parameter) on every request that the first paragraph of this section covers. A2A requires clients to send the header and interprets an empty value as version 0.3, which this binding does not support. A server that does not support the requested A2A version returns A2A's `VersionNotSupportedError` (§11.3).
 
 A server that activates the extension SHOULD echo `EXT` in the `A2A-Extensions` response header, as A2A recommends. A server that receives a Message carrying a `Part` whose `mediaType` is a MACP Envelope media type (§5) without the extension being activated MUST NOT accept the Envelope. It MUST reject the request with `ExtensionSupportRequiredError` (§11).
 
@@ -111,13 +115,38 @@ The response to a `SendMessage` request that carries an Envelope MUST be a `Mess
 - `mediaType`: `application/json`;
 - `metadata`: `{ "EXT/kind": "ack" }`.
 
-The response Message's `taskId` is the session's Task id (§6) when the Envelope was session-scoped and the session exists, and is empty for a Signal or for a rejected `SessionStart`.
+The response Message's other identifiers are set as follows:
+
+- `messageId` is an id chosen by the server, and it MUST be unique per response Message, including the Ack of a duplicate and an Ack whose `message_id` is empty because the Envelope Part could not be decoded (§11.2). The form `"ack-"` followed by `Envelope.message_id`, with a suffix for a duplicate, used in [`examples/a2a-binding-session.json`](../examples/a2a-binding-session.json) is informative, and is not unique on its own.
+- `contextId` MUST equal the request Message's `contextId` when the request carries one. When it does not, the server MAY set it to the `contextId` of the session's Task (§6.3).
+- `taskId` is the session's Task id (§6) once that Task exists, that is, when the Envelope was session-scoped, the runtime decided it, and the session exists, including the response to the accepted `SessionStart` that created it. It is empty for a Signal, for a rejected `SessionStart`, and for an Ack the server issues itself without passing the Envelope to the runtime (§11.1).
+
+The Ack JSON MUST emit every field of `macp.v1.Ack` without explicit presence, even when it holds its default value: `ok`, `duplicate`, `message_id`, `session_id`, `accepted_at_unix_ms` and `session_state`. This makes RFC-MACP-0001 §10.10's SHOULD a MUST for the Ack Part. `error` is a message field with explicit presence: it is present if and only if `ok` is `false`. `accepted_at_unix_ms` is a JSON number under RFC-MACP-0001 §10.9. In an Ack the server issues itself (§11.1), `message_id` and `session_id` are copied from the Envelope when they can be read and are `""` otherwise, `accepted_at_unix_ms` is `0`, and `session_state` is `"SESSION_STATE_UNSPECIFIED"`. Two Ack Parts are equivalent when they decode under RFC-MACP-0001 §10 to equal `Ack` messages, so member order, whitespace and a quoted versus unquoted 64-bit integer carry no meaning. Interoperability is judged on that equality, not on bytes.
 
 The Ack is the authoritative per-envelope acceptance result, as `SendResponse.ack` is on the gRPC binding (RFC-MACP-0006 §3.1). The Ack Part is not an Envelope, and a server MUST NOT encode it as one (RFC-MACP-0006 §3.2 forbids pseudo-envelopes).
 
 Returning a Message rather than a Task keeps the Ack per request. A Task is long-lived and is returned by later `GetTask` calls, so an Ack placed in `Task.status.message` or `Task.metadata` would be reported again for requests it does not belong to.
 
 A server MAY support `SendStreamingMessage` for Envelope submission. If it does, the first stream event MUST be the Ack Message described here. A server that accepts a session-scoped Envelope on a streaming request MAY continue the stream with the events of §9.2.
+
+### 5.3 JSON profile
+
+A `data` Part with media type `application/macp-envelope+json` carries the canonical JSON mapping of the Envelope (RFC-MACP-0001 §10). This subsection narrows choices that §10 leaves open, so that two conforming senders make the same encoding choices for the same Envelope. It adds no deviation from RFC-MACP-0001 §10.8: every Part it permits is also valid under §10.
+
+**Payload form.** The payload message is selected by the Envelope's `(mode, message_type)`, exactly as RFC-MACP-0001 §10.12 defines. A Core message type selects its Core payload, and `Commitment` selects `CommitmentPayload`, in any mode, including the empty `mode` of a Signal. Any other message type selects the payload message its Mode declares.
+
+- A sender MUST use `payload_b64` when the selected payload is mode-defined and `mode` is an `ext.*` or reverse-domain identifier. This deliberately narrows RFC-MACP-0001 §10.12, which requires `payload_b64` only when the sender cannot assume the receiver has the Mode's payload schema: on this binding the sender never assumes it for those modes.
+- Otherwise, a sender SHOULD use `payload` whenever it has the selected payload schema. Core payloads always qualify, in any mode, including the `CommitmentPayload` of an `ext.*` mode and the `SignalPayload` of an empty-mode Signal. A mode-defined payload of a standards-track mode in [`registries/modes.md`](../registries/modes.md) qualifies when the sender has that Mode's schema.
+- A receiver MUST accept either form, subject to RFC-MACP-0001 §10.2 and §10.12: an Envelope with both `payload` and `payload_b64`, or with neither, is rejected in band with `INVALID_ENVELOPE` (§11.2), and a receiver given a JSON `payload` for a `(mode, message_type)` it has no payload schema for rejects the Envelope with `INVALID_ENVELOPE`.
+- A sender that needs the receiver to hold exact payload bytes MUST use `payload_b64`, because converting JSON `payload` to bytes is not guaranteed to be identical across Protobuf libraries (RFC-MACP-0001 §10.13).
+
+**Timestamp.** A sender MUST write `timestamp` (RFC-MACP-0001 §10.11) in UTC with the `Z` suffix, as `YYYY-MM-DDTHH:MM:SSZ` when the millisecond part of `timestamp_unix_ms` is zero, and otherwise as `YYYY-MM-DDTHH:MM:SS.sssZ` with exactly three fraction digits. For example, `1792918800000` is `"2026-10-25T09:00:00Z"` and `1792918800120` is `"2026-10-25T09:00:00.120Z"`. A receiver MUST accept any RFC 3339 timestamp, as RFC-MACP-0001 §10.11 requires.
+
+**Base64.** A sender MUST write `payload_b64`, and a `raw` Part's bytes in A2A JSON, as base64 with the standard alphabet and padding (RFC 4648 §4). A receiver MUST also accept the URL-safe alphabet and unpadded input for both. RFC-MACP-0001 §10.3 states this rule for every other `bytes` field and leaves `Envelope.payload` to §10.2; this binding applies it to `payload_b64` as well.
+
+### 5.4 Payload size
+
+A receiver SHOULD bound the size of the decoded Envelope payload: the length of `Envelope.payload` in bytes once the Part is decoded, which is the base64-decoded `payload_b64`, the Protobuf bytes a JSON `payload` converts to (RFC-MACP-0001 §10.13), or the `payload` field of a decoded `raw` Envelope. This is the measure a runtime applies to `Envelope.payload` on its other bindings (RFC-MACP-0006 §4.9). An A2A MACP server SHOULD apply the same bound the runtime applies on gRPC, so that an Envelope is not accepted on one binding and rejected for size on another. Other receivers, such as a client decoding Artifacts, SHOULD make the bound configurable, with 1 MiB (1,048,576 bytes) as the RECOMMENDED default. An A2A MACP server reports an Envelope over the bound in band, in the Ack, with `PAYLOAD_TOO_LARGE` (§11.2). A receiver need not decode more base64 than it takes to establish that the bound is exceeded. A request rejected for size before its Envelope is decoded is an A2A-level error instead (§11.3). Base64 makes data a third larger, so a server's request-size cap MUST be at least 4/3 of the payload bound plus room for the rest of the request, so that a `payload_b64` at the bound reaches the in-band check, as RFC-MACP-0006 §4.9 requires of the HTTP binding.
 
 ---
 
@@ -147,7 +176,7 @@ A2A `contextId` groups related Tasks and Messages. It has no MACP meaning. A ser
 
 A client submits an Envelope with `SendMessage` (JSON-RPC method `SendMessage`, HTTP+JSON `POST /message:send`, gRPC `SendMessage`). The server MUST:
 
-1. Check A2A-level preconditions: `A2A-Version`, extension activation (§4), Part encoding (§5.1), and the `taskId` rules of §6.
+1. Check A2A-level preconditions: `A2A-Version`, extension activation (§4), Part encoding (§5.1), the `taskId` rules of §6, and the payload bound of §5.4. Failures are reported at the layer §11.1 assigns.
 2. Pass the Envelope to the runtime unchanged.
 3. Return the runtime's Ack as §5.2 describes.
 
@@ -160,6 +189,8 @@ The server MUST NOT accept an Envelope itself, reorder Envelopes, or synthesize 
 ## 8. Lifecycle Mapping
 
 A2A does not let an extension add `TaskState` values. This binding therefore maps each MACP session state to an existing `TaskState`, and carries the exact MACP state in the metadata key `EXT/sessionState`, whose value is the MACP state name (`"OPEN"`, `"SUSPENDED"`, `"RESOLVED"`, `"EXPIRED"` or `"CANCELLED"`). `TaskStatus` has no `metadata` field of its own, so the key goes in `Task.metadata` on every Task and in `TaskStatusUpdateEvent.metadata` on every status event this binding produces. Both MUST carry it. An A2A MACP client MUST read `EXT/sessionState`, not `TaskState`, to learn the session state.
+
+The two spellings of a session state are intentional. `EXT/sessionState` is A2A metadata and uses the bare MACP state name (`"OPEN"`), while the Ack Part's `session_state` (§5.2) is a field of the MACP `Ack` message and uses the enum value name the canonical JSON mapping requires (`"SESSION_STATE_OPEN"`, RFC-MACP-0001 §10.4). An implementation MUST NOT write either spelling in the other's place.
 
 | MACP session state (RFC-MACP-0001 §7.2) | A2A `TaskState` | Notes |
 |---|---|---|
@@ -245,13 +276,13 @@ A2A has no suspend or resume operation, and this binding does not define one. `S
 
 An Envelope that reaches the runtime is accepted or rejected, and that decision is reported **in band**, in the Ack (§5.2), on a successful A2A response. A rejected Envelope is not an A2A protocol error. This keeps the accept/reject decision the same whatever binding carried the Envelope (RFC-MACP-0003 §1), and gives the client the exact MACP code it would get on any other binding.
 
-The server itself reports three Envelope checks in band in the same Ack shape, because each concerns the Envelope rather than the A2A request: the `taskId` mismatch of §6.1, a client-sent runtime-emitted envelope (§6.1), and an undecodable Envelope Part (§11.2). Every other request that fails before an Envelope reaches the runtime, or that is not an Envelope submission at all (`GetTask`, `CancelTask`, `SubscribeToTask`), is reported as an **A2A error**. Every A2A error this binding produces MUST carry, in its details, a `google.rpc.ErrorInfo` object whose `reason` is the MACP error code from [`registries/error-codes.md`](../registries/error-codes.md) and whose `domain` is `multiagentcoordinationprotocol.io`. On the JSON-RPC binding that object is an element of `error.data`, with `"@type": "type.googleapis.com/google.rpc.ErrorInfo"`, as A2A requires. Its `metadata` SHOULD carry `session_id` and `message_id` when known. A server MAY include A2A's own `ErrorInfo` alongside it.
+The server itself reports the following Envelope checks in band in the same Ack shape (§5.2), because each concerns the Envelope rather than the A2A request: the `taskId` mismatch of §6.1, a client-sent runtime-emitted envelope (§6.1), an undecodable Envelope Part (§11.2), and a decoded payload over the size bound of §5.4. Every other request that fails before an Envelope reaches the runtime, or that is not an Envelope submission at all (`GetTask`, `CancelTask`, `SubscribeToTask`), is reported as an **A2A error**. Every A2A error this binding produces MUST carry, in its details, a `google.rpc.ErrorInfo` object whose `reason` is the MACP error code from [`registries/error-codes.md`](../registries/error-codes.md) and whose `domain` is `multiagentcoordinationprotocol.io`. On the JSON-RPC binding that object is an element of `error.data`, with `"@type": "type.googleapis.com/google.rpc.ErrorInfo"`, as A2A requires. Its `metadata` SHOULD carry `session_id` and `message_id` when known. A server MAY include A2A's own `ErrorInfo` alongside it.
 
 On the A2A HTTP+JSON and gRPC bindings, the status code is the one A2A assigns to the A2A error. A client MUST branch on the MACP `reason`, not on the A2A error type, because several MACP codes share one A2A error.
 
 ### 11.2 In-band codes
 
-Once an Envelope reaches the runtime, every MACP rejection is reported in the Ack, including `INVALID_ENVELOPE`, `UNSUPPORTED_PROTOCOL_VERSION`, `MODE_NOT_SUPPORTED`, `INVALID_SESSION_ID`, `FORBIDDEN`, `DUPLICATE_MESSAGE`, `SESSION_ALREADY_EXISTS`, `UNKNOWN_POLICY_VERSION`, `POLICY_DENIED` and `INVALID_POLICY_DEFINITION`. A suspended session's `SESSION_NOT_OPEN` is also in band, because a suspended session's Task is non-terminal. A Part with an Envelope media type whose content does not decode as an Envelope is rejected in band with `INVALID_ENVELOPE`, with the Ack's `message_id` empty when it cannot be read.
+Once an Envelope reaches the runtime, every MACP rejection is reported in the Ack, including `INVALID_ENVELOPE`, `UNSUPPORTED_PROTOCOL_VERSION`, `MODE_NOT_SUPPORTED`, `INVALID_SESSION_ID`, `FORBIDDEN`, `DUPLICATE_MESSAGE`, `SESSION_ALREADY_EXISTS`, `UNKNOWN_POLICY_VERSION`, `POLICY_DENIED` and `INVALID_POLICY_DEFINITION`. A suspended session's `SESSION_NOT_OPEN` is also in band, because a suspended session's Task is non-terminal. A Part with an Envelope media type whose content does not decode as an Envelope is rejected in band with `INVALID_ENVELOPE`, with the Ack's `message_id` empty when it cannot be read. An Envelope whose decoded payload exceeds the bound of §5.4 is rejected in band with `PAYLOAD_TOO_LARGE`.
 
 `UNSUPPORTED_PROTOCOL_VERSION` concerns `Envelope.macp_version`. It is unrelated to A2A's `VersionNotSupportedError`, which concerns the `A2A-Version` header.
 
@@ -268,13 +299,13 @@ Once an Envelope reaches the runtime, every MACP rejection is reported in the Ac
 | `SubscribeToTask` on a Task in a terminal state | `UnsupportedOperationError` | `SESSION_NOT_OPEN` |
 | `CancelTask` on a Task in a terminal state | `TaskNotCancelableError` | `SESSION_NOT_OPEN` |
 | `CancelTask` by a caller the runtime does not authorize to cancel | `TaskNotCancelableError` | `FORBIDDEN` |
-| Request rejected for size before the Envelope is decoded | A2A request error; HTTP `413` on HTTP+JSON | `PAYLOAD_TOO_LARGE` |
+| Request rejected for size before the Envelope is decoded (a decoded payload over the §5.4 bound is in band instead) | A2A request error; HTTP `413` on HTTP+JSON | `PAYLOAD_TOO_LARGE` |
 | Request rejected by rate limiting before the Envelope is decoded | A2A request error; HTTP `429` on HTTP+JSON | `RATE_LIMITED` |
 | Authentication failed | A2A authentication failure (HTTP `401` on HTTP+JSON) | `UNAUTHENTICATED` |
 | Runtime unreachable or failed | JSON-RPC Internal error (`-32603`) | `INTERNAL_ERROR` |
 | `A2A-Version` not supported | `VersionNotSupportedError` | (A2A's own; no MACP reason) |
 
-The `taskId` mismatch of §6.1 and a client Message carrying a runtime-emitted envelope are rejected in band with `INVALID_ENVELOPE`. They do not appear in this table.
+The server's in-band Envelope checks of §11.1 do not appear in this table.
 
 A server MUST return `TaskNotFoundError` both for a Task that does not exist and for one the caller is not authorized to observe, so that the two cannot be told apart. This is how the binding keeps session existence private, as RFC-MACP-0004 §6 requires for session isolation.
 
