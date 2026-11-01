@@ -20,7 +20,7 @@ To run one yourself, you need Docker and **Python 3.11 or later**.
 
 ```bash
 docker run -p 50051:50051 -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 \
-  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.10.0
+  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.12.0
 ```
 
 `MACP_ALLOW_INSECURE=1` allows plaintext gRPC and development identities, and `MACP_MEMORY_ONLY=1` keeps state in memory. Both are for local use only: without authentication configured, the runtime refuses to start unless `MACP_ALLOW_INSECURE=1` is set. For a real deployment, see [Deployment](deployment.md).
@@ -97,3 +97,25 @@ grpcurl -plaintext -import-path schemas/proto -proto macp/v1/core.proto \
 ```
 
 `Initialize` returns the runtime's name, version and capabilities. `ListModes` lists the five standard modes.
+
+## Appendix: talk to the runtime with curl
+
+From `0.12.0` the runtime image also serves the HTTP/JSON binding ([RFC-MACP-0006 §4](../rfcs/RFC-MACP-0006-transport-bindings.md)). It stays off unless `MACP_HTTP_BIND_ADDR` is set. Start the runtime with the listener on port 8080:
+
+```bash
+docker run -p 50051:50051 -p 8080:8080 \
+  -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 -e MACP_HTTP_BIND_ADDR=0.0.0.0:8080 \
+  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.12.0
+```
+
+Every call is a `POST` to `/macp/v1/{Method}` with a JSON body. The body is the canonical JSON of the request message ([RFC-MACP-0001 §10](../rfcs/RFC-MACP-0001-core.md)), and no protos are needed:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8080/macp/v1/Initialize \
+  -H 'Content-Type: application/json' -d '{"supported_protocol_versions":["1.0"]}'
+
+curl -sS -X POST http://127.0.0.1:8080/macp/v1/ListModes \
+  -H 'Content-Type: application/json' -d '{}'
+```
+
+These return the same results as the grpcurl calls above. In this development setup, `Authorization: Bearer <value>` authenticates the caller as sender `<value>`. A whole Decision session over curl, including `Send` and the SSE stream, is in the runtime's [HTTP/JSON examples](https://github.com/multiagentcoordinationprotocol/macp-runtime/blob/main/docs/examples.md#httpjson-binding-curl).
