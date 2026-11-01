@@ -123,6 +123,8 @@ INPUT_SCHEMA_EXEMPT = {
     "a2a_064_ack_integer_state": "the Ack $def pins the emitted enum names, not integers",
     "a2a_094_error_duplicate_boolean_not_duplicate":
         "ErrorInfo.metadata.duplicate is pinned to the string \"true\"; a boolean is the point",
+    "a2a_104_from_part_media_type_mixed_case":
+        "EnvelopePart.mediaType is pinned to the lowercase form a sender MUST write (§5.1)",
 }
 
 
@@ -415,8 +417,23 @@ def envelope_from_proto(buf: bytes) -> dict:
 
 # --- Parts and Messages (§5.1, §5.2, §6) --------------------------------------
 
+def envelope_media_type(part):
+    """§5.1 media type comparison: (media type, has_parameters), or None when the
+    Part is not an Envelope Part. Type and subtype compare ASCII case-insensitively
+    (RFC 9110 §8.3.1), with surrounding spaces and tabs ignored; a `;` after the
+    subtype marks parameters, even with nothing after it."""
+    if not isinstance(part, dict) or not isinstance(part.get("mediaType"), str):
+        return None
+    head, sep, _ = part["mediaType"].partition(";")
+    base = head.strip(" \t")
+    if not base.isascii():
+        return None
+    base = base.lower()
+    return (base, bool(sep)) if base in (MT_JSON, MT_PROTO) else None
+
+
 def is_envelope_part(part) -> bool:
-    return isinstance(part, dict) and part.get("mediaType") in (MT_JSON, MT_PROTO)
+    return envelope_media_type(part) is not None
 
 
 def part_from_envelope(env: dict, encoding: str) -> dict:
@@ -428,9 +445,14 @@ def part_from_envelope(env: dict, encoding: str) -> dict:
 
 
 def envelope_from_part(part, params: dict) -> dict:
-    if not is_envelope_part(part):
+    found = envelope_media_type(part)
+    if found is None:
         raise Reject("codec", "NOT_A_MACP_MESSAGE", "not an Envelope Part")
-    if part["mediaType"] == MT_JSON:
+    media_type, has_parameters = found
+    if has_parameters:
+        # §5.1: never skipped as a non-MACP Part; ContentTypeNotSupportedError (§11.3).
+        raise Reject("a2a", "INVALID_REQUEST", "an Envelope media type with parameters (§5.1)")
+    if media_type == MT_JSON:
         if not isinstance(part.get("data"), dict):
             raise bad_envelope("a JSON Envelope Part carries no data object (§5.1)")
         env = envelope_from_json(part["data"])

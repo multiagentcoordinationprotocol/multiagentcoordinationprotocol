@@ -28,9 +28,9 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 | `op` | `input` | `params` | Result | Vectors |
 |---|---|---|---|---|
 | `envelope_to_a2a_part` | `envelope` | `encoding` | an Envelope Part (§5.1) | 10 |
-| `envelope_from_a2a_part` | `part` | `max_payload_bytes` | an Envelope | 24 |
+| `envelope_from_a2a_part` | `part` | `max_payload_bytes` | an Envelope | 26 |
 | `envelope_to_a2a_message` | `envelope` | `encoding`, `message_id`, `context_id` | a ROLE_USER Message (§5.1, §6) | 4 |
-| `envelope_from_a2a_message` | `message` | `max_payload_bytes` | an Envelope | 9 |
+| `envelope_from_a2a_message` | `message` | `max_payload_bytes` | an Envelope | 11 |
 | `ack_to_a2a_message` | `ack` | `message_id` (required), `task_id`, `context_id` | an Ack Message (§5.2) | 7 |
 | `ack_from_a2a_message` | `message` | | an Ack | 14 |
 | `envelope_to_a2a_artifact` | `envelope`, `sequence` | | an Observation Artifact (§9.1) | 3 |
@@ -40,7 +40,7 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 | `macp_agent_extension` | | `macp_versions`, `modes`, `required`, `manifest_url` | an AgentExtension (§3) | 2 |
 | `error_info_from_a2a` | `error_or_details` | | `{reason, domain, metadata, duplicate}` or `null` (§11, §12) | 5 |
 
-101 vectors in all: 66 positive, 35 reject.
+105 vectors in all: 67 positive, 38 reject.
 
 ## Conventions
 
@@ -78,7 +78,7 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 
 | `layer` | `code` | Meaning |
 |---|---|---|
-| `a2a` | `INVALID_REQUEST` | Rejected as a whole at the A2A level: JSON-RPC -32602 (§11.3). |
+| `a2a` | `INVALID_REQUEST` | Rejected as a whole at the A2A level: JSON-RPC -32602, or `ContentTypeNotSupportedError` for an Envelope Part whose `mediaType` carries parameters (§5.1, §11.3). |
 | `macp` | `INVALID_ENVELOPE` | In-band Ack error: the Envelope Part does not decode, a payload form is wrong, or taskId names another session (§6.1, §11). |
 | `macp` | `PAYLOAD_TOO_LARGE` | In-band Ack error (§5.4). |
 | `codec` | `NOT_A_MACP_MESSAGE` | No Envelope Part (or no Ack Part) at all. |
@@ -100,7 +100,10 @@ varint that overflows 64 bits (046); int64 quoted, unquoted at and above
 quotes, and non-finite (051-053, 056-062); an unknown enum name and an
 integer enum value (063, 064); an integral float where an integer is expected
 (069); `error` present exactly when `ok` is false (099, 100); payload
-selection by the `(mode, message_type)` pair (031, 101).
+selection by the `(mode, message_type)` pair (031, 101); the §5.1 media type
+comparison (1.1.2-draft): a parameter-bearing Envelope Part is rejected, never
+skipped, and counts toward the one-Envelope-per-Message check, and a case
+variant is an Envelope Part (102-105).
 
 ## S6.1 edge rules not covered, and why
 
