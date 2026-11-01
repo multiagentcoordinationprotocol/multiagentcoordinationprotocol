@@ -25,7 +25,7 @@ values (see `schemas/parity/README.md`).
 Each spec release (`proto-v*` tag) attaches `macp-conformance-<version>.tar.gz`,
 `SHA256SUMS` and `MANIFEST.json` to its GitHub release. The tarball holds this
 directory's fixtures, its `cmt-hash/` and `receipt/` vectors with the decision-receipt
-schema, `schemas/parity/` and its schema,
+schema, its `a2a/` vectors with the A2A binding schema, `schemas/parity/` and its schema,
 and the five `schemas/json/policy/` rule schemas, all **at their repo paths**,
 plus a `MANIFEST.json` (bundle format, version, spec commit, and the sha256 of
 every file) and `moved-files.json`. The contents are declared in
@@ -298,3 +298,23 @@ Vectors are **generated** by `scripts/gen-receipt-vectors.py` (dev-only; needs
 `jcs` and `cryptography`) and must never be hand-edited. Ed25519 signatures are
 deterministic, so regenerating leaves the directory unchanged unless the
 generator changed.
+
+## `a2a/` — A2A binding codec vectors (RFC-MACP-0014)
+
+`a2a/` holds reference vectors for a codec of the A2A extension binding: each
+vector names one codec function (`op`), its `input` and optional `params`, and
+either the `expected` result or an `expected_error` `{layer, code}`.
+`a2a/vector-schema.json` documents the shape and [`a2a/README.md`](a2a/README.md)
+lists the ops, the conventions every vector assumes, the codec-only error
+codes, and the edge rules the pack deliberately does not exercise.
+
+`make a2a-vectors` (in `make validate` and CI) runs
+`scripts/check-a2a-vectors.py`, a stdlib-only reference mapper of
+RFC-MACP-0014, and asserts it returns exactly `expected` (or raises exactly
+`expected_error`) for every vector. It then runs ajv: every vector against
+`vector-schema.json`, and every A2A-side object a positive vector consumes or
+produces against its `$def` in `schemas/json/macp-a2a-binding.schema.json`.
+Like `cmt-hash/` and `receipt/`, the directory is invisible to
+`scripts/validate-json.sh` and `lint_fixtures.py`, which glob this directory
+non-recursively. Vectors are hand-written; changing any `expected` value makes
+`make a2a-vectors` fail.

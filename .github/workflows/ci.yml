@@ -50,6 +50,10 @@ jobs:
         run: |
           python3 scripts/check-receipt-vectors.py
 
+      - name: Check A2A binding vectors (RFC-MACP-0014)
+        run: |
+          python3 scripts/check-a2a-vectors.py
+
       - name: Check parity-contract manifest (issue #134)
         run: |
           echo "Checking cross-implementation parity-contract manifest..."
