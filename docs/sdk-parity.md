@@ -104,6 +104,10 @@ The optional features themselves:
 - **Base session/projection classes** — shared inheritance (vs standalone classes)
 - **Agent framework** — Participant abstraction, dispatcher, strategies, bootstrap
 - **Logging** — structured logging helpers
+- **A2A binding codec** — RFC-MACP-0014 (1.1.2-draft); both SDKs have one on main (unreleased),
+  each running all 106 vectors in `schemas/conformance/a2a/` — see
+  [IMPLEMENTATIONS.md](../IMPLEMENTATIONS.md#bindings)
+- **multi_round session helper** — `MultiRoundSession` and `MultiRoundProjection` for `ext.multi_round.v1`
 
 ## Naming
 
@@ -317,9 +321,14 @@ Each SDK must include a conformance test runner that:
 3. Verifies transcript length, commitment presence, commitment field values, and — where a fixture
    declares `expected_mode_state` — the projected `phase` and `votes`
    (`schemas/conformance/README.md` pins both, and each SDK's harness asserts both)
-4. Replays `multi_round` fixtures through a test-local transcript-only projection
-   (`MultiRoundReplayProjection` in both SDKs): `ext.multi_round.v1` is an extension mode with no
-   required projection, so the runner checks transcript length and the commitment, not mode state
+4. Replays `multi_round` fixtures through the SDK's real `MultiRoundProjection`, which replaced the
+   earlier test-local transcript-only `MultiRoundReplayProjection` in both SDKs
+   (`macp-sdk-python` #214, `macp-sdk-typescript` #232). `ext.multi_round.v1` is an extension mode
+   with no required projection, so this stays outside the MUST tier; the fixtures carry no
+   `expected_mode_state`, and each runner additionally asserts the convergence it reaches. Both
+   projections are meant to read `Contribute` payloads the way `macp-runtime`'s
+   `parse_contribute_value` does (`macp-sdk-typescript` #234; the Python decoder fix,
+   `macp-sdk-python` #216, is still open)
 5. Skips `reject_paths` fixtures (test runtime rejection, not projection replay)
 
 The fixture format is documented in `schemas/conformance/README.md`.
