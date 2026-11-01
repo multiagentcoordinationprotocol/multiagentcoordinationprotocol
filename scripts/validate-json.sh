@@ -397,7 +397,7 @@ except ValueError as exc:
 # `contains` is collapsed the same way: ajv reports one error per array item the
 # `contains` subschema failed on, plus the `contains` itself, and all of them are
 # the one violated constraint "no item matches".
-BRANCH = re.compile(r"^(.*/(?:oneOf|anyOf))/\d+(?:/.*)?$|^(.*/contains)/.+$")
+BRANCH = re.compile(r"^(.*/(?:oneOf|anyOf))/\d+(?:/.*)?$|^(.*(?<!/properties)/contains)/.+$")
 reasons = {}
 for e in errors:
     if e.get("keyword") == "if":
@@ -1143,6 +1143,9 @@ echo ""
 # macp-envelope.schema.json's job and tests/invalid/'s corpus, and ajv reports
 # errors inside the cross-file $ref with schemaPaths rooted in the envelope
 # schema, which the isolation guard cannot collapse into the EnvelopePart oneOf.
+# The two mediaType-mismatch fixtures fail BOTH arms of that discriminated oneOf,
+# so each also flips if the other arm's `required` member is removed. That is
+# inherent to a discriminated oneOf; no one keyword flips two fixtures.
 A2A_SCHEMA="${PROJECT_ROOT}/schemas/json/macp-a2a-binding.schema.json"
 A2A_TRANSCRIPT="${PROJECT_ROOT}/examples/a2a-binding-session.json"
 A2A_INVALID_DIR="${PROJECT_ROOT}/schemas/json/tests/invalid-a2a-binding"

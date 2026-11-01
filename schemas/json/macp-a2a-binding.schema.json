@@ -25,8 +25,8 @@
             "raw": {
               "type": "string",
               "contentEncoding": "base64",
-              "pattern": "^[A-Za-z0-9+/_-]*={0,2}$",
-              "description": "Protobuf-encoded macp.v1.Envelope as base64. Senders write the standard alphabet with padding (RFC 4648 §4); receivers MUST also accept the URL-safe alphabet and unpadded input (RFC-MACP-0014 §5.3), so this pattern admits both."
+              "pattern": "^(?:(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?|(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==)?|[A-Za-z0-9_-]{3}=?)?)$",
+              "description": "Protobuf-encoded macp.v1.Envelope as base64. Senders write the standard alphabet with padding (RFC 4648 §4); receivers MUST also accept the URL-safe alphabet and unpadded input (RFC-MACP-0014 §5.3), so this pattern admits either alphabet (not a mix), padded or unpadded, at a length some decoder accepts."
             }
           }
         }
@@ -71,7 +71,7 @@
       }
     },
     "Ack": {
-      "description": "macp.v1.Ack in the canonical JSON mapping (RFC-MACP-0001 §10), as carried in an Ack Part. RFC-MACP-0014 §5.2 makes RFC-MACP-0001 §10.10's SHOULD a MUST here: every field without explicit presence is emitted even at its default, so all six are required. error has explicit presence and is present if and only if ok is false. session_state uses the SESSION_STATE_* enum value name, never the bare name EXT/sessionState uses (§8). In an Ack the server issues itself (§11.1), message_id and session_id may be \"\", accepted_at_unix_ms is 0 and session_state is SESSION_STATE_UNSPECIFIED, so none of those is constrained further.",
+      "description": "macp.v1.Ack in the canonical JSON mapping (RFC-MACP-0001 §10), as carried in an Ack Part. RFC-MACP-0014 §5.2 makes RFC-MACP-0001 §10.10's SHOULD a MUST here: every field without explicit presence is emitted even at its default, so all six are required. error has explicit presence and is present if and only if ok is false. session_state uses the SESSION_STATE_* enum value name, never the bare name EXT/sessionState uses (§8). The Ack is checked as the server MUST emit it (§5.2), not with a decoder's leniency: a decoder would also read an absent field as its default and an integer session_state. accepted_at_unix_ms accepts the quoted decimal too, because §10.9 requires an encoder to quote a value above 2^53-1. In an Ack the server issues itself (§11.1), message_id and session_id may be \"\", accepted_at_unix_ms is 0 and session_state is SESSION_STATE_UNSPECIFIED, so none of those is constrained further.",
       "type": "object",
       "additionalProperties": true,
       "required": ["ok", "duplicate", "message_id", "session_id", "accepted_at_unix_ms", "session_state"],
@@ -126,7 +126,12 @@
       "required": ["artifactId", "name", "parts", "metadata", "extensions"],
       "properties": {
         "artifactId": { "type": "string", "pattern": "^macp:.+$" },
-        "name": { "type": "string", "minLength": 1 },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "not": { "enum": ["Signal", "SessionCancel", "SessionSuspend", "SessionResume"] },
+          "description": "Envelope.message_type. Signals are never session-scoped, and the runtime annotations SessionCancel, SessionSuspend and SessionResume consume no ordinal, so none of them is ever exposed as an Artifact (§9.1)."
+        },
         "parts": {
           "type": "array",
           "minItems": 1,
@@ -169,13 +174,13 @@
                 "type": "string",
                 "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?([-+][0-9A-Za-z.-]+)?$"
               },
-              "description": "MACP protocol versions accepted in Envelope.macp_version; the same pattern as macp-envelope.schema.json's macp_version."
+              "description": "MACP protocol versions accepted in Envelope.macp_version; the same pattern as macp-envelope.schema.json's macp_version. minItems is this schema's addition: a server that accepts no version cannot serve the binding."
             },
             "modes": {
               "type": "array",
               "minItems": 1,
               "items": { "type": "string", "minLength": 1 },
-              "description": "Mode identifiers accepted in SessionStart: a registries/modes.md identifier, an ext.* identifier, or a reverse-domain extension mode identifier. Registry membership is not schema-expressible."
+              "description": "Mode identifiers accepted in SessionStart: a registries/modes.md identifier, an ext.* identifier, or a reverse-domain extension mode identifier. Registry membership is not schema-expressible. minItems is this schema's addition: a server that serves no mode cannot serve the binding."
             },
             "transport": { "const": "macp.transport.a2a.v1" },
             "manifestUrl": {
@@ -199,7 +204,7 @@
       }
     },
     "ErrorInfo": {
-      "description": "The google.rpc.ErrorInfo that every A2A error this binding produces MUST carry in its details (RFC-MACP-0014 §11.1), for example as an element of a JSON-RPC error.data array. A client selects it by @type and domain, since A2A's own ErrorInfo MAY also be present. reason is a MACP error code from registries/error-codes.md. metadata SHOULD carry session_id and message_id when known. metadata.duplicate, when present, is the string \"true\": the error reports a retry of an Envelope already in the terminated session's accepted history (§12), which a client treats as a duplicate Ack. ErrorInfo metadata is a string map, so any other value, the boolean true included, is malformed here; a tolerant decoder reads it as not a duplicate.",
+      "description": "The google.rpc.ErrorInfo that every A2A error this binding produces MUST carry in its details (RFC-MACP-0014 §11.1), for example as an element of a JSON-RPC error.data array. A client selects it by @type and domain, since A2A's own ErrorInfo MAY also be present. reason is a MACP error code from registries/error-codes.md. metadata SHOULD carry session_id and message_id when known. metadata.duplicate, when present, is the string \"true\": the error reports a retry of an Envelope already in the terminated session's accepted history (§12), which a client treats as a duplicate Ack. This schema pins \"true\", the only value §12 defines, so any other value fails here; ErrorInfo metadata is a string map, and the boolean true in particular is not the marker. A tolerant decoder reads any other value as not a duplicate.",
       "type": "object",
       "additionalProperties": true,
       "required": ["@type", "reason", "domain"],

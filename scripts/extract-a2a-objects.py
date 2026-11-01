@@ -13,12 +13,19 @@ $defs, so validate-json.sh needs two things this script provides:
 
   extract <transcript> <out-dir>
       Find each A2A object in an RFC-MACP-0014 transcript (examples/a2a-binding-session.json)
-      by its POSITION, never by the property the schema checks, so a malformed object
-      is validated and fails instead of being skipped:
+      by its POSITION wherever it can, so a malformed object is validated and fails
+      instead of being skipped:
         AgentExtension        capabilities.extensions[*] whose uri is under the MACP
-                              extension prefix (any version, so a wrong /vN still lands here)
-        EnvelopePart          any object whose mediaType starts application/macp-envelope
-        AckMessage            result.message of a JSON-RPC response
+                              extension prefix (any version, so a wrong /vN still lands
+                              here). A card with no such entry, or with two, fails.
+        EnvelopePart          any object whose mediaType starts application/macp-envelope.
+                              This one is selected by the pinned property itself, so two
+                              positional guards back it up: every SendMessage request
+                              (all of them carry an Envelope here) MUST have exactly one
+                              such Part (§5.1), and Artifact parts reach EnvelopePart
+                              through ObservationArtifact.parts.items anyway.
+        AckMessage            result.message of a JSON-RPC response. A SendMessage
+                              response whose result is not a Message fails (§5.2).
         ObservationArtifact   artifactUpdate.artifact, and every Task.artifacts[*]
         SessionStateMetadata  the metadata (or {} if absent) of every object whose
                               status.state is a TASK_STATE_* value: a Task or a
@@ -26,9 +33,11 @@ $defs, so validate-json.sh needs two things this script provides:
         ErrorInfo             error.data[*] with the google.rpc.ErrorInfo @type and the
                               MACP domain -- the selection rule of RFC-MACP-0014 §11.1.
                               Because that rule keys on the very domain the schema pins,
-                              this script also fails unless EVERY JSON-RPC error object
-                              carries exactly one such entry (§11.1: every A2A error the
-                              binding produces MUST carry one).
+                              an entry with a wrong domain is dropped rather than failed;
+                              the per-$def count validate-json.sh pins catches that drop.
+                              Not every A2A error carries one (VersionNotSupportedError has
+                              no MACP reason, §11.3), so absence alone is not an error; two
+                              entries in one error are.
       Writes <out-dir>/<Def>__NNN.json per object and prints "<Def>\t<path>" per object.
 
 Stdlib only.
@@ -66,9 +75,30 @@ def extract(transcript_path, out_dir):
                 found.append(("EnvelopePart", node, path))
             caps = node.get("capabilities")
             if isinstance(caps, dict) and isinstance(caps.get("extensions"), list):
+                n = 0
                 for i, e in enumerate(caps["extensions"]):
                     if isinstance(e, dict) and str(e.get("uri", "")).startswith(EXT_PREFIX):
+                        n += 1
                         found.append(("AgentExtension", e, "%s/capabilities/extensions/%d" % (path, i)))
+                if n != 1:
+                    bad.append("%s/capabilities/extensions declares the MACP extension %d times, "
+                               "not exactly once (RFC-MACP-0014 §3)" % (path, n))
+            req = node.get("request")
+            req_body = req.get("body") if isinstance(req, dict) else None
+            if isinstance(req_body, dict) and req_body.get("method") == "SendMessage":
+                msg = (req_body.get("params") or {}).get("message") or {}
+                parts = msg.get("parts") if isinstance(msg.get("parts"), list) else []
+                n = sum(1 for pt in parts if isinstance(pt, dict)
+                        and str(pt.get("mediaType", "")).startswith("application/macp-envelope"))
+                if n != 1:
+                    bad.append("%s/request carries %d Envelope Parts, not exactly 1 "
+                               "(RFC-MACP-0014 §5.1)" % (path, n))
+                resp = node.get("response")
+                resp_body = resp.get("body") if isinstance(resp, dict) else None
+                if isinstance(resp_body, dict) and "result" in resp_body and not (
+                        isinstance(resp_body["result"], dict) and "message" in resp_body["result"]):
+                    bad.append("%s/response answers SendMessage with a result that is not a "
+                               "Message (RFC-MACP-0014 §5.2)" % path)
             res = node.get("result")
             if isinstance(res, dict) and "message" in res:
                 found.append(("AckMessage", res["message"], path + "/result/message"))
@@ -83,13 +113,13 @@ def extract(transcript_path, out_dir):
             err = node.get("error")
             if isinstance(err, dict) and "code" in err:
                 data = err.get("data") if isinstance(err.get("data"), list) else []
-                hits = [d for d in data if isinstance(d, dict)
+                hits = [(i, d) for i, d in enumerate(data) if isinstance(d, dict)
                         and d.get("@type") == ERRORINFO_TYPE and d.get("domain") == MACP_DOMAIN]
-                if len(hits) != 1:
-                    bad.append("%s/error carries %d MACP ErrorInfo entries, not exactly 1 "
+                if len(hits) > 1:
+                    bad.append("%s/error carries %d MACP ErrorInfo entries, not at most 1 "
                                "(RFC-MACP-0014 §11.1)" % (path, len(hits)))
-                for h in hits:
-                    found.append(("ErrorInfo", h, path + "/error/data"))
+                for i, h in hits:
+                    found.append(("ErrorInfo", h, "%s/error/data/%d" % (path, i)))
             for k, v in node.items():
                 walk(v, "%s/%s" % (path, k))
         elif isinstance(node, list):
