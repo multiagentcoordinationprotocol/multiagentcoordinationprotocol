@@ -1,0 +1,15 @@
+{
+  "_def": "AgentExtension",
+  "_invalid_because": "params MUST contain macpVersions (RFC-MACP-0014 §3). Diagonal keyed on the required member macpVersions.",
+  "uri": "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1",
+  "description": "MACP coordination sessions.",
+  "required": true,
+  "params": {
+    "modes": [
+      "macp.mode.decision.v1",
+      "ext.multi_round.v1"
+    ],
+    "transport": "macp.transport.a2a.v1",
+    "manifestUrl": "https://runtime.example.com/.well-known/macp.json"
+  }
+}

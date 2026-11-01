@@ -1,0 +1,6 @@
+{
+  "_def": "EnvelopePart",
+  "_invalid_because": "raw is base64, in the standard or URL-safe alphabet, padded or not (RFC-MACP-0014 §5.3); '!' and the space are in neither alphabet.",
+  "mediaType": "application/macp-envelope+proto",
+  "raw": "not base64!"
+}

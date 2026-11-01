@@ -43,6 +43,32 @@ for schema_file in "${SCHEMA_DIR}"/*.schema.json; do
     fi
 done
 
+# The A2A binding schema is a bag of $defs under an accept-anything root, and
+# ajv compiles only what the root reaches, so the loop above checks its $defs
+# against the meta-schema but never resolves their $refs. Compile one copy per
+# $def, rooted at that $def, with the envelope schema its EnvelopePart references.
+A2A_SCHEMA="${SCHEMA_DIR}/macp-a2a-binding.schema.json"
+if [ -f "${A2A_SCHEMA}" ]; then
+    echo "── A2A binding \$defs (macp-a2a-binding.schema.json) ──"
+    echo ""
+    A2A_WRAP_DIR="$(mktemp -d)"
+    trap 'rm -rf "${A2A_WRAP_DIR}"' EXIT
+    python3 "${PROJECT_ROOT}/scripts/extract-a2a-objects.py" wrap "${A2A_SCHEMA}" "${A2A_WRAP_DIR}" > "${A2A_WRAP_DIR}/defs.txt"
+    while read -r def; do
+        TOTAL=$((TOTAL + 1))
+        echo "Compiling: macp-a2a-binding.schema.json#/\$defs/${def}"
+        if ajv compile -s "${A2A_WRAP_DIR}/a2a-${def}.schema.json" -r "${SCHEMA_DIR}/macp-envelope.schema.json" \
+            --spec=draft2020 --strict=false >/dev/null; then
+            VALIDATED=$((VALIDATED + 1))
+            echo "  ✓ Valid"
+        else
+            echo "  ✗ Invalid"
+            exit 1
+        fi
+        echo ""
+    done < "${A2A_WRAP_DIR}/defs.txt"
+fi
+
 # Validate policy rule schemas
 echo "── Policy rule schemas ──"
 echo ""

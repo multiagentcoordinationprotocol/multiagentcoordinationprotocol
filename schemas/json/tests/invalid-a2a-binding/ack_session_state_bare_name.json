@@ -1,0 +1,27 @@
+{
+  "_def": "AckMessage",
+  "_invalid_because": "The Ack's session_state is the SESSION_STATE_* enum value name (RFC-MACP-0001 §10.4); the bare name \"OPEN\" belongs to EXT/sessionState only (RFC-MACP-0014 §8).",
+  "messageId": "ack-01JD2A2A0V0TE0000000000003",
+  "taskId": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+  "contextId": "ctx-txn-48000",
+  "role": "ROLE_AGENT",
+  "extensions": [
+    "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1"
+  ],
+  "parts": [
+    {
+      "mediaType": "application/json",
+      "data": {
+        "ok": true,
+        "duplicate": false,
+        "message_id": "01JD2A2A0V0TE0000000000003",
+        "session_id": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+        "accepted_at_unix_ms": 1792918802000,
+        "session_state": "OPEN"
+      },
+      "metadata": {
+        "https://multiagentcoordinationprotocol.io/a2a/extensions/macp/v1/kind": "ack"
+      }
+    }
+  ]
+}

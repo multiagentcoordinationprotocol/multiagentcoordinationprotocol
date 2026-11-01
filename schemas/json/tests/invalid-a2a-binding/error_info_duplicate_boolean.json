@@ -1,0 +1,12 @@
+{
+  "_def": "ErrorInfo",
+  "_invalid_because": "metadata.duplicate is the string \"true\" (RFC-MACP-0014 §12); ErrorInfo metadata is a string map, so the boolean true is not the duplicate marker.",
+  "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+  "reason": "SESSION_NOT_OPEN",
+  "domain": "multiagentcoordinationprotocol.io",
+  "metadata": {
+    "session_id": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+    "message_id": "01JD2A2A0V0TE0000000000004",
+    "duplicate": true
+  }
+}

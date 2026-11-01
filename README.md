@@ -126,6 +126,7 @@ MACP/
       macp-decision-receipt.schema.json
       macp-receipt-keys.schema.json     # GetReceiptKeys JWK Set (RFC-MACP-0013 §13)
       macp-http-error.schema.json       # HTTP binding error body (RFC-MACP-0006 §4.5)
+      macp-a2a-binding.schema.json      # A2A-side shapes, one $def each (RFC-MACP-0014)
       macp-semconv.schema.json          # shape of otel/macp-semconv.json
       tests/
         invalid/          # negative envelope fixtures (MUST fail validation)
@@ -139,6 +140,7 @@ MACP/
         invalid-agent-bootstrap/ # negative agent-bootstrap fixtures (MUST fail validation)
         invalid-receipt-keys/  # negative receipt-key-set fixtures (MUST fail validation)
         invalid-http-errors/   # negative HTTP error-body fixtures (MUST fail validation)
+        invalid-a2a-binding/   # negative A2A-shape fixtures, one $def each (MUST fail validation)
         valid-policy-rules/    # maximal positive rules fixtures (MUST validate)
       policy/
         decision-rules.schema.json

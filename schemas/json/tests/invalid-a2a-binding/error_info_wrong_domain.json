@@ -1,0 +1,12 @@
+{
+  "_def": "ErrorInfo",
+  "_invalid_because": "domain is multiagentcoordinationprotocol.io (RFC-MACP-0014 §11.1); an ErrorInfo in another domain, such as A2A's own, is not the MACP one.",
+  "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+  "reason": "SESSION_NOT_OPEN",
+  "domain": "a2a-protocol.org",
+  "metadata": {
+    "session_id": "6f1c2a9e-4b7d-4c1e-9a53-2d8f0b7e5a10",
+    "message_id": "01JD2A2A0V0TE0000000000004",
+    "duplicate": "true"
+  }
+}
