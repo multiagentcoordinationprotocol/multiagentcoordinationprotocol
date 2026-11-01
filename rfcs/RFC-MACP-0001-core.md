@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.6.1-draft
+**Version:** 1.6.2-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,17 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.6.2-draft:** §10.8 gains a sixth fixed deviation, moved here from
+> RFC-MACP-0014 §5.3 so that it holds on every JSON transport, not only A2A (issue #252): a
+> canonical encoder MUST write a `double` or `float` of -0.0 as the JSON string `"-0"`, and a
+> decoder MUST accept `"-0"` as well as a bare `-0` or `-0.0` number. The base-mapping sentence
+> of §10.8 lists `"-0"` beside `"NaN"`, `"Infinity"` and `"-Infinity"`. Behaviour: both SDKs'
+> canonical JSON codecs already write `"-0"` on every binding, and `macp-envelope.schema.json`
+> already accepts it (`$defs.JsonDouble`, issue #246); an encoder that wrote the number `-0`
+> on HTTP, WebSocket or a message bus now writes the string, and every decoder already had to
+> accept both under the proto3 JSON mapping. **Replay:** no exposure. Both forms decode to the
+> same -0.0, and §10.13 rule 2 already emits a -0.0 value, so the bytes history stores are unchanged.
 
 > **Changelog — 1.6.1-draft:** §8.2 no longer says a `SessionStart` for an existing session is
 > rejected with `SESSION_ALREADY_EXISTS` "regardless of `message_id`". That sentence contradicted
@@ -557,7 +568,7 @@ Encoders SHOULD always include `session_id` and `mode` fields in the JSON object
 
 ### 10.8 Base Mapping and Fixed Deviations
 
-The JSON form of any MACP message is the proto3 JSON mapping of that message ([Protocol Buffers, "ProtoJSON Format"](https://protobuf.dev/programming-guides/json/)), with exactly the deviations listed in this subsection and detailed in §10.9–§10.11. Anything this section does not change follows the proto3 JSON mapping: a message is a JSON object, a `repeated` field is a JSON array, a `map` is a JSON object keyed by the map key's string form, a `bool` is `true` or `false`, a `double` or `float` is a JSON number (or the strings `"NaN"`, `"Infinity"`, `"-Infinity"`), a 32-bit integer is a JSON number, and an enum is its value name (§10.4).
+The JSON form of any MACP message is the proto3 JSON mapping of that message ([Protocol Buffers, "ProtoJSON Format"](https://protobuf.dev/programming-guides/json/)), with exactly the deviations listed in this subsection, several of them detailed in §10.6 and §10.9–§10.11. Anything this section does not change follows the proto3 JSON mapping: a message is a JSON object, a `repeated` field is a JSON array, a `map` is a JSON object keyed by the map key's string form, a `bool` is `true` or `false`, a `double` or `float` is a JSON number (or the strings `"NaN"`, `"Infinity"`, `"-Infinity"`, and `"-0"` for negative zero, deviation 6 below), a 32-bit integer is a JSON number, and an enum is its value name (§10.4).
 
 The deviations are:
 
@@ -566,6 +577,7 @@ The deviations are:
 3. **Default values emitted** (§10.10), where proto3 JSON omits them.
 4. **Three structural transforms** (§10.11): `Envelope.timestamp`, `Envelope.payload`/`payload_b64`, and `PolicyDescriptor.rules`.
 5. **Unrecognized fields ignored** (§10.6), where a strict proto3 JSON parser rejects them.
+6. **Negative zero as a string.** A canonical encoder MUST write a `double` or `float` value of -0.0 as the JSON string `"-0"`. A decoder MUST accept `"-0"`, and it MUST also accept a bare `-0` or `-0.0` number, as the proto3 JSON mapping does, and treat each as -0.0. A stock proto3 JSON encoder writes the number, which many JSON serializers turn into `0`, losing the sign; the string survives them, and the proto3 JSON mapping already accepts a quoted number for any floating-point field, so this deviation narrows only what an encoder writes. `"NaN"`, `"Infinity"` and `"-Infinity"` remain the only other strings a canonical encoder writes for a `double` or `float`, and only for those values.
 
 No other deviation exists. A future one is a change to this RFC.
 
@@ -612,7 +624,7 @@ A receiver that accepts an Envelope whose payload arrived as JSON `payload` conv
 4. encode `repeated` scalar numeric fields packed, as proto3 does by default;
 5. emit `map` entries in ascending order of their key's UTF-8 bytes, each entry always encoding both its key (field 1) and its value (field 2), in that order, even when either is the default;
 6. encode a `double` or `float` NaN as the canonical quiet NaN (`0x7FF8000000000000` for `double`, `0x7FC00000` for `float`); and
-7. apply the decoding rules of §10.3, §10.4 and §10.9–§10.11 (base64 alphabets, quoted 64-bit integers, `rules` string form) before encoding, so that equivalent JSON yields identical bytes.
+7. apply the decoding rules of §10.3, §10.4, §10.8 (deviation 6) and §10.9–§10.11 (base64 alphabets, quoted 64-bit integers, `rules` string form) before encoding, so that equivalent JSON yields identical bytes.
 
 Implementations MUST check their conversion against these rules: Protobuf libraries' own deterministic modes are not guaranteed to match them or each other (for example, some order string map keys by UTF-16 code unit rather than by UTF-8 byte). A client that relies on the exact bytes, for example one that must keep a field this receiver does not know, or one that will check RFC-MACP-0013 §6.1 or a receipt's `commitment_wire_b64` against bytes it encoded itself, MUST send `payload_b64` instead.
 

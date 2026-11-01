@@ -284,7 +284,7 @@
       "contentEncoding": "base64"
     },
     "JsonDouble": {
-      "description": "Protobuf double or float in JSON (RFC-MACP-0001 Section 10.8): a JSON number, or one of the strings \"NaN\", \"Infinity\" and \"-Infinity\", or \"-0\" for negative zero, which RFC-MACP-0014 Section 5.3 requires a sender to write and RFC-MACP-0001 Section 10.8's proto3 JSON mapping accepts as a quoted number. A numeric bound such as minimum on the referencing property constrains only the number arm.",
+      "description": "Protobuf double or float in JSON (RFC-MACP-0001 Section 10.8): a JSON number, or one of the strings \"NaN\", \"Infinity\" and \"-Infinity\", or \"-0\" for negative zero, which RFC-MACP-0001 Section 10.8 (deviation 6) requires a canonical encoder to write on every JSON transport; a decoder also accepts the number -0. A numeric bound such as minimum on the referencing property constrains only the number arm.",
       "anyOf": [
         {
           "type": "number"

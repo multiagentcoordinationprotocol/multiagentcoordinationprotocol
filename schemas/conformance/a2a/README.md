@@ -104,7 +104,8 @@ selection by the `(mode, message_type)` pair (031, 101); the §5.1 media type
 comparison (1.1.2-draft): a parameter-bearing Envelope Part is rejected, never
 skipped, and counts toward the one-Envelope-per-Message check, and a case
 variant is an Envelope Part, but a non-ASCII lookalike is not (102-106);
-negative zero (§5.3, 1.1.1-draft) written as the string `"-0"` in a Core
+negative zero (§5.3, 1.1.1-draft; the rule moved to RFC-MACP-0001 §10.8
+in 1.1.3-draft) written as the string `"-0"` in a Core
 payload's floating-point field, which passes through the Part unchanged
 (107). `macp-envelope.schema.json` types the Core payloads' `double` fields as
 `$defs.JsonDouble` (a number or `"NaN"`, `"Infinity"`, `"-Infinity"`, `"-0"`),
