@@ -30,7 +30,7 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 | `envelope_to_a2a_part` | `envelope` | `encoding` | an Envelope Part (§5.1) | 10 |
 | `envelope_from_a2a_part` | `part` | `max_payload_bytes` | an Envelope | 26 |
 | `envelope_to_a2a_message` | `envelope` | `encoding`, `message_id`, `context_id` | a ROLE_USER Message (§5.1, §6) | 4 |
-| `envelope_from_a2a_message` | `message` | `max_payload_bytes` | an Envelope | 11 |
+| `envelope_from_a2a_message` | `message` | `max_payload_bytes` | an Envelope | 12 |
 | `ack_to_a2a_message` | `ack` | `message_id` (required), `task_id`, `context_id` | an Ack Message (§5.2) | 7 |
 | `ack_from_a2a_message` | `message` | | an Ack | 14 |
 | `envelope_to_a2a_artifact` | `envelope`, `sequence` | | an Observation Artifact (§9.1) | 3 |
@@ -40,7 +40,7 @@ Envelope media types) are pinned implicitly by the vectors that use them.
 | `macp_agent_extension` | | `macp_versions`, `modes`, `required`, `manifest_url` | an AgentExtension (§3) | 2 |
 | `error_info_from_a2a` | `error_or_details` | | `{reason, domain, metadata, duplicate}` or `null` (§11, §12) | 5 |
 
-105 vectors in all: 67 positive, 38 reject.
+106 vectors in all: 68 positive, 38 reject.
 
 ## Conventions
 
@@ -103,7 +103,7 @@ integer enum value (063, 064); an integral float where an integer is expected
 selection by the `(mode, message_type)` pair (031, 101); the §5.1 media type
 comparison (1.1.2-draft): a parameter-bearing Envelope Part is rejected, never
 skipped, and counts toward the one-Envelope-per-Message check, and a case
-variant is an Envelope Part (102-105).
+variant is an Envelope Part, but a non-ASCII lookalike is not (102-106).
 
 ## S6.1 edge rules not covered, and why
 
@@ -128,6 +128,10 @@ variant is an Envelope Part (102-105).
 
 ## Deliberately not pinned
 
+- Which A2A error a Message with two Envelope Parts gets when one of them
+  carries parameters. §5.1 says JSON-RPC -32602, not
+  `ContentTypeNotSupportedError`, but both carry `ErrorInfo.reason`
+  `INVALID_REQUEST`, which is all a vector's `expected_error` names (103, 105).
 - A non-empty `taskId` on a `SessionStart` or Signal Message. The server
   answers it from its Task state (§6.1, §6.2, §11.3: `TaskNotFoundError`,
   `SESSION_ALREADY_EXISTS`), which a codec cannot decide, so the reference
