@@ -4,6 +4,7 @@ Collected weekly by `scripts/collect-adoption.py`. Weeks run Monday to Monday, U
 
 | Week | Hosted runs | Showcase (live) | PyPI | npm | crates.io | Stars | External issues | External PRs | TTFS |
 |---|---|---|---|---|---|---|---|---|---|
+| 2026-10-26 | 7 | 7 | 2393 | 1866 | 4256 | 0 | 0 | 0 | — |
 | 2026-10-19 | 22 | 2 | 1151 | 1753 | 7106 | 0 | 0 | 0 | — |
 | 2026-10-12 | 0 | 0 | 330 | 316 | 1475 | — | 0 | 0 | — |
 | 2026-10-05 | 0 | 0 | 149 | 64 | 10504 | — | 0 | 0 | — |
