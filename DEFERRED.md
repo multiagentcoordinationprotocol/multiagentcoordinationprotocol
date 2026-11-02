@@ -11,3 +11,5 @@ Items worth remembering that do not meet the bar for an issue (bug, blocker, sec
 - multi_round Contribute decoding (parse_contribute_value rev 3): the 460-case runtime-captured corpus is copied SDK to SDK (Py #216, TS #235) with no drift gate. Candidate: move it to a schemas/conformance dir owned by the spec.
 - IMPLEMENTATIONS.md closing paragraph says only the Python SDK replays the conformance fixtures; TypeScript does too (flagged in the #249 review).
 - SessionStart retry after the runtime evicts a finished session would open a new session; no RFC bounds the duplicate-tracking window (found in the #251 review, unverified against runtime retention).
+- TS SDK: @noble/* 2.x majors are ESM-only; adopting them needs an ESM build or a Node floor of 20.19/22.12 (owner call; dependabot ignores them for now, TS #241).
+- CP webhooks accept an empty-string secret (deliveries signed with an empty HMAC key); predates #141. Candidate: require a non-empty secret on create.
