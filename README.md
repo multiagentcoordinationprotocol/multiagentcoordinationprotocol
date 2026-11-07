@@ -219,6 +219,31 @@ MACP/
       core_envelope_reject_paths.json
       core_config_default.json
       core_signal_ambient.json
+      policy_commitment_echo.json
+      policy_decision_annotation_ignored.json
+      policy_decision_any_participant.json
+      policy_decision_evaluation_required.json
+      policy_decision_finalize_decline_evaluation_waiver.json
+      policy_decision_minimum_confidence.json
+      policy_decision_minimum_confidence_met.json
+      policy_decision_percentage_quorum.json
+      policy_decision_quorum_inert.json
+      policy_decision_supermajority_binary64.json
+      policy_decision_v3_quorum_floor.json
+      policy_decision_v3_vacuous_floor.json
+      policy_decision_veto_threshold.json
+      policy_decision_veto_threshold_met.json
+      policy_decision_weighted_quorum_floor.json
+      policy_decision_weighted_ratio.json
+      policy_default_echo.json
+      policy_default_explicit.json
+      policy_proposal_criterion_counterparty.json
+      policy_proposal_criterion_initiator.json
+      policy_proposal_max_rounds_unlimited.json
+      policy_proposal_terminal_on_any_reject.json
+      policy_quorum_percentage_ceil.json
+      policy_session_start_reject_paths.json
+      policy_task_reassignment_on_reject.json
     otel/
       macp-semconv.json    # OpenTelemetry semantic conventions, macp-semconv/0.1 (docs/opentelemetry.md)
     parity/

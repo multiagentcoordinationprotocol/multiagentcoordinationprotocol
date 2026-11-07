@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "Under 'supermajority', voting.threshold MUST be greater than 0.5 -- the supermajority allOf arm's exclusiveMinimum 0.5 (RFC-MACP-0012 Section 4.1). The key is present, so the arm's required is satisfied and cannot be the cause; 0.5 is legal for threshold's own bounds.",
+  "voting": {
+    "algorithm": "supermajority",
+    "threshold": 0.5
+  }
+}

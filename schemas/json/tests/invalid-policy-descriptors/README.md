@@ -42,16 +42,19 @@ at the root, so the annotation never causes the rejection.
 constraint from the schema — see the granularity note below for what counts as
 one — should make exactly that fixture validate and leave the others rejected:
 
-| mutation | missing-description | missing-rules | policy-id-empty | schema-version-out-of-range |
-|---|---|---|---|---|
-| *intact* | reject | reject | reject | reject |
-| drop `required."rules"` | reject | **PASS** | reject | reject |
-| drop `required."description"` | **PASS** | reject | reject | reject |
-| drop `policy_id.minLength` | reject | reject | **PASS** | reject |
-| drop `schema_version.enum` | reject | reject | reject | **PASS** |
+| mutation | missing-description | missing-mode | missing-policy-id | missing-rules | missing-schema-version | policy-id-empty | schema-version-out-of-range |
+|---|---|---|---|---|---|---|---|
+| *intact* | reject | reject | reject | reject | reject | reject | reject |
+| drop `required."rules"` | reject | reject | reject | **PASS** | reject | reject | reject |
+| drop `required."description"` | **PASS** | reject | reject | reject | reject | reject | reject |
+| drop `required."mode"` | reject | **PASS** | reject | reject | reject | reject | reject |
+| drop `required."policy_id"` | reject | reject | **PASS** | reject | reject | reject | reject |
+| drop `required."schema_version"` | reject | reject | reject | reject | **PASS** | reject | reject |
+| drop `policy_id.minLength` | reject | reject | reject | reject | reject | **PASS** | reject |
+| drop `schema_version.enum` | reject | reject | reject | reject | reject | reject | **PASS** |
 
 **The granularity here is one `required` MEMBER, not one keyword.** Two fixtures
-now key on `required`, so a single "drop `required`" row would flip both and read
+key on `required` (five, since `missing-mode`, `missing-policy-id` and `missing-schema-version` joined `missing-rules` and `missing-description`), so a single "drop `required`" row would flip all five and read
 as a violation of the one-constraint rule when nothing is wrong. `remove "rules"
 from required` and `remove "description" from required` are two distinct
 mutations of two distinct constraints that happen to share a keyword. Do not

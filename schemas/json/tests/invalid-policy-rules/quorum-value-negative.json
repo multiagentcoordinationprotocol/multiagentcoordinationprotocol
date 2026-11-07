@@ -1,0 +1,9 @@
+{
+  "_invalid_because": "voting.quorum.value MUST be at least 0 -- minimum: 0 (RFC-MACP-0012 Section 4.1, Quorum).",
+  "voting": {
+    "quorum": {
+      "type": "count",
+      "value": -1
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "_invalid_because": "Omits the required `schema_version` key. RFC-MACP-0012 Section 3 makes `schema_version` mandatory on a PolicyDescriptor, and macp-policy-descriptor.schema.json lists it in `required`. The other four required keys are present so this fixture isolates exactly one missing key.",
+  "policy_id": "policy.test.missing-schema-version",
+  "mode": "macp.mode.decision.v1",
+  "description": "Test fixture for the missing-schema-version negative case.",
+  "rules": {
+    "voting": {
+      "algorithm": "none"
+    }
+  }
+}

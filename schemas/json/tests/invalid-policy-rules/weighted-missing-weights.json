@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "Under algorithm 'weighted', voting.weights is REQUIRED -- the weighted allOf arm's required (RFC-MACP-0012 Section 4.1: the weights map defines the weighted electorate). threshold 0.5 is legal, so only the missing map rejects.",
+  "voting": {
+    "algorithm": "weighted",
+    "threshold": 0.5
+  }
+}
