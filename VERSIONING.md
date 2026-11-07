@@ -191,9 +191,13 @@ the promotion PR shows the evidence for each one:
 2. **No open defects.** No open issue reports a bug, contradiction or design
    flaw in the RFC.
 3. **Conformance coverage.** Every validation rule and state transition the
-   RFC defines has at least one fixture or vector under `schemas/conformance/`
-   that `make validate` checks. For a Mode RFC this includes its
-   `*_happy_path.json` and `*_reject_paths.json` fixtures.
+   RFC defines that the fixture format can express has at least one fixture
+   or vector that `make validate` checks: under `schemas/conformance/`, or a
+   negative schema fixture under `schemas/json/tests/`. For a Mode RFC this
+   includes its `*_happy_path.json` and `*_reject_paths.json` fixtures. The
+   promotion PR lists every rule the format cannot express (for example, one
+   reached only through an RPC other than `Send`, or one that depends on a
+   caller-chosen `message_id`) and says why.
 4. **Implementations pass.** The reference runtime (`macp-runtime`) passes
    that fixture set, and both SDKs (`macp-sdk-python`, `macp-sdk-typescript`)
    vendor the current fixtures (`scripts/check-sdk-sync.py` reports no drift).
