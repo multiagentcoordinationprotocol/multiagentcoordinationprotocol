@@ -47,7 +47,7 @@ To propose a new RFC:
 1. Open an issue using the [RFC proposal template](.github/ISSUE_TEMPLATE/rfc_proposal.yml).
 2. After discussion, create `rfcs/RFC-MACP-XXXX-<topic>.md` (sequential numbering) following the structure of existing RFCs.
 3. Add the new file to every index that enumerates RFCs — `README.md`'s repo tree, `rfcs/README.md`, `rfcs/RFC-MACP-0001.md`, and this file's Normative RFCs list. `make check-indexes` verifies this and names anything you missed.
-4. Submit a PR referencing the issue; RFCs are accepted through community consensus.
+4. Submit a PR referencing the issue; RFCs are accepted through community consensus. Promotion from `-draft` to Stable follows [VERSIONING.md §9](VERSIONING.md#9-rfc-maturity-and-promotion).
 
 ## Technical Requirements
 
