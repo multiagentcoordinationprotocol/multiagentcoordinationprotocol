@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-semconv.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-semconv.schema.json",
   "title": "MACP OpenTelemetry Semantic Conventions Registry",
   "description": "Shape of schemas/otel/macp-semconv.json, the single list of MACP OpenTelemetry names (docs/opentelemetry.md). Informative and experimental. The shape mirrors the OpenTelemetry Weaver registry YAML in JSON: groups of type attribute_group, span or metric, each with id, brief and stability. Attribute groups define attributes by id; span and metric groups reference them, and reused OpenTelemetry attributes (error.type, service.name, service.version) appear as ref entries. span_name is a MACP addition: Weaver does not carry a span-name template.",
   "type": "object",

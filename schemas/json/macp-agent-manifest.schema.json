@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-agent-manifest.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-agent-manifest.schema.json",
   "title": "MACP Agent Manifest",
   "type": "object",
   "required": [

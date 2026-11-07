@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-receipt-keys.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-receipt-keys.schema.json",
   "title": "MACP Receipt Verification Keys",
   "description": "The JWK Set [RFC 7517] a runtime returns from GetReceiptKeys (RFC-MACP-0013 \u00a713): the public keys that verify the jws attestations of the decision receipts it issues. Every key names a kid and a kty; an OKP key is an Ed25519 public key with its x coordinate; no key carries the private member d or the symmetric secret k (every EC, OKP or RSA private key carries d, and every oct key carries k; the other private RSA members are listed in \u00a713 item 8). Other key types are allowed, so a later revision that admits ES256 is additive. kid uniqueness across the set is required by \u00a713 item 8 but is not expressible here. An empty set ({\"keys\": []}) is valid: it is what a runtime with no signing key publishes.",
   "type": "object",

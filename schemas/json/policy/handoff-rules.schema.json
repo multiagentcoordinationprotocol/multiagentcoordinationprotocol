@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/policy/handoff-rules.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/policy/handoff-rules.schema.json",
   "title": "Handoff Mode Governance Rules",
   "description": "JSON Schema for governance rules applied to macp.mode.handoff.v1 sessions. See RFC-MACP-0012 Section 4.5.",
   "type": "object",

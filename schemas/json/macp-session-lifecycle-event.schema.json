@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-session-lifecycle-event.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-session-lifecycle-event.schema.json",
   "title": "MACP Session Lifecycle Event",
   "description": "JSON Schema for SessionLifecycleEvent emitted by WatchSessions. See RFC-MACP-0001 Section 7.3 and RFC-MACP-0006 Section 3.8.",
   "type": "object",

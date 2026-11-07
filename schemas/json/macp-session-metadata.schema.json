@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-session-metadata.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-session-metadata.schema.json",
   "title": "MACP Session Metadata",
   "description": "JSON Schema for SessionMetadata returned by GetSession. See RFC-MACP-0001 Section 9 and RFC-MACP-0006 Section 3.5.",
   "type": "object",

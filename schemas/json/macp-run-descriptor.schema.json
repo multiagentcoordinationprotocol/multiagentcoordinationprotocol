@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-run-descriptor.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-run-descriptor.schema.json",
   "title": "MACP Run Descriptor",
   "description": "NON-NORMATIVE product contract between components of the reference stack, used by the control plane (macp-control-plane `POST /runs`). It is not part of the MACP protocol, and no RFC requires an implementation to accept it. Scenario-agnostic execution descriptor posted by a scenario-producing tier (e.g., examples-service) to a control plane's `POST /runs` endpoint. The control plane does not decode scenario semantics (RFC-MACP-0004 §3, direct-agent-auth architecture). It returns {runId, sessionId, ...} and observes the session the initiator agent opens on the runtime.",
   "type": "object",

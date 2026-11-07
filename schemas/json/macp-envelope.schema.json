@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-envelope.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-envelope.schema.json",
   "title": "MACP Envelope (Canonical JSON Mapping)",
   "type": "object",
   "required": [

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-error.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-error.schema.json",
   "title": "MACP Error",
   "description": "Validates an MACPError message in JSON form. See RFC-MACP-0001.",
   "type": "object",
