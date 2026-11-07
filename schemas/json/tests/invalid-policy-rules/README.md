@@ -64,6 +64,13 @@ anything, so preserve that property when adding cases.
 | `vendor-extension-nested.json` | Vendor-extension keys are top-level only — the **`commitment`-level** `additionalProperties: false` (RFC-MACP-0012 §4; issue #185 S1) |
 | `veto-threshold-zero.json` | `objection_handling.veto_threshold` MUST be at least 1 — `minimum: 1` (RFC-MACP-0012 §4.1). An admission-time range vector (issue #185 S11) |
 | `minimum-confidence-above-one.json` | `evaluation.minimum_confidence` MUST be at most 1 — `maximum: 1` (RFC-MACP-0012 §4.1). An admission-time range vector (issue #185 S11) |
+| `weighted-missing-weights.json` | Under `weighted`, `voting.weights` is REQUIRED — the `weighted` `allOf` arm's `required` (RFC-MACP-0012 §4.1: the map is the electorate) |
+| `supermajority-threshold-half.json` | Under `supermajority`, `voting.threshold` MUST exceed 0.5 — the `supermajority` arm's `exclusiveMinimum: 0.5` (RFC-MACP-0012 §4.1). Separable from `supermajority-missing-threshold.json`: the key IS present, so the arm's `required` cannot be the cause |
+| `threshold-above-one.json` | `voting.threshold` MUST be at most 1 — `maximum: 1` (RFC-MACP-0012 §4.1). No algorithm is named, so no `allOf` arm fires |
+| `algorithm-off-enum.json` | `voting.algorithm` MUST be one of the six defined algorithms — its `enum` (RFC-MACP-0012 §4.1) |
+| `quorum-type-off-enum.json` | `voting.quorum.type` MUST be `count` or `percentage` — its `enum` (RFC-MACP-0012 §4.1, Quorum) |
+| `quorum-value-negative.json` | `voting.quorum.value` MUST be at least 0 — `minimum: 0` (RFC-MACP-0012 §4.1, Quorum) |
+| `critical-action-off-enum.json` | `objection_handling.critical_objection_action` MUST be `deny`, `finalize_decline` or `hold` — its `enum` (RFC-MACP-0012 §4.1) |
 
 `threshold-zero-weighted.json` deliberately uses `weighted` rather than
 `supermajority`: `supermajority` with `threshold: 0` already fails via the

@@ -1,0 +1,7 @@
+{
+  "_invalid_because": "objection_handling.critical_objection_action MUST be deny, finalize_decline or hold -- its enum (RFC-MACP-0012 Section 4.1, Negative-outcome parameters).",
+  "objection_handling": {
+    "critical_severity_vetoes": true,
+    "critical_objection_action": "escalate"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "voting.threshold MUST be at most 1 -- maximum: 1 (RFC-MACP-0012 Section 4.1; a ratio above 1 can never be met). No algorithm is named, so no allOf arm applies.",
+  "voting": {
+    "threshold": 1.5
+  }
+}

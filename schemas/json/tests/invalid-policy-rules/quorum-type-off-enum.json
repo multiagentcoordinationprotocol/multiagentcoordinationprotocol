@@ -1,0 +1,9 @@
+{
+  "_invalid_because": "voting.quorum.type MUST be count or percentage -- the quorum type enum (RFC-MACP-0012 Section 4.1, Quorum).",
+  "voting": {
+    "quorum": {
+      "type": "ratio",
+      "value": 1
+    }
+  }
+}

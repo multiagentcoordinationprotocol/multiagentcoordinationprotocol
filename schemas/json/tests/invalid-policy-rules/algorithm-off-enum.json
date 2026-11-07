@@ -1,0 +1,6 @@
+{
+  "_invalid_because": "voting.algorithm MUST be one of the six algorithms RFC-MACP-0012 Section 4.1 defines -- the algorithm enum. An unknown algorithm must be refused at admission rather than evaluated.",
+  "voting": {
+    "algorithm": "ranked_choice"
+  }
+}
