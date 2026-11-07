@@ -190,6 +190,24 @@ Notes:
   accepted. `task_reject_paths.json` pins RFC-MACP-0009 §5 rule 2a on a
   broadcast task: one participant's pre-assignment `TaskReject` does not bar
   another's `TaskAccept`, and the declining participant can never accept.
+- `handoff_offer_rules.json` pins the rest of RFC-MACP-0010 §2.1 and §5: owner-only
+  `HandoffOffer` / `HandoffContext` / `Commitment` (`FORBIDDEN`), target-only
+  accept and decline, references to unknown `handoff_id`s, one outstanding offer
+  at a time, no re-use of a `handoff_id`, no competing settlement of an accepted
+  offer, no further offers once one is accepted, and §5.1(3)'s rejection of a
+  client-sent `HandoffAccept` with `implicit: true`. The two §5.1(4) races are
+  `handoff_implicit_accept_declined.json` (a decline before the deadline wins and
+  no synthetic accept is emitted) and `handoff_implicit_accept_late_decline.json`
+  (a decline evaluated after the deadline loses, because the synthetic accept is
+  appended first).
+- `quorum_admission_reject_paths.json` pins RFC-MACP-0011 §2.1 and §5 rules 1, 2,
+  3, 4a and 5: coordinator-only `ApprovalRequest` and `Commitment`, the
+  `required_approvals` bounds, one request per Session, ballots only from
+  `participants` (the coordinator is outside them), ballots naming the accepted
+  `request_id`, and an early negative `Commitment` while the threshold is still
+  reachable. `quorum_all_abstain.json` pins the 4a/4b boundary with
+  `required_approvals` 1: two abstentions leave the threshold reachable, the
+  third makes it unreachable.
 
 ## Source of truth & enforcement
 

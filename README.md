@@ -199,12 +199,17 @@ MACP/
       handoff_negative_outcome.json
       handoff_reject_paths.json
       handoff_implicit_accept.json
+      handoff_implicit_accept_declined.json
+      handoff_implicit_accept_late_decline.json
+      handoff_offer_rules.json
       quorum_happy_path.json
       quorum_negative_outcome.json
       quorum_reject_paths.json
       quorum_unreachable_override.json
       quorum_percentage_override_reachable.json
       quorum_policy_pack_two_agent_rule.json
+      quorum_admission_reject_paths.json
+      quorum_all_abstain.json
       multi_round_happy_path.json
       multi_round_reject_paths.json
       session_start_reject_paths.json
