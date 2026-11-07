@@ -162,3 +162,72 @@ are not versioned with these releases (`packages/proto-go/README.md`). Rules:
   generator, but only as a CI compile check: the output is gitignored and
   excluded from the published tarball, and the package declares no
   dependencies, so it has no floors to drift.
+
+## 9. RFC Maturity and Promotion
+
+The versions above describe the wire and the bound semantics. This section
+describes the RFC *text*. Each RFC's `**Version:**` header is in one of two
+maturity states:
+
+- **Draft** — the version carries a `-draft` suffix (for example
+  `1.4.0-draft`). Normative wording can still change in any revision, and the
+  changelog records each change.
+- **Stable** — the version has no suffix (for example `1.0.0`). Its normative
+  text changes only under the rules below.
+
+The `**Status:**` line (`Community Standards Track`) names a track, not a
+maturity state, and promotion does not change it.
+
+### 9.1 Promotion criteria
+
+An RFC moves from Draft to Stable only when **all** of the following hold, and
+the promotion PR shows the evidence for each one:
+
+1. **Stability window.** No normative change has merged for at least **30
+   days**. A change is normative if it adds, removes or alters a requirement
+   (an RFC 2119 keyword, a validation rule, an error code, a state transition
+   or a wire shape). Fixing a typo, a link or an example that already matched
+   the text does not reset the window.
+2. **No open defects.** No open issue reports a bug, contradiction or design
+   flaw in the RFC.
+3. **Conformance coverage.** Every validation rule and state transition the
+   RFC defines has at least one fixture or vector under `schemas/conformance/`
+   that `make validate` checks. For a Mode RFC this includes its
+   `*_happy_path.json` and `*_reject_paths.json` fixtures.
+4. **Implementations pass.** The reference runtime (`macp-runtime`) passes
+   that fixture set, and both SDKs (`macp-sdk-python`, `macp-sdk-typescript`)
+   vendor the current fixtures (`scripts/check-sdk-sync.py` reports no drift).
+   MACP has one maintainer, so these are not independent implementations; the
+   promotion PR says so.
+5. **Dependencies are Stable.** Every RFC that it depends on normatively (one
+   whose requirements it needs in order to be implemented, not one it cites
+   for information) is already Stable, or is promoted in the same PR.
+6. **Maintainer sign-off.** The maintainer approves the promotion, and the
+   decision is recorded in `DECISIONS.md`.
+
+An RFC marked **provisional** (for example RFC-MACP-0014) cannot be promoted
+while the external specification or registration it depends on is still
+provisional.
+
+### 9.2 Promotion
+
+The promotion PR drops the `-draft` suffix, keeping the same `MAJOR.MINOR.PATCH`
+(`1.6.1-draft` becomes `1.6.1`), and adds a changelog entry that cites the
+evidence for each criterion in 9.1.
+
+### 9.3 Changing a Stable RFC
+
+After promotion, every revision of a Stable RFC bumps its version:
+
+- **PATCH** — editorial only: wording, examples or links, with no change to
+  what is accepted, rejected or produced.
+- **MINOR** — a backward-compatible addition, such as a new optional field or
+  a new error code for a case that was previously unspecified. A history that
+  a conformant runtime accepted before the change MUST still replay to the same
+  outcome (Section 5; RFC-MACP-0003).
+- **MAJOR** — anything else, including tightening a validation rule. A Mode
+  change that alters resolution also requires a new Mode version (Section 3).
+
+A Stable RFC never returns to Draft. Work that would need to goes into a new
+`-draft` revision with the next MAJOR version (for example `2.0.0-draft`),
+while the Stable version stays in force until that revision is promoted.
