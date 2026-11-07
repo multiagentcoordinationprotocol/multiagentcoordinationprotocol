@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) — Governance Policy Framework
 
 **Document:** RFC-MACP-0012
-**Version:** 1.8.1-draft
+**Version:** 1.9.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0001, RFC-MACP-0002, RFC-MACP-0003
 
+> **Changelog — 1.9.0-draft:** Six rules whose effect was unstated now say what the reference runtime does, as pinned by the conformance corpus where the fixture format can express it. (1) §4.1 `voting.quorum` counts distinct voters, `ABSTAIN` ballots included (`policy_decision_v3_quorum_floor.json`). (2) §4.1 `evaluation`: `minimum_confidence` is inert unless `required_before_voting` is `true`; the gate is checked at `Commitment`, not at `Vote`; `REVIEW` evaluations never qualify; and one qualifying evaluation at or above the floor is enough (`policy_decision_minimum_confidence.json`, `policy_decision_minimum_confidence_met.json`). (3) §4.2 `abstention.counts_toward_quorum` and `abstention.interpretation` are report-only and MUST NOT gate a commitment. (4) §4.3 defines a round as one accepted `CounterProposal`; with `max_rounds > 0` the counter-proposal beyond the limit is rejected at submission with `INVALID_ENVELOPE`, and a positive `Commitment` past the limit is `POLICY_DENIED` (`policy_proposal_max_rounds_unlimited.json` pins `0` = unlimited). (5) §4.4 `completion.require_output` is checked at `Commitment` with `POLICY_DENIED`; it does not reject the `TaskComplete`. (6) §6.1 names the code for a commitment echo mismatch, `INVALID_ENVELOPE`, including a literal `policy.default` echoed on a session bound to a named policy (`policy_commitment_echo.json`). **Replay:** no exposure for the reference runtime, which has always behaved this way. A runtime that read these rules differently diverges in two places. If it gated on `abstention.*` or on `minimum_confidence` alone, it denied commitments that are now allowed; a denial never entered history, so its stored histories still replay. If it admitted counter-proposals beyond `max_rounds`, its histories can hold one that a runtime re-driving Mode validation now rejects, so such a runtime needs to keep the old rule for sessions recorded under it.
+>
 > **Changelog — 1.8.1-draft:** §8.1 item 8 and §10 cover the case where a runtime no longer holds a session's full accepted history (for example, because its storage compacts a terminal session's log into one checkpoint). `WhatIfReplay` then fails with the new permanent code `HISTORY_UNAVAILABLE`, rather than reporting from a partial history. A runtime that advertises `what_if_replay` SHOULD retain full history for the sessions it means to make replayable.
 >
 > **Changelog — 1.8.0-draft:** New §8.1, **What-if replay**: an optional, read-only `WhatIfReplay` RPC that replays a session's accepted history under a candidate policy and reports how the outcome would differ, so a policy change can be checked against recorded sessions before it is rolled out. It is advertised by the new `PolicyRegistryCapability.what_if_replay` flag (§9). It changes nothing a runtime that does not advertise it must do, and it never alters a session, its history, the registry, or the replay invariant of §8.
@@ -180,8 +182,12 @@ A **vote-authorized** negative commitment on an empty decisive tally remains blo
 
 **Quorum:**
 
-- `type: "count"` — minimum number of votes that must be cast
+- `type: "count"` — minimum number of distinct voters
 - `type: "percentage"` — minimum percentage of declared participants that must vote
+
+A voter is a declared participant who has cast at least one `Vote` of any value, `ABSTAIN` included, on any proposal in the session. Each voter counts once. Abstentions therefore count toward the participation floor even though they are excluded from the approval ratio (see **Denominator** above).
+
+**`evaluation` gate.** `evaluation.minimum_confidence` is inert unless `evaluation.required_before_voting` is `true`. A policy that sets the floor without that flag imposes nothing, as with `voting.quorum` without `require_vote_quorum`; tooling MAY warn. When `required_before_voting` is `true`, a vote-authorized `Commitment`, in either direction, MUST be denied with `POLICY_DENIED` unless the session holds at least one **qualifying** `Evaluation`, that is, one whose `recommendation` is not `REVIEW` (RFC-MACP-0007 §4). When `minimum_confidence` is also greater than `0`, at least one qualifying `Evaluation` MUST have `confidence >= minimum_confidence`; one such evaluation is enough, and evaluations below the floor neither help nor block. Despite its name, `required_before_voting` does not gate `Vote` submission: votes are accepted regardless, and the gate is evaluated when the `Commitment` arrives. An objection-authorized decline is not subject to this gate (§4.1, **Negative-outcome parameters**).
 
 **Negative-outcome parameters:**
 
@@ -199,10 +205,12 @@ Canonical schema: `schemas/json/policy/quorum-rules.schema.json`
 | Rule Group | Parameters | Description |
 |------------|-----------|-------------|
 | `threshold` | `type`, `value` | Override the `required_approvals` from `ApprovalRequest` |
-| `abstention` | `counts_toward_quorum`, `interpretation` | How abstentions affect quorum calculation |
+| `abstention` | `counts_toward_quorum`, `interpretation` | Report-only; neither field gates a commitment (see below) |
 | `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
 `threshold` is the **approval bar** — the number (or percentage) of approvals required for a positive outcome — and it is the **only gate** defined in schema_version ≤ 3. There is no separate *participation quorum* (a minimum number of ballots cast regardless of direction); implementations MUST NOT reinterpret `threshold` as one. If a participation quorum is desired, it requires a distinct rule field in a future schema version. The `percentage` threshold type is an **integer percentage (1–100)** of the participant count declared at `SessionStart`. The effective approval threshold is `ceil(value × declared_participant_count / 100)` — the product is rounded **up**, so a fractional product never lowers the bar: `value: 50` over 3 declared participants requires 2 approvals, not 1. Implementations MUST compute this threshold with exact integer arithmetic (equivalently, integer division `(value × declared_participant_count + 99) div 100`) and MUST NOT use floating-point division. The declared participant count is fixed at `SessionStart`; the effective threshold does not change as ballots, including abstentions, are cast. This rounding rule completes previously undefined behavior — earlier text of this section stated no rounding direction — and is therefore normative at **every** `schema_version` (see the completion note in Section 8). `threshold.value` MUST be greater than zero, matching [RFC-MACP-0011](RFC-MACP-0011-quorum-mode.md) Section 5, rule 2; the rule schema enforces this at admission (`exclusiveMinimum: 0`). The `weighted` threshold type is **removed as of 1.2.0-draft** and its identifier reserved: it appeared in the rule schema's enum without any defined weights vocabulary, electorate rule, or termination arithmetic, so no conformant evaluation of it ever existed. A future weighted threshold, if standardized, MUST arrive with complete semantics under a new rule field or a reinstated identifier carrying its original meaning, and the identifier MUST NOT be reused with a different meaning.
+
+**`abstention` is report-only.** Neither `abstention.counts_toward_quorum` nor `abstention.interpretation` gates a commitment. A runtime MUST NOT allow or deny a `Commitment`, or change the effective approval threshold, on the basis of either field. `counts_toward_quorum` has no effect, because schema_version ≤ 3 defines no participation quorum (above). A runtime MAY report the effect of `interpretation: "implicit_reject"` (abstentions added to the rejection count) among a decision's reasons. Both fields remain valid so existing descriptors keep validating, and `interpretation` MUST still be one of the rule schema's enum values at admission.
 
 ### 4.3 Proposal Mode Rules
 
@@ -215,6 +223,8 @@ Canonical schema: `schemas/json/policy/proposal-rules.schema.json`
 | `rejection` | `terminal_on_any_reject` | Whether any rejection terminates the session |
 | `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
 
+**Rounds.** One round is one accepted `CounterProposal` ([RFC-MACP-0008](RFC-MACP-0008-proposal-mode.md) §4). The initial `Proposal` is not a round, and a withdrawn counter-proposal still counts. With `max_rounds` greater than `0`, a `CounterProposal` that would make the count exceed `max_rounds` MUST be rejected with `INVALID_ENVELOPE` (RFC-MACP-0002 §6.1). A positive `Commitment` on a history whose count exceeds `max_rounds` MUST be denied with `POLICY_DENIED`. That second check cannot fire on a live session whose counter-proposals were admitted under the same policy; it holds a replayed or imported history to the limit. A negative `Commitment` is never gated by `max_rounds`, because it is the legitimate exit from an over-long negotiation.
+
 ### 4.4 Task Mode Rules
 
 Canonical schema: `schemas/json/policy/task-rules.schema.json`
@@ -222,8 +232,10 @@ Canonical schema: `schemas/json/policy/task-rules.schema.json`
 | Rule Group | Parameters | Description |
 |------------|-----------|-------------|
 | `assignment` | `allow_reassignment_on_reject` | Whether rejected tasks can be reassigned |
-| `completion` | `require_output` | Whether `TaskComplete` must include output |
+| `completion` | `require_output` | Whether a positive `Commitment` requires a `TaskComplete` with output |
 | `commitment` | `authority`, `designated_roles` | Who can emit the terminal `Commitment`; `designated_roles` is REQUIRED when `authority` is `designated_role` (§4) |
+
+**`completion.require_output`** is evaluated at `Commitment`, not at `TaskComplete`. A `TaskComplete` without output is accepted. When `require_output` is `true`, a positive `Commitment` MUST then be denied with `POLICY_DENIED` unless the recorded terminal report is a `TaskComplete` with non-empty `output`. A negative `Commitment` is not gated, since a failed task legitimately has no output.
 
 ### 4.5 Handoff Mode Rules
 
@@ -356,7 +368,7 @@ At `SessionStart`:
 6. The resolved `PolicyDescriptor` (including the full `rules` object) is stored on the session for the session's lifetime.
 7. The session's persisted metadata MUST record the **resolved** policy identifier — `policy.default` when the payload was empty — not the raw payload value. Replay equality (Section 8) and any observer surface (`GetSession`, lifecycle events) refer to the resolved identifier.
 
-**Commitment echo.** `CommitmentPayload.policy_version` binds the commitment to the session's governance policy. An **empty** `policy_version` in the commitment matches the session's bound policy (whatever it resolved to) — a client that started with an empty `policy_version` is not required to echo a value it never sent. A **non-empty** `policy_version` MUST equal the session's resolved policy identifier exactly; otherwise the runtime MUST reject the commitment as invalid. Runtimes MUST NOT require clients to echo `policy.default` literally.
+**Commitment echo.** `CommitmentPayload.policy_version` binds the commitment to the session's governance policy. An **empty** `policy_version` in the commitment matches the session's bound policy (whatever it resolved to) — a client that started with an empty `policy_version` is not required to echo a value it never sent. A **non-empty** `policy_version` MUST equal the session's resolved policy identifier exactly; otherwise the runtime MUST reject the commitment with `INVALID_ENVELOPE`, not `POLICY_DENIED`, because the echo is a binding check rather than a policy evaluation. This includes a literal `policy.default` echoed on a session bound to a named policy. Runtimes MUST NOT require clients to echo `policy.default` literally.
 
 ### 6.2 Commitment Evaluation
 

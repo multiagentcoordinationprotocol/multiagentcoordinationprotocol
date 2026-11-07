@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.6.2-draft
+**Version:** 1.7.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,23 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.7.0-draft:** §7.6 gains three acceptance obligations that the reference
+> runtime already enforces and the conformance corpus partly pins. Item 7: a session-scoped
+> envelope naming a session the runtime does not know MUST be rejected with `SESSION_NOT_FOUND`
+> (pinned by `core_envelope_reject_paths.json` and `security_isolation_reject_paths.json`;
+> previously the code appeared only in the error registry). Item 8: a session-scoped envelope
+> whose `mode` differs from the session's bound mode MUST be rejected with `INVALID_ENVELOPE`,
+> checked after deduplication and before the session-state check. Nothing previously forbade
+> that mismatch, which left a mode-confusion route open. Item 9: a `SessionCancel`,
+> `SessionSuspend` or `SessionResume` submitted through `Send` MUST be rejected with no effect,
+> and SHOULD be rejected with `FORBIDDEN` (pinned for Decision Mode by
+> `core_runtime_annotation_reject_paths.json`). Editorial: §7.3 and §7.5 leave how transports
+> sequence and deliver internal annotations to RFC-MACP-0006 §3.2, §7.3.1 states the
+> `commitment_hash` form directly, and §9 names RFC-MACP-0006 as the normative home of
+> `StreamSession` and `ListSessions`. **Replay:** no exposure. Each new obligation rejects an
+> envelope before it enters accepted history, and the reference runtime has always rejected all
+> three, so no stored history contains one.
 
 > **Changelog — 1.6.2-draft:** §10.8 gains a sixth fixed deviation, moved here from
 > RFC-MACP-0014 §5.3 so that it holds on every JSON transport, not only A2A (issue #252): a
@@ -366,7 +383,7 @@ Any session-scoped message referencing a non-OPEN session MUST be rejected.
 
 By default, only the accepted `SessionStart` sender (session initiator) is authorized to submit `CancelSession` for that session. The runtime MUST record the initiator in `SessionMetadata.initiator` at session creation time for authorization checks. Deployments MAY extend cancellation authority to additional roles through policy. `CancelSession` MUST be subject to the same authentication requirements as any session-scoped operation.
 
-`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation (as an internal annotation: it consumes no ordinal and is not delivered on a subscribe stream, see RFC-MACP-0006 §3.2). `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter.
+`CancelSession` is the client-facing RPC. Upon accepting a `CancelSession` request, the runtime MUST transition the session to CANCELLED and append a `SessionCancel` envelope (with `SessionCancelPayload`) to the session's accepted history as a terminal annotation. How transport bindings sequence and deliver internal annotations is specified in RFC-MACP-0006 §3.2. `SessionCancel` envelopes MUST NOT be submitted directly via the `Send` RPC; the runtime is the sole emitter (§7.6 item 9).
 
 `CancelSession` is a Core control-plane message. Mode-specific authorization rules (e.g., who can emit which Mode message type) do NOT apply to `CancelSession`. Only the initiator and policy-delegated roles may cancel a session.
 
@@ -374,7 +391,7 @@ By default, only the accepted `SessionStart` sender (session initiator) is autho
 
 `CommitmentPayload` MAY carry a `supersedes` field (`CommitmentRef { session_id, commitment_hash }`) indicating that this commitment revises an earlier one. Because a `RESOLVED` session accepts no further session-scoped messages (step 5 above), a superseding commitment cannot live in the same session as the commitment it supersedes: it is emitted in a **new** session whose `supersedes` reference points back at the earlier commitment. Supersession is therefore inherently **cross-session**.
 
-The runtime's structural obligations are limited to: (a) if `supersedes` is present, its fields MUST be well-formed — non-empty `session_id`, and a `commitment_hash` that is a syntactically valid canonical commitment hash (RFC-MACP-0013: `sha256:` followed by 64 lowercase hex characters); and (b) the superseding party MUST be authorized in the new session under the normal authority rules. The runtime MUST NOT, as a Core obligation, resolve the reference, verify that the referenced commitment exists, was sealed, or is unforked, or decide whether the supersession is *permitted* — those are cross-session concerns. Chain resolution ("the current commitment for this matter"), supersession policy, and fork handling (whether two live successors to one commitment are allowed) are consumer governance built above Core, which MAY maintain a cross-session commitment index for the purpose. A consumer that does not use supersession is unaffected; the field is simply absent.
+The runtime's structural obligations are limited to: (a) if `supersedes` is present, its fields MUST be well-formed — non-empty `session_id`, and a `commitment_hash` of the form `sha256:` followed by 64 lowercase hex characters (the canonical form of RFC-MACP-0013); and (b) the superseding party MUST be authorized in the new session under the normal authority rules. The runtime MUST NOT, as a Core obligation, resolve the reference, verify that the referenced commitment exists, was sealed, or is unforked, or decide whether the supersession is *permitted* — those are cross-session concerns. Chain resolution ("the current commitment for this matter"), supersession policy, and fork handling (whether two live successors to one commitment are allowed) are consumer governance built above Core, which MAY maintain a cross-session commitment index for the purpose. A consumer that does not use supersession is unaffected; the field is simply absent.
 
 ### 7.4 Session Context and Extensions
 
@@ -411,7 +428,7 @@ An `OPEN` session MAY be paused into the `SUSPENDED` state and later resumed to 
 - `SuspendSession` is accepted only when the session is `OPEN`; it transitions the session to `SUSPENDED`.
 - `ResumeSession` is accepted only when the session is `SUSPENDED`; it transitions the session back to `OPEN`.
 
-Like `CancelSession`, they are restricted to the session initiator and policy-delegated roles, are subject to the same authentication requirements, and are NOT governed by Mode-specific authorization rules. Upon accepting a `SuspendSession` request the runtime MUST append a `SessionSuspend` envelope (with `SessionSuspendPayload`); upon accepting a `ResumeSession` request it MUST append a `SessionResume` envelope (with `SessionResumePayload`). These envelopes MUST NOT be submitted via the `Send` RPC — the runtime is the sole emitter — and they enter the accepted history so the suspension timeline is part of the replayed record (as internal annotations: they consume no ordinal and are not delivered on a subscribe stream, see RFC-MACP-0006 §3.2).
+Like `CancelSession`, they are restricted to the session initiator and policy-delegated roles, are subject to the same authentication requirements, and are NOT governed by Mode-specific authorization rules. Upon accepting a `SuspendSession` request the runtime MUST append a `SessionSuspend` envelope (with `SessionSuspendPayload`); upon accepting a `ResumeSession` request it MUST append a `SessionResume` envelope (with `SessionResumePayload`). These envelopes MUST NOT be submitted via the `Send` RPC — the runtime is the sole emitter (§7.6 item 9) — and they enter the accepted history as internal annotations, so the suspension timeline is part of the replayed record. How transport bindings sequence and deliver internal annotations is specified in RFC-MACP-0006 §3.2.
 
 **Acceptance while suspended.** A `SUSPENDED` session is not `OPEN`; therefore any session-scoped Mode message (Proposal, Vote, Commitment, …) referencing it MUST be rejected with a non-OPEN session error, exactly as for terminal sessions (§7.3). Only `ResumeSession` (and `CancelSession`) may be accepted against a `SUSPENDED` session.
 
@@ -428,6 +445,9 @@ The obligations in this section bind every MACP Runtime, whatever its transport,
 4. **Acceptance time.** Every time-dependent rule, including TTL (§7.1), suspension banking (§7.5) and Mode timeouts such as RFC-MACP-0010 §5.1, MUST be evaluated against the runtime's recorded acceptance time. It MUST NOT be evaluated against `Envelope.timestamp_unix_ms`. The runtime MUST record the acceptance time with the accepted envelope so that replay reproduces it. This item governs the clock against which a deadline is checked. It does not move a deadline's base where another section fixes it: RFC-MACP-0003 §2 makes the accepted `SessionStart` envelope's `timestamp_unix_ms` the base of the initial TTL deadline, and that rule stands. The runtime-emitted `SessionSuspend` and `SessionResume` annotations carry the runtime's own clock, so the suspension accounting of RFC-MACP-0003 §2 already meets this item.
 5. **Due synthetic envelopes.** Before evaluating a session-scoped envelope, the runtime MUST append every synthetic envelope that a Mode specifies as due at that acceptance time, such as the synthetic `HandoffAccept` of RFC-MACP-0010 §5.1. Observation at evaluation time is sufficient. A timer or sweep is RECOMMENDED but not required.
 6. **Duplicates.** A duplicate (§8.2) MUST be reported to the submitter distinctly from a first acceptance and from every other rejection, either as `DUPLICATE_MESSAGE` or as an idempotent success that the submitter can recognise as a replay. This lets a caller tell a retried submission from a new one.
+7. **Unknown session.** A session-scoped envelope other than `SessionStart` whose `session_id` names no session the runtime knows MUST be rejected with `SESSION_NOT_FOUND`.
+8. **Bound mode.** A session-scoped envelope whose `mode` differs from the mode bound at the session's `SessionStart` MUST be rejected with `INVALID_ENVELOPE`. The check follows deduplication (§8.2), so a retry that reuses an accepted `message_id` is still a duplicate. It precedes the session-state check (§7.3).
+9. **Runtime-emitted annotations.** A `SessionCancel`, `SessionSuspend` or `SessionResume` envelope submitted through `Send` (§7.3, §7.5) MUST be rejected, leaving session state and accepted history unchanged. The runtime SHOULD report `FORBIDDEN`, because no submitter is authorized to emit a runtime-only message type.
 
 ---
 
@@ -491,7 +511,7 @@ The canonical gRPC service definition is `MACPRuntimeService` in [`schemas/proto
 
 - `Initialize` — unary initialization and capability negotiation
 - `Send` — unary envelope send with acknowledgement
-- `StreamSession` — bidirectional session streaming
+- `StreamSession` — bidirectional session streaming, as specified by RFC-MACP-0006 §3.2
 
 If a `StreamSession` receives an invalid or unauthorized envelope, the runtime MUST respond with a `StreamSessionResponse` containing an `MACPError` on the same stream rather than terminating the stream. Stream termination is reserved for transport-level failures, not application-level validation errors.
 
@@ -503,7 +523,7 @@ If a `StreamSession` receives an invalid or unauthorized envelope, the runtime M
 - `ListRoots` — root listing
 - `WatchRoots` — root change notifications
 - `WatchSignals` — server-streaming RPC that broadcasts accepted Ambient Signal Envelopes in real time. The stream carries only Signals (messages with empty `session_id` and empty `mode`). Signals are ephemeral; there is no built-in backlog or resume mechanism. Clients that disconnect MAY miss Signals.
-- `ListSessions` — returns a bounded page of `SessionMetadata` for the sessions the runtime currently knows about, active and terminal. The listing is paginated: `page_size` bounds the page (0 selects a server-chosen default, and the runtime MAY cap the requested value), `page_token` continues a traversal, and the result set is complete only once `next_page_token` comes back empty — a short page does not signal completion. Advertised by `sessions.list_sessions`. See [RFC-MACP-0006 Section 3.8](RFC-MACP-0006-transport-bindings.md#38-session-lifecycle-observation-rpcs) for the full contract.
+- `ListSessions` — `ListSessions`, when `sessions.list_sessions` is advertised, is specified by [RFC-MACP-0006 §3.2/§3.8](RFC-MACP-0006-transport-bindings.md#38-session-lifecycle-observation-rpcs); the summary here is informative. It returns a bounded page of `SessionMetadata` for the sessions the runtime currently knows about, active and terminal. The listing is paginated: `page_size` bounds the page (0 selects a server-chosen default, and the runtime MAY cap the requested value), `page_token` continues a traversal, and the result set is complete only once `next_page_token` comes back empty — a short page does not signal completion.
 - `WatchSessions` — server-streaming RPC that emits `SessionLifecycleEvent` notifications when sessions are created, resolved, or expired. Advertised by `sessions.watch_sessions`.
 
 The proto file also defines extension mode lifecycle RPCs (`ListExtModes`, `RegisterExtMode`, `UnregisterExtMode`, `PromoteMode`); see [RFC-MACP-0002](RFC-MACP-0002-modes.md) for extension mode semantics.
