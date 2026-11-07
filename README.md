@@ -187,9 +187,14 @@ MACP/
       proposal_happy_path.json
       proposal_negative_outcome.json
       proposal_reject_paths.json
+      proposal_counter_live_original.json
+      proposal_withdrawn_after_accept.json
       task_happy_path.json
       task_negative_outcome.json
       task_reject_paths.json
+      task_named_assignee.json
+      task_named_reject_negative.json
+      task_reassignment_on_reject.json
       handoff_happy_path.json
       handoff_negative_outcome.json
       handoff_reject_paths.json
