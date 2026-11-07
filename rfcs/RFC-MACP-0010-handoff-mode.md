@@ -2,10 +2,12 @@
 # Multi-Agent Coordination Protocol (MACP) - Handoff Mode
 
 **Document:** RFC-MACP-0010
-**Version:** 1.2.1-draft
+**Version:** 1.3.0-draft
 **Status:** Community Standards Track
 **Updates:** RFC-MACP-0002
 
+> **Changelog — 1.3.0-draft:** New §6.1 states when a `Commitment` is ready, which §6 left implicit. A positive `Commitment` (`outcome_positive: true`) requires at least one offer accepted by a `HandoffAccept`, explicit or the synthetic accept of §5.1; a declined offer transfers nothing and does not satisfy it. A negative `Commitment` has no readiness precondition: it MAY be accepted with no offer ever made (the definitive no-target outcome §6 already allows), with an offer still pending, or after declines. A `Commitment` that is not ready is rejected with `INVALID_ENVELOPE` (RFC-MACP-0002 §6.1). The former §6.1 (Governance Policy) is now §6.2. Behaviour: the reference runtime accepted any `Commitment` once some offer had been accepted *or declined*, so it accepted a positive `Commitment` when the only offer had been declined, and it rejected every `Commitment`, negative included, while no offer had been settled. The positive rule tightens validation; the negative rule relaxes it. Pinned by `handoff_commitment_readiness.json` and `handoff_no_target_commitment.json`. **Replay:** the relaxation has no exposure, because a negative `Commitment` a runtime used to refuse never entered history. The tightening is exposed: `mode_version` stays `1.0.0`, and RFC-MACP-0003 §1 guarantees identical decisions only under identical validation rules, so a stored history that resolved with a positive `Commitment` after only a decline would be rejected by a runtime whose replay re-drives Mode validation under the new rule. Such a runtime needs to apply the old rule to sessions recorded under it, for example by gating it on a per-session semantics revision recorded at `SessionStart`.
+>
 > **Changelog — 1.2.1-draft:** §5 rule 3a's last sentence spoke of an offer that "expired unanswered under no implicit-accept policy", but Handoff Mode defines no per-offer expiry: without §5.1 an unanswered offer simply stays pending until the Session ends, and under §5.1 it is implicitly accepted rather than expired. The sentence now says what it meant: only an accepted `HandoffDecline` bars a target from a later offer. Clarification only. **Replay:** no exposure; no validation outcome changes.
 >
 > **Changelog — 1.2.0-draft:** Two changes. (1) §5 rule 3a's second sentence said a re-offer after a decline MUST name "a different `target_participant`" without saying different from what, and a runtime that enforced neither reading let an owner re-offer to a target that had just declined until it gave in. The sentence now bars, by name, any target that has declined an offer earlier in the Session, and names the rejection code (`INVALID_ENVELOPE`). An offer that expired unanswered with no implicit-accept policy does not bar its target. The "or is unreachable" clause is dropped: a target that never answers has not declined. (2) §5.1(2) no longer restates the obligation to append the synthetic `HandoffAccept` before evaluating the next envelope. It cites RFC-MACP-0001 §7.6 item 5 (Acceptance obligations), which now states it for every Mode's due synthetic envelopes and for every runtime, including one that embeds a library and has no `MACPRuntimeService` endpoint. Change (1) tightens validation: an offer to a previously declining target that a runtime used to accept is now rejected. Change (2) is a restatement and changes no behaviour. Source: seam-embedder-findings proposal S5 and S12, issue #185. **Replay:** change (1) is exposed. `mode_version` stays `1.0.0`, and RFC-MACP-0003 §1 guarantees identical accept/reject decisions only under identical validation rules. A stored history that already contains a re-offer to a declined target was accepted under the old wording; a runtime whose replay re-drives Mode validation under the new rule would reject that entry and diverge from the recorded outcome. A runtime that replays such histories needs to apply the old rule to sessions recorded under it, for example by gating the rule on a per-session semantics revision recorded at `SessionStart`. Histories without such a re-offer replay unchanged. Change (2) has no replay effect.
@@ -124,7 +126,16 @@ Positive commitments SHOULD make the transfer explicit, for example `handoff.acc
 
 Handoff Mode allows negative committed outcomes (declined or no-target). `CommitmentPayload.outcome_positive` MUST be set explicitly on all Handoff Mode commitments.
 
-### 6.1 Governance Policy
+### 6.1 Commitment readiness
+
+A `Commitment` is evaluated against the offers in accepted history at its acceptance time, after any synthetic `HandoffAccept` due at that time has been appended (§5.1(2)).
+
+1. A positive `Commitment` (`outcome_positive: true`) MUST be rejected with `INVALID_ENVELOPE` unless at least one `HandoffOffer` in the Session has been accepted by a `HandoffAccept`, explicit or synthetic (§5.1). A declined offer does not satisfy this rule, and neither does a pending one.
+2. A negative `Commitment` (`outcome_positive: false`) has no readiness precondition. It MUST NOT be rejected on the ground that no offer was made, that an offer is pending, or that every offer was declined. In particular, a Session in which no `HandoffOffer` was ever accepted MAY resolve with a negative `Commitment` that binds a definitive no-target outcome.
+
+These are Mode validation rules, not policy evaluation: neither depends on a bound policy, so a breach uses `INVALID_ENVELOPE`, never `POLICY_DENIED` (RFC-MACP-0002 §6.1). They run before governance-policy evaluation (RFC-MACP-0012 §6.4), and sender authorization (§2.1) runs before both.
+
+### 6.2 Governance Policy
 
 Handoff sessions MAY be governed by declarative policies that constrain acceptance timeouts and commitment authority. See [RFC-MACP-0012](RFC-MACP-0012-policy.md) for the governance policy framework and `schemas/json/policy/handoff-rules.schema.json` for the Handoff Mode rule schema.
 
