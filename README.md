@@ -176,6 +176,12 @@ MACP/
       decision_plurality.json
       decision_finalize_decline_empty_tally.json
       decision_finalize_decline_quorum_waiver.json
+      decision_decline_over_approval.json
+      decision_decline_over_approval_allowed.json
+      decision_decline_guard_quorum.json
+      decision_abstain_denominator.json
+      decision_objection_decline_passed.json
+      decision_0007_initiator_not_participant.json
       decision_policy_pack_human_signoff.json
       decision_policy_pack_compliance_vote.json
       proposal_happy_path.json
