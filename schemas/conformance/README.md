@@ -204,12 +204,17 @@ Notes:
   another's `TaskAccept`, and the declining participant can never accept. It
   also pins rule 3d: while an assignee is active, another participant's
   `TaskReject` is rejected `INVALID_ENVELOPE`.
-- RFC-MACP-0010 §6.1 (Commitment readiness) is pinned at both corners.
-  `handoff_commitment_readiness.json`: after the only offer is declined, a
-  positive `Commitment` is rejected `INVALID_ENVELOPE` and a negative one
-  resolves the Session. `handoff_no_target_commitment.json`: with no offer ever
-  made, a positive `Commitment` is rejected and a negative (no-target) one
-  resolves the Session.
+- RFC-MACP-0010 §6.1 (Commitment readiness). A positive `Commitment` needs an
+  accepted offer; a negative one needs the Session settled without a transfer
+  (no offer, or every offer declined). Every rejection is `INVALID_ENVELOPE`.
+  `handoff_commitment_readiness.json` walks one Session: a negative
+  `Commitment` while the first offer is pending, a positive one after that
+  offer is declined, a negative one while a second offer is pending, and a
+  negative one after the second offer is accepted are all rejected; a
+  positive one then resolves. `handoff_no_target_commitment.json`: with no
+  offer ever made, a positive `Commitment` is rejected and a negative
+  (no-target) one resolves. `handoff_negative_outcome.json` is the
+  every-offer-declined corner.
 - `handoff_offer_rules.json` pins the rest of RFC-MACP-0010 §2.1 and §5: owner-only
   `HandoffOffer` / `HandoffContext` / `Commitment` (`FORBIDDEN`), target-only
   accept and decline, references to unknown `handoff_id`s, one outstanding offer
