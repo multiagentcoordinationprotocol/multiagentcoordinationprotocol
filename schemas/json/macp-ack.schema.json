@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-ack.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-ack.schema.json",
   "title": "MACP Acknowledgement",
   "description": "Validates an Ack message in JSON form. See RFC-MACP-0001 Section 8.",
   "type": "object",

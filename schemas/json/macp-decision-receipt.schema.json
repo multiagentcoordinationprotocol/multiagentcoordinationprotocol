@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-decision-receipt.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-decision-receipt.schema.json",
   "title": "MACP Decision Receipt",
   "description": "Portable, offline-verifiable record of one binding Commitment, defined informatively by RFC-MACP-0013 Appendix A (format macp-receipt/1). Integrity rests on commitment_hash, which is recomputed from `commitment`; authenticity rests on `attestations`, each of which declares what it binds. Key distribution and trust are out of scope.",
   "type": "object",

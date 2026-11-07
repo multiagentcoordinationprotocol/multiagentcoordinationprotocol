@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/policy/decision-rules.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/policy/decision-rules.schema.json",
   "title": "Decision Mode Governance Rules",
   "description": "JSON Schema for governance rules applied to macp.mode.decision.v1 sessions. See RFC-MACP-0012 Section 4.1.",
   "type": "object",

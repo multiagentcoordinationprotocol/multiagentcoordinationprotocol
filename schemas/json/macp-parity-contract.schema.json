@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://macp.dev/schemas/macp-parity-contract.schema.json",
+  "$id": "https://multiagentcoordinationprotocol.io/schemas/macp-parity-contract.schema.json",
   "title": "MACP Cross-Implementation Parity Contract",
   "description": "Validates the SHAPE of schemas/parity/contract.json. This schema enforces structure only (type/pattern/enum/uniqueItems/minItems/minLength) -- it does NOT verify that the pinned VALUES are actually correct against their real sources. That is scripts/check-parity-contract.py's job. See schemas/parity/README.md; this manifest is non-normative.",
   "$defs": {
