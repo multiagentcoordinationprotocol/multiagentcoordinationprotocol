@@ -2,7 +2,7 @@
 # Multi-Agent Coordination Protocol (MACP) — Core
 
 **Document:** RFC-MACP-0001
-**Version:** 1.7.0-draft
+**Version:** 1.8.0-draft
 **Status:** Community Standards Track
 **Canonical wire format:** Protocol Buffers
 **Normative transport:** gRPC over HTTP/2
@@ -10,6 +10,18 @@
 **Intended status:** Stable Core
 
 > This is an RFC-style open standard. It is not an IETF RFC.
+
+> **Changelog — 1.8.0-draft:** §7.6 item 9: a `SessionCancel`, `SessionSuspend` or
+> `SessionResume` submitted through `Send` MUST now be rejected with `FORBIDDEN` (was SHOULD),
+> in every Mode, by a check that does not depend on the Mode. The item also places the check:
+> after the session-state check (§7.3) and before Mode authorization and validation, so a
+> duplicate, a mode mismatch (item 8) and a non-`OPEN` session keep their own codes. Behaviour:
+> the reference runtime already reported `FORBIDDEN` in Decision Mode, but `INVALID_ENVELOPE`
+> in Proposal, Task, Handoff and Quorum, where the envelope reached Mode dispatch; those now
+> report `FORBIDDEN`. Pinned outside Decision Mode by
+> `quorum_runtime_annotation_reject_paths.json`. The conformance corpus also gains a fixture step
+> for item 8 (`core_envelope_reject_paths.json`). **Replay:** no exposure. The rejection was
+> already required; only its code changes, and a rejected envelope never enters history.
 
 > **Changelog — 1.7.0-draft:** §7.6 gains three acceptance obligations that the reference
 > runtime already enforces and the conformance corpus partly pins. Item 7: a session-scoped
@@ -447,7 +459,7 @@ The obligations in this section bind every MACP Runtime, whatever its transport,
 6. **Duplicates.** A duplicate (§8.2) MUST be reported to the submitter distinctly from a first acceptance and from every other rejection, either as `DUPLICATE_MESSAGE` or as an idempotent success that the submitter can recognise as a replay. This lets a caller tell a retried submission from a new one.
 7. **Unknown session.** A session-scoped envelope other than `SessionStart` whose `session_id` names no session the runtime knows MUST be rejected with `SESSION_NOT_FOUND`.
 8. **Bound mode.** A session-scoped envelope whose `mode` differs from the mode bound at the session's `SessionStart` MUST be rejected with `INVALID_ENVELOPE`. The check follows deduplication (§8.2), so a retry that reuses an accepted `message_id` is still a duplicate. It precedes the session-state check (§7.3).
-9. **Runtime-emitted annotations.** A `SessionCancel`, `SessionSuspend` or `SessionResume` envelope submitted through `Send` (§7.3, §7.5) MUST be rejected, leaving session state and accepted history unchanged. The runtime SHOULD report `FORBIDDEN`, because no submitter is authorized to emit a runtime-only message type.
+9. **Runtime-emitted annotations.** A `SessionCancel`, `SessionSuspend` or `SessionResume` envelope submitted through `Send` (§7.3, §7.5) MUST be rejected with `FORBIDDEN`, leaving session state and accepted history unchanged, because no submitter is authorized to emit a runtime-only message type. The check MUST NOT depend on the session's Mode: the code is `FORBIDDEN` in every Mode, whatever the Mode's own authorization or validation would say about the message type. It follows the session-state check (§7.3) and precedes Mode authorization and validation, so a duplicate (§8.2) is still reported as a duplicate, a mode mismatch (item 8) as `INVALID_ENVELOPE`, and an envelope for a session that is not `OPEN` as `SESSION_NOT_OPEN`.
 
 ---
 

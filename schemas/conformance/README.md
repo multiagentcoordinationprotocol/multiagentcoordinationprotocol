@@ -191,8 +191,8 @@ Notes:
   mode to run in are pinned in Decision Mode, in files named `core_*.json`:
   - `core_ttl_expired.json`: OPEN → EXPIRED once the TTL elapses on the acceptance clock, with later messages rejected `SESSION_NOT_OPEN`.
   - `core_mode_before_policy.json`: a Commitment that breaches both a mode rule and a policy rule gets the mode-rule code (RFC-MACP-0002 §6.1).
-  - `core_runtime_annotation_reject_paths.json`: `SessionCancel`, `SessionSuspend` and `SessionResume` submitted via `Send` are rejected (RFC-MACP-0001 §7.3, §7.5). The RFC names no code; the fixture pins the reference runtime's `FORBIDDEN`.
-  - `core_envelope_reject_paths.json`: an in-session unsupported `macp_version` (`UNSUPPORTED_PROTOCOL_VERSION`) and an unknown `session_id` (`SESSION_NOT_FOUND`), neither of which touches the session.
+  - `core_runtime_annotation_reject_paths.json`: `SessionCancel`, `SessionSuspend` and `SessionResume` submitted via `Send` are rejected `FORBIDDEN` (RFC-MACP-0001 §7.3, §7.5, §7.6 item 9). `quorum_runtime_annotation_reject_paths.json` pins the same code outside Decision Mode, from declared voters whom Quorum's own authorization admits, because item 9 makes the check mode-independent.
+  - `core_envelope_reject_paths.json`: an in-session unsupported `macp_version` (`UNSUPPORTED_PROTOCOL_VERSION`), an unknown `session_id` (`SESSION_NOT_FOUND`, RFC-MACP-0001 §7.6 item 7) and a `mode` other than the bound one (`INVALID_ENVELOPE`, item 8), none of which touches the session.
   - `core_config_default.json`: the reserved `configuration_version` `config.default` is accepted (RFC-MACP-0001 §7.1).
   - `core_signal_ambient.json`: a Signal leaves session state untouched (RFC-MACP-0001 §5.1). Its envelope sets an empty `session_id` and `mode`.
 
@@ -201,7 +201,20 @@ Notes:
   target that declined is rejected, an offer to a different target is
   accepted. `task_reject_paths.json` pins RFC-MACP-0009 §5 rule 2a on a
   broadcast task: one participant's pre-assignment `TaskReject` does not bar
-  another's `TaskAccept`, and the declining participant can never accept.
+  another's `TaskAccept`, and the declining participant can never accept. It
+  also pins rule 3d: while an assignee is active, another participant's
+  `TaskReject` is rejected `INVALID_ENVELOPE`.
+- RFC-MACP-0010 §6.1 (Commitment readiness). A positive `Commitment` needs an
+  accepted offer; a negative one needs the Session settled without a transfer
+  (no offer, or every offer declined). Every rejection is `INVALID_ENVELOPE`.
+  `handoff_commitment_readiness.json` walks one Session: a negative
+  `Commitment` while the first offer is pending, a positive one after that
+  offer is declined, a negative one while a second offer is pending, and a
+  negative one after the second offer is accepted are all rejected; a
+  positive one then resolves. `handoff_no_target_commitment.json`: with no
+  offer ever made, a positive `Commitment` is rejected and a negative
+  (no-target) one resolves. `handoff_negative_outcome.json` is the
+  every-offer-declined corner.
 - `handoff_offer_rules.json` pins the rest of RFC-MACP-0010 §2.1 and §5: owner-only
   `HandoffOffer` / `HandoffContext` / `Commitment` (`FORBIDDEN`), target-only
   accept and decline, references to unknown `handoff_id`s, one outstanding offer
