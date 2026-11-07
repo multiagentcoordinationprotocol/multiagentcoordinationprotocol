@@ -11,7 +11,7 @@ Each level includes everything in the level above it.
 | Level | Fixtures that must pass | What it shows |
 |---|---|---|
 | **Core** | `session_start_reject_paths.json`, and the commitment-hash vectors `cmt-hash/cmt_hash_001`–`010` | `SessionStart` validation ([RFC-MACP-0001 §7](../rfcs/RFC-MACP-0001-core.md)) and the canonical commitment hash, both computing it and verifying it ([RFC-MACP-0013](../rfcs/RFC-MACP-0013-commitment-hash.md)) |
-| **Core + Decision** | every `decision_*.json` | the Decision Mode ([RFC-MACP-0007](../rfcs/RFC-MACP-0007-decision-mode.md)), including empty tallies, vetoes and finalize-decline |
+| **Core + Decision** | every `decision_*.json`, `security_*.json` and `transport_*.json` | the Decision Mode ([RFC-MACP-0007](../rfcs/RFC-MACP-0007-decision-mode.md)), including empty tallies, vetoes and finalize-decline; and the session isolation ([RFC-MACP-0004](../rfcs/RFC-MACP-0004-security.md) §6) and per-Envelope version checks ([RFC-MACP-0006](../rfcs/RFC-MACP-0006-transport-bindings.md) §4.7) that `security_*` and `transport_*` pin through a Decision Mode session |
 | **Standard modes** | every `proposal_*.json`, `task_*.json`, `handoff_*.json` and `quorum_*.json` | all five standard modes ([RFC-MACP-0007](../rfcs/RFC-MACP-0007-decision-mode.md) through [RFC-MACP-0011](../rfcs/RFC-MACP-0011-quorum-mode.md)) |
 
 The `ext.multi_round.v1` extension mode has its own fixtures (`multi_round_*.json`). An implementation that supports it MAY add "+ multi_round" to its claim; it is not part of any level.

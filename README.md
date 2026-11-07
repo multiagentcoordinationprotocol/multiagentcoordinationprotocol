@@ -244,6 +244,8 @@ MACP/
       policy_quorum_percentage_ceil.json
       policy_session_start_reject_paths.json
       policy_task_reassignment_on_reject.json
+      security_isolation_reject_paths.json
+      transport_macp_version_in_band.json
     otel/
       macp-semconv.json    # OpenTelemetry semantic conventions, macp-semconv/0.1 (docs/opentelemetry.md)
     parity/
