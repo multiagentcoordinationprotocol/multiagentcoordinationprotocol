@@ -97,12 +97,19 @@ def lint_fixture(path: Path) -> tuple[list[str], list[str]]:
         expect = msg.get("expect")
         if expect not in VALID_EXPECT:
             errors.append(f"messages[{i}].expect {expect!r} not in {sorted(VALID_EXPECT)}")
+        # SessionCancel / SessionSuspend / SessionResume are runtime-emitted
+        # annotations that MUST NOT be submitted via Send (RFC-MACP-0001 §7.3,
+        # §7.5), so a fixture step carrying one can never be accepted.
+        if msg.get("message_type") in {"SessionCancel", "SessionSuspend", "SessionResume"} \
+                and expect == "accept":
+            errors.append(f"messages[{i}] {msg.get('message_type')} is runtime-emitted "
+                          "(RFC-MACP-0001 §7.3/§7.5) and cannot be accepted via Send")
         # An ACCEPTED message must come from a participant — except the
-        # initiator's role-based messages (SessionStart / Commitment /
-        # SessionCancel), which do not require participant-list membership
+        # initiator's role-based messages (SessionStart / Commitment), which
+        # do not require participant-list membership
         # (see the initiator note above). A REJECTED message may legitimately
         # come from an outsider (that is often why it rejects).
-        initiator_role_messages = {"SessionStart", "Commitment", "SessionCancel"}
+        initiator_role_messages = {"SessionStart", "Commitment"}
         # Mode-specific messages that are likewise issued by the initiator
         # ROLE: the quorum coordinator poses the question (RFC-0011 §2), the
         # task requester issues the request (RFC-0009 §4).
