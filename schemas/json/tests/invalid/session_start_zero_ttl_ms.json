@@ -1,0 +1,20 @@
+{
+  "_invalid_because": "ttl_ms MUST be greater than zero: a SessionStart with ttl_ms 0 declares a session that is already past its deadline (RFC-MACP-0001 \u00a77.1). Otherwise a valid SessionStart.",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "SessionStart",
+  "message_id": "msg-invalid-zero-ttl",
+  "session_id": "sess-ghi789",
+  "sender": "agent://coordinator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "intent": "approve release",
+    "participants": [
+      "agent://a",
+      "agent://b"
+    ],
+    "mode_version": "1.0.0",
+    "configuration_version": "runtime-2026.07.01",
+    "ttl_ms": 0
+  }
+}

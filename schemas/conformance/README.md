@@ -88,7 +88,7 @@ Each fixture is a JSON object with:
 | Field | Used By | Description |
 |-------|---------|-------------|
 | `mode` | Both | Mode identifier |
-| `initiator` | Both | Session initiator. Membership in `participants` is **mode-specific** — required only by handoff's delegated model (RFC-MACP-0010 §2). Elsewhere the initiator's authority is role-based, so an initiator outside `participants` is legitimate if it sends only `SessionStart` / `Commitment` / `SessionCancel` (plus each mode's initiator-role message). See the note above the format section. |
+| `initiator` | Both | Session initiator. Membership in `participants` is **mode-specific** — required only by handoff's delegated model (RFC-MACP-0010 §2). Elsewhere the initiator's authority is role-based, so an initiator outside `participants` is legitimate if it sends only `SessionStart` / `Commitment` (plus each mode's initiator-role message). `SessionCancel` is runtime-emitted and never accepted via `Send` (RFC-MACP-0001 §7.3). See the note above the format section. |
 | `participants` | Both | Declared participant roster. Must include every `accept` sender other than the initiator's role-based messages. **MAY be empty** — MACP does not require `SessionStart` to declare participants, and `decision_zero_participants.json` pins what that implies. |
 | `messages` | Both | Ordered message sequence |
 | `messages[].sender` | Both | Sender identity. For `accept` messages must be a participant; `reject` messages may come from outsiders. |
@@ -102,6 +102,8 @@ Each fixture is a JSON object with:
 | `expected_final_state` | Both | Terminal state: `Open`, `Resolved`, `Suspended`, or `Cancelled`. `Resolved` ⇒ a commitment was emitted. |
 | `expected_resolution` | Both | Commitment field assertions (`action`, `mode_version`, `configuration_version`, `outcome_positive`) when `Resolved` |
 | `expected_mode_state` | Both | Mode-specific assertions: `phase`, `votes` (per proposal/sender), proposal/offer dispositions |
+| `ttl_ms` | Runtime | The `ttl_ms` the harness binds in the fixture's own `SessionStart`. In a clocked fixture the deadline is acceptance time `0` plus `ttl_ms`; see `core_ttl_expired.json`. |
+| `verify_replay_equivalence` | Runtime | Optional, default `false`. When `true`, after every other assertion the harness replays the fixture session's accepted history from scratch, under the same bound versions and policy, and asserts that the replayed session equals the live one: the same state, resolution, mode state and deduplication state (RFC-MACP-0003 §1). A harness that cannot replay reports the assertion as unverified; it MUST NOT report it as passed. |
 
 Notes:
 - SDKs replay only `accept` messages through their projections (reject-path
@@ -185,6 +187,16 @@ Notes:
   `ResumeSession` RPCs and MUST NOT be submitted via `Send`
   (RFC-MACP-0001 §7.5), while every fixture step is a `Send`-submitted
   envelope.
+- **Core rules** (RFC-MACP-0001, RFC-MACP-0002, RFC-MACP-0003) that need some
+  mode to run in are pinned in Decision Mode, in files named `core_*.json`:
+  - `core_ttl_expired.json`: OPEN → EXPIRED once the TTL elapses on the acceptance clock, with later messages rejected `SESSION_NOT_OPEN`.
+  - `core_mode_before_policy.json`: a Commitment that breaches both a mode rule and a policy rule gets the mode-rule code (RFC-MACP-0002 §6.1).
+  - `core_runtime_annotation_reject_paths.json`: `SessionCancel`, `SessionSuspend` and `SessionResume` submitted via `Send` are rejected (RFC-MACP-0001 §7.3, §7.5). The RFC names no code; the fixture pins the reference runtime's `FORBIDDEN`.
+  - `core_envelope_reject_paths.json`: an in-session unsupported `macp_version` (`UNSUPPORTED_PROTOCOL_VERSION`) and an unknown `session_id` (`SESSION_NOT_FOUND`), neither of which touches the session.
+  - `core_config_default.json`: the reserved `configuration_version` `config.default` is accepted (RFC-MACP-0001 §7.1).
+  - `core_signal_ambient.json`: a Signal leaves session state untouched (RFC-MACP-0001 §5.1). Its envelope sets an empty `session_id` and `mode`.
+
+  `decision_happy_path.json` also pins the terminal-state rule: after its Commitment, a Vote and a non-authority Commitment are both rejected `SESSION_NOT_OPEN`. The second one shows that the OPEN check runs before authorization (RFC-MACP-0001 §7.3 steps 1–2).
 - `handoff_reject_paths.json` pins RFC-MACP-0010 §5 rule 3a: a re-offer to a
   target that declined is rejected, an offer to a different target is
   accepted. `task_reject_paths.json` pins RFC-MACP-0009 §5 rule 2a on a

@@ -1,0 +1,15 @@
+{
+  "_invalid_because": "message_type MUST be non-empty: it is the payload-type discriminator (RFC-MACP-0001 §6). This is a session-scoped envelope (non-empty mode and session_id), so the session-scoping rule is satisfied and only the message_type constraint fails. An ambient base would also fail the session-scoping rule, because an empty message_type is not Signal.",
+  "macp_version": "1.0.0",
+  "mode": "macp.mode.decision.v1",
+  "message_type": "",
+  "message_id": "msg-invalid-empty-type",
+  "session_id": "sess-ghi789",
+  "sender": "agent://initiator",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "payload": {
+    "proposal_id": "p1",
+    "option": "deploy",
+    "rationale": "ready"
+  }
+}
