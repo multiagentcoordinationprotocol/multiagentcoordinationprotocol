@@ -88,7 +88,7 @@ Each fixture is a JSON object with:
 | Field | Used By | Description |
 |-------|---------|-------------|
 | `mode` | Both | Mode identifier |
-| `initiator` | Both | Session initiator. Membership in `participants` is **mode-specific** — required only by handoff's delegated model (RFC-MACP-0010 §2). Elsewhere the initiator's authority is role-based, so an initiator outside `participants` is legitimate if it sends only `SessionStart` / `Commitment` / `SessionCancel` (plus each mode's initiator-role message). See the note above the format section. |
+| `initiator` | Both | Session initiator. Membership in `participants` is **mode-specific** — required only by handoff's delegated model (RFC-MACP-0010 §2). Elsewhere the initiator's authority is role-based, so an initiator outside `participants` is legitimate if it sends only `SessionStart` / `Commitment` (plus each mode's initiator-role message). `SessionCancel` is runtime-emitted and never accepted via `Send` (RFC-MACP-0001 §7.3). See the note above the format section. |
 | `participants` | Both | Declared participant roster. Must include every `accept` sender other than the initiator's role-based messages. **MAY be empty** — MACP does not require `SessionStart` to declare participants, and `decision_zero_participants.json` pins what that implies. |
 | `messages` | Both | Ordered message sequence |
 | `messages[].sender` | Both | Sender identity. For `accept` messages must be a participant; `reject` messages may come from outsiders. |
