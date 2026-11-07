@@ -213,6 +213,12 @@ MACP/
       multi_round_happy_path.json
       multi_round_reject_paths.json
       session_start_reject_paths.json
+      core_ttl_expired.json
+      core_mode_before_policy.json
+      core_runtime_annotation_reject_paths.json
+      core_envelope_reject_paths.json
+      core_config_default.json
+      core_signal_ambient.json
     otel/
       macp-semconv.json    # OpenTelemetry semantic conventions, macp-semconv/0.1 (docs/opentelemetry.md)
     parity/

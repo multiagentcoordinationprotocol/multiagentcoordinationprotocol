@@ -1,0 +1,15 @@
+{
+  "_invalid_because": "message_id MUST be non-empty: it is the idempotency key every runtime deduplicates on (RFC-MACP-0001 \u00a76, \u00a78.2). Otherwise a valid ambient Signal.",
+  "macp_version": "1.0",
+  "mode": "",
+  "message_type": "Signal",
+  "message_id": "",
+  "session_id": "",
+  "sender": "agent://telemetry.observer",
+  "timestamp": "2026-03-01T20:24:00Z",
+  "payload": {
+    "signal_type": "observation.latency",
+    "data": "AAECAwQ=",
+    "confidence": 0.92
+  }
+}

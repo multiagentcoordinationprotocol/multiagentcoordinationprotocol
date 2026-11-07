@@ -30,6 +30,10 @@ itself never causes the rejection.
 | `session_suspend_missing_reason.json` | `SessionSuspend`'s payload MUST carry a non-empty `reason` (schema-level requirement, mirroring `SessionCancelPayload`'s convention — not itself stated by RFC-MACP-0001 §7.5) |
 | `session_resume_missing_reason.json` | `SessionResume`'s payload MUST carry a non-empty `reason` (schema-level requirement, mirroring `SessionCancelPayload`'s convention — not itself stated by RFC-MACP-0001 §7.5) |
 | `session_resume_negative_banked_ms.json` | `banked_ms` MUST be non-negative (RFC-MACP-0001 §7.5, RFC-MACP-0003 §2) |
+| `empty_message_id.json` | `message_id` MUST be non-empty (RFC-MACP-0001 §6, §8.2) |
+| `empty_message_type.json` | `message_type` MUST be non-empty (RFC-MACP-0001 §6). Session-scoped base: an empty `message_type` on an ambient envelope also fails the session-scoping rule, because it is not `Signal` |
+| `empty_sender.json` | `sender` MUST be non-empty (RFC-MACP-0001 §6) |
+| `session_start_zero_ttl_ms.json` | `ttl_ms` MUST be greater than zero (RFC-MACP-0001 §7.1) |
 
 `signal_with_session_id.json`/`signal_with_mode.json` and
 `session_scoped_empty_session_id.json`/`session_scoped_empty_mode.json` are
