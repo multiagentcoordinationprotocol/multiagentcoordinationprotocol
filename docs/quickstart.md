@@ -20,7 +20,7 @@ To run one yourself, you need Docker and **Python 3.11 or later**.
 
 ```bash
 docker run -p 50051:50051 -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 \
-  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.12.0
+  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.1
 ```
 
 `MACP_ALLOW_INSECURE=1` allows plaintext gRPC and development identities, and `MACP_MEMORY_ONLY=1` keeps state in memory. Both are for local use only: without authentication configured, the runtime refuses to start unless `MACP_ALLOW_INSECURE=1` is set. For a real deployment, see [Deployment](deployment.md).
@@ -106,7 +106,7 @@ From `0.12.0` the runtime image also serves the HTTP/JSON binding ([RFC-MACP-000
 ```bash
 docker run -p 50051:50051 -p 8080:8080 \
   -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 -e MACP_HTTP_BIND_ADDR=0.0.0.0:8080 \
-  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.12.0
+  ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.1
 ```
 
 Every call is a `POST` to `/macp/v1/{Method}` with a JSON body. The body is the canonical JSON of the request message ([RFC-MACP-0001 §10](../rfcs/RFC-MACP-0001-core.md)), and no protos are needed:
