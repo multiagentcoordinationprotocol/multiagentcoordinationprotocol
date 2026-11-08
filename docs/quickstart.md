@@ -81,6 +81,7 @@ state: SESSION_STATE_RESOLVED mode: macp.mode.decision.v1
 - [Architecture](architecture.md): the two planes, sessions and the envelope.
 - The TypeScript SDK: `npm install macp-sdk-typescript` (see its [README](https://github.com/multiagentcoordinationprotocol/macp-sdk-typescript#readme) for the current install steps).
 - [Conformance](conformance.md): what it means for an implementation to conform.
+- Ask the MACP knowledge base from your agent: a public, read-only MCP server that answers questions about the spec, SDKs and runtime (`claude mcp add --transport http macp-kb https://macp-kb-mcp-production.up.railway.app/mcp`). See [Knowledge base MCP](https://www.multiagentcoordinationprotocol.io/docs/knowledge-base-mcp) for other clients and the rate limits.
 - Watch a session from the terminal: `macp session tail <session_id>`. Replay it under a different policy to see whether the outcome would change: `macp replay --session <session_id> --policy candidate.json` ([RFC-MACP-0012 §8.1](../rfcs/RFC-MACP-0012-policy.md)).
 
 ## Appendix: talk to the runtime with grpcurl
