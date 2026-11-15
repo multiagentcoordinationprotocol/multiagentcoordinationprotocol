@@ -307,6 +307,9 @@ If you are new to MACP, start here:
 
 ## Standards posture
 
+**About the name:** in this repository, MACP always means the Multi-Agent Coordination Protocol. It is unrelated to the IETF Internet-Draft `draft-li-dmsc-macp` ("Multi-agent Collaboration Protocol Suites Architecture") and to the `macp.dev` domain. The project's own code lives in the `multiagentcoordinationprotocol` GitHub organization. Its packages are `macp-sdk-typescript` and the `@multiagentcoordinationprotocol/*` scope on npm, and `macp-*` names on PyPI and crates.io.
+
+
 MACP is intentionally split into a small set of RFCs because that makes the standard more credible and easier to evolve.
 
 - **RFC-MACP-0001 Core** defines the base protocol, capability negotiation, the envelope model, session lifecycle, transport requirements, and registry hooks.
